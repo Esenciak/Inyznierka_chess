@@ -14,7 +14,7 @@ public class BoardManager : MonoBehaviour
 
 	public GameObject tilePrefab;
 
-	[Header("Kolory kafelków")]
+	[Header("Kolory kafelkÃ³w")]
 	public Color[] playerColors;
 	public Color[] enemyColors;
 	public Color[] centerColors;
@@ -28,7 +28,7 @@ public class BoardManager : MonoBehaviour
 	public Vector2 enemyOffset = new Vector2(0, 5);
 	public Vector2 centerOffset = new Vector2(0, 0);
 
-	// globalne rzêdy w "wie¿y"
+	// globalne rzÃªdy w "wieÂ¿y"
 	private int playerStartRow;
 	private int centerStartRow;
 	private int enemyStartRow;
@@ -76,7 +76,7 @@ public class BoardManager : MonoBehaviour
 	{
 		if (Input.GetKeyDown(KeyCode.R))
 		{
-			// testowo – przegenerowanie z aktualnymi rozmiarami
+			// testowo Â– przegenerowanie z aktualnymi rozmiarami
 			RecalculateGlobalRows();
 			offsetCalculation();
 			CreateAndGenerateBoards();
@@ -150,8 +150,8 @@ public class BoardManager : MonoBehaviour
 					tileComponent.col = c;
 					tileComponent.boardType = boardType;
 
-					tileComponent.globalRow = startGlobalRow + r;
-					tileComponent.globalCol = c;
+                                    tileComponent.globalRow = startGlobalRow + r;
+                                    tileComponent.globalCol = Mathf.RoundToInt(offset.x) + c;
 				}
 
 				board[r, c] = tileGO;
@@ -159,7 +159,7 @@ public class BoardManager : MonoBehaviour
 		}
 	}
 
-	// plansza centralna – blend kolorów
+	// plansza centralna Â– blend kolorÃ³w
 	void GenerateBoard(GameObject[,] board, Color[] playerColor, Color[] enemyColor, Vector2 offset, BoardType boardType, int startGlobalRow)
 	{
 		int rows = board.GetLength(0);
@@ -192,8 +192,8 @@ public class BoardManager : MonoBehaviour
 					tileComponent.col = c;
 					tileComponent.boardType = boardType;
 
-					tileComponent.globalRow = startGlobalRow + r;
-					tileComponent.globalCol = c;
+                                    tileComponent.globalRow = startGlobalRow + r;
+                                    tileComponent.globalCol = Mathf.RoundToInt(offset.x) + c;
 				}
 
 				board[r, c] = tileGO;
@@ -281,32 +281,48 @@ public class BoardManager : MonoBehaviour
 		return tileGO.GetComponent<Tile>();
 	}
 
-	// NOWE: pobieranie kafelka po globalnym rzêdzie (jedna wspólna plansza)
-	public Tile GetTileGlobal(int globalRow, int col)
-	{
-		if (globalRow < 0 || globalRow >= totalRows)
-			return null;
+        // NOWE: pobieranie kafelka po globalnym rzÃªdzie (jedna wspÃ³lna plansza)
+        public Tile GetTileGlobal(int globalRow, int globalCol)
+        {
+                if (globalRow < 0 || globalRow >= totalRows)
+                        return null;
 
-		if (col < 0 || col >= PlayerCols) // zak³adamy te same kolumny
-			return null;
+                int playerStartCol = Mathf.RoundToInt(playerOffset.x);
+                int enemyStartCol = Mathf.RoundToInt(enemyOffset.x);
+                int centerStartCol = Mathf.RoundToInt(centerOffset.x);
 
-		// Player
-		if (globalRow < centerStartRow)
-		{
-			int localRow = globalRow - playerStartRow;
-			return GetTile(BoardType.Player, localRow, col);
-		}
-		// Center
-		else if (globalRow < enemyStartRow)
-		{
-			int localRow = globalRow - centerStartRow;
-			return GetTile(BoardType.Center, localRow, col);
-		}
-		// Enemy
-		else
-		{
-			int localRow = globalRow - enemyStartRow;
-			return GetTile(BoardType.Enemy, localRow, col);
-		}
-	}
+                // Player
+                if (globalRow < centerStartRow)
+                {
+                        int localRow = globalRow - playerStartRow;
+                        int localCol = globalCol - playerStartCol;
+
+                        if (localCol < 0 || localCol >= PlayerCols)
+                                return null;
+
+                        return GetTile(BoardType.Player, localRow, localCol);
+                }
+                // Center
+                else if (globalRow < enemyStartRow)
+                {
+                        int localRow = globalRow - centerStartRow;
+                        int localCol = globalCol - centerStartCol;
+
+                        if (localCol < 0 || localCol >= CenterCols)
+                                return null;
+
+                        return GetTile(BoardType.Center, localRow, localCol);
+                }
+                // Enemy
+                else
+                {
+                        int localRow = globalRow - enemyStartRow;
+                        int localCol = globalCol - enemyStartCol;
+
+                        if (localCol < 0 || localCol >= PlayerCols)
+                                return null;
+
+                        return GetTile(BoardType.Enemy, localRow, localCol);
+                }
+        }
 }

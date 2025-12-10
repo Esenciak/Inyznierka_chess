@@ -101,13 +101,13 @@ public class Piece : MonoBehaviour
 		return legalMoves;
 	}
 
-	// ruchy jednopolowe (król, skoczek itd.) – u¿ywamy globalRow + GetTileGlobal
+	// ruchy jednopolowe (krÃ³l, skoczek itd.) Â– uÂ¿ywamy globalRow + GetTileGlobal
 	private void AddStepMoves(Vector2Int[] dirs)
 	{
 		foreach (var d in dirs)
 		{
-			int gRow = currentTile.globalRow + d.x;
-			int col = currentTile.col + d.y;
+                        int gRow = currentTile.globalRow + d.x;
+                        int col = currentTile.globalCol + d.y;
 
 			Tile target = BoardManager.Instance.GetTileGlobal(gRow, col);
 
@@ -118,13 +118,13 @@ public class Piece : MonoBehaviour
 		}
 	}
 
-	// ruchy piona – do przodu o 1, z u¿yciem globalRow
+	// ruchy piona Â– do przodu o 1, z uÂ¿yciem globalRow
 	private void AddPawnMoves()
 	{
 		int forward = (owner == PieceOwner.Player) ? 1 : -1;
 
-		int gRow = currentTile.globalRow + forward;
-		int col = currentTile.col;
+                int gRow = currentTile.globalRow + forward;
+                int col = currentTile.globalCol;
 
 		Tile target = BoardManager.Instance.GetTileGlobal(gRow, col);
 
@@ -134,7 +134,7 @@ public class Piece : MonoBehaviour
 		legalMoves.Add(target);
 	}
 
-	// ===== zestawy ruchów (na razie u¿ywamy King/Pawn) =====
+	// ===== zestawy ruchÃ³w (na razie uÂ¿ywamy King/Pawn) =====
 
 	private static readonly Vector2Int[] knightMoves = new Vector2Int[]
 	{
