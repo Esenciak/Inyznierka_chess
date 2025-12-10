@@ -44,11 +44,15 @@ public class GameManager : MonoBehaviour
 		}
 	}
 
-	public void EndPlayerMove()
-	{
-		currentTurn = Turn.Enemy;
-		//EnemyAI.Instance.MakeMove();  // dodamy w Etapie 4
-	}
+        public void EndPlayerMove()
+        {
+                currentTurn = Turn.Enemy;
+
+                if (EnemyAI.Instance != null)
+                        EnemyAI.Instance.MakeMove();
+                else
+                        EndEnemyMove();
+        }
 
 	public void EndEnemyMove()
 	{
@@ -64,7 +68,7 @@ public class GameManager : MonoBehaviour
 		}
 		else
 		{
-			// awaryjnie, gdyby singleton nie istnia³
+			// awaryjnie, gdyby singleton nie istniaÂ³
 			UnityEngine.SceneManagement.SceneManager.LoadScene("Shop");
 		}
 	}
