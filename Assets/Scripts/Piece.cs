@@ -34,25 +34,25 @@ public class Piece : MonoBehaviour
 		transform.position = mouseWorld;
 	}
 
-	void OnMouseUp()
-	{
-		Tile nearest = FindNearestTile();
+        void OnMouseUp()
+        {
+                Tile nearestLegal = FindNearestLegalTile();
 
-		if (nearest != null && legalMoves.Contains(nearest))
-		{
-			MoveToTile(nearest);
-		}
-		else
-		{
-			transform.position = dragStartPosition;
-		}
-	}
+                if (nearestLegal != null)
+                {
+                        MoveToTile(nearestLegal);
+                }
+                else
+                {
+                        transform.position = dragStartPosition;
+                }
+        }
 
-	Tile FindNearestTile()
-	{
-		Tile[] allTiles = Object.FindObjectsByType<Tile>(FindObjectsSortMode.None);
-		Tile nearest = null;
-		float minDist = Mathf.Infinity;
+        Tile FindNearestTile()
+        {
+                Tile[] allTiles = Object.FindObjectsByType<Tile>(FindObjectsSortMode.None);
+                Tile nearest = null;
+                float minDist = Mathf.Infinity;
 
 		foreach (Tile t in allTiles)
 		{
@@ -64,8 +64,32 @@ public class Piece : MonoBehaviour
 			}
 		}
 
-		return (minDist < 1.5f) ? nearest : null;
-	}
+                return (minDist < 1.5f) ? nearest : null;
+        }
+
+        private Tile FindNearestLegalTile()
+        {
+                if (legalMoves.Count == 0)
+                        return null;
+
+                Tile nearest = null;
+                float minDist = Mathf.Infinity;
+
+                foreach (Tile t in legalMoves)
+                {
+                        if (t == null)
+                                continue;
+
+                        float dist = Vector2.Distance(transform.position, t.transform.position);
+                        if (dist < minDist)
+                        {
+                                minDist = dist;
+                                nearest = t;
+                        }
+                }
+
+                return (nearest != null && minDist < 1.5f) ? nearest : null;
+        }
 
 	private void MoveToTile(Tile target)
 	{

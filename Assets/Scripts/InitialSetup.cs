@@ -12,6 +12,14 @@ public class InitialSetup : MonoBehaviour
                 yield return new WaitUntil(() =>
                         BoardManager.Instance != null && BoardManager.Instance.IsReady);
 
+                // awaryjnie podmieniamy brakujcy prefab pionka na ten sam, ktry
+                // jest uytwany dla krla, eby unikn sytuacji braku pionw na planszy
+                if (pawnPrefab == null)
+                {
+                        Debug.LogWarning("Brak przypisanego prefab'u pionka - uycie kingPrefab jako zamiennika.");
+                        pawnPrefab = kingPrefab;
+                }
+
                 int rows = BoardManager.Instance.PlayerRows;
                 int cols = BoardManager.Instance.PlayerCols;
 
