@@ -618,6 +618,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InitialSetup
   kingPrefab: {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
   pawnPrefab: {fileID: 3002512713483526407, guid: 308823bf762d7674ab8537160504a26f, type: 3}
+  enemyKingPrefab: {fileID: 1361584432996271375, guid: 87b757d746625214dbf7cd7c49046d43, type: 3}
+  enemyPawnPrefab: {fileID: 5078288275362618545, guid: f883beabdedf17f459e545ff677136f1, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
