@@ -9,32 +9,28 @@ public class Piece : MonoBehaviour
 	public Tile currentTile;
 
 	private Vector3 dragStartPosition;
+	private Tile startTile;
+
 	private List<Tile> legalMoves = new List<Tile>();
 
-	private Vector3 originalPosition;
-
-	void Start()
+	private void OnMouseDown()
 	{
-		originalPosition = transform.position;
-	}
-
-	void OnMouseDown()
-	{
-		if (!GameManager.Instance.CanPieceMove(this))
+		if (GameManager.Instance != null && !GameManager.Instance.CanPieceMove(this))
 			return;
 
+		startTile = currentTile;
 		dragStartPosition = transform.position;
 		GetLegalMoves();
 	}
 
-	void OnMouseDrag()
+	private void OnMouseDrag()
 	{
 		Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 		mouseWorld.z = -1;
 		transform.position = mouseWorld;
 	}
 
-	void OnMouseUp()
+	private void OnMouseUp()
 	{
 		Tile nearest = FindNearestTile();
 
@@ -45,10 +41,11 @@ public class Piece : MonoBehaviour
 		else
 		{
 			transform.position = dragStartPosition;
+			currentTile = startTile;
 		}
 	}
 
-	Tile FindNearestTile()
+	private Tile FindNearestTile()
 	{
 		Tile[] allTiles = Object.FindObjectsByType<Tile>(FindObjectsSortMode.None);
 		Tile nearest = null;
@@ -71,17 +68,15 @@ public class Piece : MonoBehaviour
 	{
 		MoveInternal(target);
 
-		if (owner == PieceOwner.Player)
-			GameManager.Instance.EndPlayerMove();
-		else
-			GameManager.Instance.EndEnemyMove();
+		if (GameManager.Instance == null) return;
+
+		if (owner == PieceOwner.Player) GameManager.Instance.EndPlayerMove();
+		else GameManager.Instance.EndEnemyMove();
 	}
 
-	// liczy legalne ruchy
 	public List<Tile> GetLegalMoves()
 	{
 		legalMoves.Clear();
-
 		if (currentTile == null) return legalMoves;
 
 		switch (pieceType)
@@ -89,28 +84,22 @@ public class Piece : MonoBehaviour
 			case PieceType.King:
 				AddStepMoves(kingDirs);
 				break;
-
 			case PieceType.Pawn:
 				AddPawnMoves();
-				break;
-
-			default:
 				break;
 		}
 
 		return legalMoves;
 	}
 
-	// ruchy jednopolowe globalRow + GetTileGlobal
 	private void AddStepMoves(Vector2Int[] dirs)
 	{
 		foreach (var d in dirs)
 		{
-                        int gRow = currentTile.globalRow + d.x;
-                        int col = currentTile.globalCol + d.y;
+			int gr = currentTile.globalRow + d.x;
+			int gc = currentTile.globalCol + d.y;
 
-			Tile target = BoardManager.Instance.GetTileGlobal(gRow, col);
-
+			Tile target = BoardManager.Instance.GetTileGlobal(gr, gc);
 			if (target == null) continue;
 			if (target.isOccupied) continue;
 
@@ -118,35 +107,19 @@ public class Piece : MonoBehaviour
 		}
 	}
 
-	// ruchy piona  do przodu o 1 z globalRow
 	private void AddPawnMoves()
 	{
 		int forward = (owner == PieceOwner.Player) ? 1 : -1;
 
-                int gRow = currentTile.globalRow + forward;
-                int col = currentTile.globalCol;
+		int gr = currentTile.globalRow + forward;
+		int gc = currentTile.globalCol;
 
-		Tile target = BoardManager.Instance.GetTileGlobal(gRow, col);
-
+		Tile target = BoardManager.Instance.GetTileGlobal(gr, gc);
 		if (target == null) return;
 		if (target.isOccupied) return;
 
 		legalMoves.Add(target);
 	}
-
-	// zestaw ruchow pionow
-
-	private static readonly Vector2Int[] knightMoves = new Vector2Int[]
-	{
-		new Vector2Int(1, 2),
-		new Vector2Int(2, 1),
-		new Vector2Int(-1, 2),
-		new Vector2Int(-2, 1),
-		new Vector2Int(1, -2),
-		new Vector2Int(2, -1),
-		new Vector2Int(-1, -2),
-		new Vector2Int(-2, -1)
-	};
 
 	private static readonly Vector2Int[] kingDirs = new Vector2Int[]
 	{
@@ -160,40 +133,10 @@ public class Piece : MonoBehaviour
 		new Vector2Int(-1, -1)
 	};
 
-	private static readonly Vector2Int[] bishopDirections = new Vector2Int[]
-	{
-		new Vector2Int(1, 1),
-		new Vector2Int(1, -1),
-		new Vector2Int(-1, 1),
-		new Vector2Int(-1, -1)
-	};
-
-	private static readonly Vector2Int[] rookDirections = new Vector2Int[]
-	{
-		new Vector2Int(1, 0),
-		new Vector2Int(0, 1),
-		new Vector2Int(-1, 0),
-		new Vector2Int(0, -1)
-	};
-
-	private static readonly Vector2Int[] queenDirections = new Vector2Int[]
-	{
-		new Vector2Int(1, 0),
-		new Vector2Int(0, 1),
-		new Vector2Int(-1, 0),
-		new Vector2Int(0, -1),
-		new Vector2Int(1, 1),
-		new Vector2Int(1, -1),
-		new Vector2Int(-1, 1),
-		new Vector2Int(-1, -1)
-	};
-
-	// ai enemy
-
 	public void MoveToTileFromAI(Tile target)
 	{
 		MoveInternal(target);
-		GameManager.Instance.EndEnemyMove();
+		if (GameManager.Instance != null) GameManager.Instance.EndEnemyMove();
 	}
 
 	private void MoveInternal(Tile target)
@@ -204,13 +147,13 @@ public class Piece : MonoBehaviour
 
 			if (other.owner != this.owner)
 			{
-				if (other.pieceType == PieceType.King)
+				if (GameManager.Instance != null && other.pieceType == PieceType.King)
 				{
 					bool playerWon = this.owner == PieceOwner.Player;
 					GameManager.Instance.GameOver(playerWon);
 				}
 
-				Object.Destroy(other.gameObject);
+				Destroy(other.gameObject);
 			}
 		}
 

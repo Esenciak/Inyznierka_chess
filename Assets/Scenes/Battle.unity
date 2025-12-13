@@ -232,8 +232,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BoardManager
   PlayerRows: 3
   PlayerCols: 3
-  CenterRows: 7
-  CenterCols: 7
+  CenterRows: 5
+  CenterCols: 5
   tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
   playerColors:
   - {r: 0.22352943, g: 0.45882356, b: 0.36078432, a: 0}
@@ -241,11 +241,8 @@ MonoBehaviour:
   enemyColors:
   - {r: 0.89433956, g: 0.65787685, b: 0.2953007, a: 0}
   - {r: 0.89433956, g: 0.8694499, b: 0.39654678, a: 0}
-  centerColors:
-  - {r: 0.2509804, g: 0.2509804, b: 0.2509804, a: 0}
-  - {r: 0.4901961, g: 0.4901961, b: 0.4901961, a: 0}
-  playerOffset: {x: 0, y: 0}
-  enemyOffset: {x: 0, y: 0}
+  playerOffset: {x: 0, y: -5}
+  enemyOffset: {x: 0, y: 5}
   centerOffset: {x: 0, y: 0}
 --- !u!114 &555778725
 MonoBehaviour:

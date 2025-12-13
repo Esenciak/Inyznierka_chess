@@ -3,61 +3,62 @@ using UnityEngine;
 
 public class InitialSetup : MonoBehaviour
 {
-        [Header("Prefaby figur")]
-        public GameObject kingPrefab;
-        public GameObject pawnPrefab;
+	public GameObject kingPrefab;
+	public GameObject pawnPrefab;
 
-        private IEnumerator Start()
-        {
-                yield return new WaitUntil(() =>
-                        BoardManager.Instance != null && BoardManager.Instance.IsReady);
+	private IEnumerator Start()
+	{
+		yield return new WaitUntil(() =>
+			BoardManager.Instance != null && BoardManager.Instance.IsReady);
 
-                int rows = BoardManager.Instance.PlayerRows;
-                int cols = BoardManager.Instance.PlayerCols;
+		int rows = BoardManager.Instance.PlayerRows;
+		int cols = BoardManager.Instance.PlayerCols;
 
-                int playerFrontRow = rows - 1; // miejsce pionow gracza na najwyzszym rzedzie
-                int enemyFrontRow = 0;          // miejsce enemy na najnizszym rzedzie
+		int midColLocal = cols / 2;
 
-                // wszystkie pionki w pierwszym rzędzie przy centrum
-                for (int c = 0; c < cols; c++)
-                {
-                        SpawnPiece(pawnPrefab, BoardType.Player, playerFrontRow, c, PieceOwner.Player, PieceType.Pawn);
-                        SpawnPiece(pawnPrefab, BoardType.Enemy, enemyFrontRow, c, PieceOwner.Enemy, PieceType.Pawn);
-                }
+		int playerFrontRowLocal = rows - 1;
+		int enemyFrontRowLocal = 0;
 
-                // króle w rogach plansz gracza/przeciwnika
-                int playerKingRow = 0;
-                int playerKingCol = Mathf.Max(0, cols - 1);
-                SpawnPiece(kingPrefab, BoardType.Player, playerKingRow, playerKingCol, PieceOwner.Player, PieceType.King);
+		SpawnPiece(kingPrefab, BoardType.Player, playerFrontRowLocal, midColLocal, PieceOwner.Player, PieceType.King);
 
-                int enemyKingRow = Mathf.Max(0, rows - 1);
-                int enemyKingCol = Mathf.Max(0, cols - 1);
-                SpawnPiece(kingPrefab, BoardType.Enemy, enemyKingRow, enemyKingCol, PieceOwner.Enemy, PieceType.King);
-        }
+		if (cols >= 3)
+		{
+			SpawnPiece(pawnPrefab, BoardType.Player, playerFrontRowLocal, midColLocal - 1, PieceOwner.Player, PieceType.Pawn);
+			SpawnPiece(pawnPrefab, BoardType.Player, playerFrontRowLocal, midColLocal + 1, PieceOwner.Player, PieceType.Pawn);
+		}
 
-        private void SpawnPiece(GameObject prefab, BoardType boardType, int row, int col, PieceOwner owner, PieceType type)
-        {
-                Tile tile = BoardManager.Instance.GetTile(boardType, row, col);
-                if (tile == null)
-                {
-                        Debug.LogWarning($"Brak tile dla {boardType} ({row},{col})");
-                        return;
-                }
+		SpawnPiece(kingPrefab, BoardType.Enemy, enemyFrontRowLocal, midColLocal, PieceOwner.Enemy, PieceType.King);
 
-                GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
-                Piece piece = pieceGO.GetComponent<Piece>();
+		if (cols >= 3)
+		{
+			SpawnPiece(pawnPrefab, BoardType.Enemy, enemyFrontRowLocal, midColLocal - 1, PieceOwner.Enemy, PieceType.Pawn);
+			SpawnPiece(pawnPrefab, BoardType.Enemy, enemyFrontRowLocal, midColLocal + 1, PieceOwner.Enemy, PieceType.Pawn);
+		}
+	}
 
-                if (piece == null)
-                {
-                        Debug.LogError("Prefab nie ma komponentu Piece!");
-                        return;
-                }
+	private void SpawnPiece(GameObject prefab, BoardType boardType, int row, int col, PieceOwner owner, PieceType type)
+	{
+		Tile tile = BoardManager.Instance.GetTile(boardType, row, col);
+		if (tile == null)
+		{
+			Debug.LogWarning($"Brak tile dla {boardType} ({row},{col})");
+			return;
+		}
 
-                piece.owner = owner;
-                piece.pieceType = type;
-                piece.currentTile = tile;
+		GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
+		Piece piece = pieceGO.GetComponent<Piece>();
 
-                tile.isOccupied = true;
-                tile.currentPiece = piece;
-        }
+		if (piece == null)
+		{
+			Debug.LogError("Prefab nie ma komponentu Piece!");
+			return;
+		}
+		//sss
+		piece.owner = owner;
+		piece.pieceType = type;
+		piece.currentTile = tile;
+
+		tile.isOccupied = true;
+		tile.currentPiece = piece;
+	}
 }

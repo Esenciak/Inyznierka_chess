@@ -7,6 +7,8 @@ public class GameManager : MonoBehaviour
 	public GamePhase currentPhase = GamePhase.Battle; // na razie od razu walka
 	public Turn currentTurn = Turn.Player;
 
+
+
 	private void Awake()
 	{
 		if (Instance != null && Instance != this)

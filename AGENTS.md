@@ -8,7 +8,7 @@
   - Layers:
     - Default, TransparentFX, Ignore Raycast, Water, UI, LogicTile, Background, Tile, Piece
 - Active game object:
-  - Name: InventoryManager 
+  - Name: W_King(Clone)
   - Tag: Untagged
-  - Layer: Default
+  - Layer: Piece
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->
