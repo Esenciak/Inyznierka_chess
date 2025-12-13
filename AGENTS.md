@@ -8,7 +8,7 @@
   - Layers:
     - Default, TransparentFX, Ignore Raycast, Water, UI, LogicTile, Background, Tile, Piece
 - Active game object:
-  - Name: W_King(Clone)
+  - Name: BoardManager
   - Tag: Untagged
-  - Layer: Piece
+  - Layer: Default
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->

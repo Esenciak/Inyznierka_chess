@@ -6,12 +6,15 @@ public class InitialSetup : MonoBehaviour
 	public GameObject kingPrefab;
 	public GameObject pawnPrefab;
 
+	public GameObject enemyKingPrefab;
+	public GameObject enemyPawnPrefab;
+
 	private IEnumerator Start()
 	{
 		yield return new WaitUntil(() =>
 			BoardManager.Instance != null && BoardManager.Instance.IsReady);
 
-		int rows = BoardManager.Instance.PlayerRows;
+		int rows = BoardManager.Instance.PlayerRows; 
 		int cols = BoardManager.Instance.PlayerCols;
 
 		int midColLocal = cols / 2;
@@ -25,14 +28,16 @@ public class InitialSetup : MonoBehaviour
 		{
 			SpawnPiece(pawnPrefab, BoardType.Player, playerFrontRowLocal, midColLocal - 1, PieceOwner.Player, PieceType.Pawn);
 			SpawnPiece(pawnPrefab, BoardType.Player, playerFrontRowLocal, midColLocal + 1, PieceOwner.Player, PieceType.Pawn);
+
+		
 		}
 
-		SpawnPiece(kingPrefab, BoardType.Enemy, enemyFrontRowLocal, midColLocal, PieceOwner.Enemy, PieceType.King);
+		SpawnPiece(enemyKingPrefab, BoardType.Enemy, enemyFrontRowLocal, midColLocal, PieceOwner.Enemy, PieceType.King);
 
 		if (cols >= 3)
 		{
-			SpawnPiece(pawnPrefab, BoardType.Enemy, enemyFrontRowLocal, midColLocal - 1, PieceOwner.Enemy, PieceType.Pawn);
-			SpawnPiece(pawnPrefab, BoardType.Enemy, enemyFrontRowLocal, midColLocal + 1, PieceOwner.Enemy, PieceType.Pawn);
+			SpawnPiece(enemyPawnPrefab, BoardType.Enemy, enemyFrontRowLocal, midColLocal - 1, PieceOwner.Enemy, PieceType.Pawn);
+			SpawnPiece(enemyPawnPrefab, BoardType.Enemy, enemyFrontRowLocal, midColLocal + 1, PieceOwner.Enemy, PieceType.Pawn);
 		}
 	}
 
@@ -53,7 +58,7 @@ public class InitialSetup : MonoBehaviour
 			Debug.LogError("Prefab nie ma komponentu Piece!");
 			return;
 		}
-		//sss
+	
 		piece.owner = owner;
 		piece.pieceType = type;
 		piece.currentTile = tile;
