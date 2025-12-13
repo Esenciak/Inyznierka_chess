@@ -85,12 +85,12 @@ public class ShopManager : MonoBehaviour
 		if (GameProgress.Instance == null)
 			return;
 
-		GameProgress.Instance.LoadScene("Battle"); // nazwa sceny z bitw¹
+		GameProgress.Instance.LoadScene("Battle");
 	}
 
 	private void Update()
 	{
-		// Jeœli chcesz, mo¿esz tu okresowo odœwie¿aæ UI.
+		// potem okresowo odwiezac UI jakby coœ siê mia³o zmieniaæ np odliczanie albo kasa 
 		// RefreshUI();
 	}
 }

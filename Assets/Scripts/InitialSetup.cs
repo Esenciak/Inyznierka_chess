@@ -15,8 +15,8 @@ public class InitialSetup : MonoBehaviour
                 int rows = BoardManager.Instance.PlayerRows;
                 int cols = BoardManager.Instance.PlayerCols;
 
-                int playerFrontRow = rows - 1; // rząd przy centrum dla gracza
-                int enemyFrontRow = 0;          // rząd przy centrum dla przeciwnika
+                int playerFrontRow = rows - 1; // miejsce pionow gracza na najwyzszym rzedzie
+                int enemyFrontRow = 0;          // miejsce enemy na najnizszym rzedzie
 
                 // wszystkie pionki w pierwszym rzędzie przy centrum
                 for (int c = 0; c < cols; c++)

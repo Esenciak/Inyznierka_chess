@@ -28,7 +28,7 @@ public class BoardManager : MonoBehaviour
 	public Vector2 enemyOffset = new Vector2(0, 5);
 	public Vector2 centerOffset = new Vector2(0, 0);
 
-	// globalne rzêdy w "wie¿y"
+	// globalne rzędy w "wieży"
 	private int playerStartRow;
 	private int centerStartRow;
 	private int enemyStartRow;
@@ -104,12 +104,12 @@ public class BoardManager : MonoBehaviour
 
 	private void CreateAndGenerateBoards()
 	{
-		// kasujemy stare
+		// kasuje stare
 		DestroyBoard(playerBoard);
 		DestroyBoard(enemyBoard);
 		DestroyBoard(centerBoard);
 
-		// tworzymy nowe tablice
+		// nowe tablice
 		playerBoard = new GameObject[PlayerRows, PlayerCols];
 		enemyBoard = new GameObject[PlayerRows, PlayerCols];
 		centerBoard = new GameObject[CenterRows, CenterCols];
@@ -281,7 +281,7 @@ public class BoardManager : MonoBehaviour
 		return tileGO.GetComponent<Tile>();
 	}
 
-        // NOWE: pobieranie kafelka po globalnym rzêdzie (jedna wspólna plansza)
+        //pobieranie kafelka po globalnym rzędzie że wspólna plansza
         public Tile GetTileGlobal(int globalRow, int globalCol)
         {
                 if (globalRow < 0 || globalRow >= totalRows)

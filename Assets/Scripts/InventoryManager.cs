@@ -8,7 +8,7 @@ public class InventoryManager : MonoBehaviour
 	public GameObject tilePrefab;       // kafelek inventory
 	public GameObject pawnPrefab;       // prefab pionka
 	public GameObject kingPrefab;       // prefab króla
-	public Color[] inventoryColors;     // [0,1] kolory inventory
+	public Color[] inventoryColors;     // kolory
 
 	private GameObject[,] inventoryTiles;
 
@@ -21,7 +21,7 @@ public class InventoryManager : MonoBehaviour
 
 	void GenerateInventory()
 	{
-		// przesuniêcie obok g³ównej planszy (np. +5 w osi X)
+		// przesuniêcie obok g³ównej planszy (ale chyba to musi pójsæ do shop)
 		float offsetX = cols + 5;
 
 		for (int r = 0; r < rows; r++)
@@ -33,7 +33,7 @@ public class InventoryManager : MonoBehaviour
 				Vector2 pos = new Vector2(c + offsetX, r);
 				GameObject tile = Instantiate(tilePrefab, pos, Quaternion.identity);
 
-				// kolory indeksy 2 i 3
+				// kolory indeksy 2 i 3 (ale to chyba zmienie na osobne)
 				SpriteRenderer sr = tile.GetComponent<SpriteRenderer>();
 				sr.color = color2;
 
@@ -44,7 +44,7 @@ public class InventoryManager : MonoBehaviour
 
 	void SpawnRandomPieces()
 	{
-		// losowe pola w inventory
+		// losowe pola
 		int kingRow = Random.Range(0, rows);
 		int kingCol = Random.Range(0, cols);
 
@@ -61,7 +61,7 @@ public class InventoryManager : MonoBehaviour
 			{
 				r = Random.Range(0, rows);
 				c = Random.Range(0, cols);
-			} while ((r == kingRow && c == kingCol)); // unikamy pola króla
+			} while ((r == kingRow && c == kingCol)); // unikam pola krpola
 
 			Vector3 pawnPos = inventoryTiles[r, c].transform.position;
 			pawnPos.z = -1;

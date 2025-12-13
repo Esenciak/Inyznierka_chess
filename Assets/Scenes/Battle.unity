@@ -232,8 +232,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BoardManager
   PlayerRows: 3
   PlayerCols: 3
-  CenterRows: 5
-  CenterCols: 5
+  CenterRows: 7
+  CenterCols: 7
   tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
   playerColors:
   - {r: 0.22352943, g: 0.45882356, b: 0.36078432, a: 0}
