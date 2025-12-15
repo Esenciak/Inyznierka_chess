@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
 
-// Prosta klasa do zapamiêtania figury
+// Ma³a klasa do przechowywania danych o figurze
 [System.Serializable]
 public class SavedPiece
 {
@@ -34,7 +35,7 @@ public class GameProgress : MonoBehaviour
 		}
 	}
 
-	// --- NOWOŒÆ: Pamiêæ Armii ---
+	// --- PAMIÊÆ ARMII ---
 	public List<SavedPiece> savedArmy = new List<SavedPiece>();
 
 	private void Awake()
@@ -66,6 +67,6 @@ public class GameProgress : MonoBehaviour
 
 	public void LoadScene(string sceneName)
 	{
-		UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+		SceneManager.LoadScene(sceneName);
 	}
 }

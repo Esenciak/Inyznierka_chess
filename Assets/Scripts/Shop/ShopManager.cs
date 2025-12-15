@@ -109,8 +109,8 @@ public class ShopManager : MonoBehaviour
 
 	public void StartGame()
 	{
-		SaveArmyConfig(); // Zapisz armiê
-		GameProgress.Instance.LoadScene("Battle"); // Za³aduj bitwê
+		SaveArmyConfig(); // 1. Zapisz to co stoi na planszy
+		GameProgress.Instance.LoadScene("Battle"); // 2. Zmieñ scenê
 	}
 
 	void UpdateUI()
@@ -160,21 +160,20 @@ public class ShopManager : MonoBehaviour
 
 	void SaveArmyConfig()
 	{
-		// 1. Wyczyœæ star¹ pamiêæ
+		// Czyœcimy star¹ pamiêæ
 		GameProgress.Instance.savedArmy.Clear();
 
-		// 2. Pobierz rozmiar planszy gracza
 		int rows = BoardManager.Instance.PlayerRows;
 		int cols = BoardManager.Instance.PlayerCols;
 
-		// 3. Przeszukaj ka¿dy kafelek na planszy gracza
+		// Przeszukujemy planszê gracza (Player Board)
 		for (int r = 0; r < rows; r++)
 		{
 			for (int c = 0; c < cols; c++)
 			{
 				Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
 
-				// Jeœli na kafelku jest figura
+				// Jeœli na kafelku stoi figura
 				if (tile != null && tile.isOccupied && tile.currentPiece != null)
 				{
 					SavedPiece data = new SavedPiece();
