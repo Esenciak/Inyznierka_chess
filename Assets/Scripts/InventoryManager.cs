@@ -2,73 +2,97 @@ using UnityEngine;
 
 public class InventoryManager : MonoBehaviour
 {
-	public int rows = 3;
-	public int cols = 3;
+	public static InventoryManager Instance { get; private set; }
 
-	public GameObject tilePrefab;       // kafelek inventory
-	public GameObject pawnPrefab;       // prefab pionka
-	public GameObject kingPrefab;       // prefab króla
-	public Color[] inventoryColors;     // kolory
+	[Header("Ustawienia Ekwipunku")]
+	public int rows = 5; // Wysokoœæ (5)
+	public int cols = 2; // Szerokoœæ (2)
+	public Vector2 offsetFromBoard = new Vector2(2.0f, 0.0f); // Odstêp od planszy gracza
 
+	public GameObject tilePrefab;
+	public Color inventoryColor1 = new Color(0.3f, 0.3f, 0.3f);
+	public Color inventoryColor2 = new Color(0.4f, 0.4f, 0.4f);
 	private GameObject[,] inventoryTiles;
 
-	void Start()
+	private void Awake()
 	{
-		inventoryTiles = new GameObject[rows, cols];
+		Instance = this;
+	}
+
+	private void Start()
+	{
 		GenerateInventory();
-		SpawnRandomPieces();
 	}
 
 	void GenerateInventory()
 	{
-		// przesuniêcie obok g³ównej planszy (ale chyba to musi pójsæ do shop)
-		float offsetX = cols + 5;
+		// Pobieramy szerokoœæ planszy gracza, ¿eby wiedzieæ gdzie zacz¹æ rysowaæ ekwipunek
+		float startX = BoardManager.Instance.PlayerCols + offsetFromBoard.x;
+		float startY = BoardManager.Instance.playerOffset.y; // Zaczynamy na poziomie gracza
+
+		inventoryTiles = new GameObject[rows, cols];
+
+		
 
 		for (int r = 0; r < rows; r++)
 		{
 			for (int c = 0; c < cols; c++)
 			{
-				Color color2 = new Color(inventoryColors[(c + r) % 2].r, inventoryColors[(c + r) % 2].g, inventoryColors[(c + r) % 2].b);
+				// Pozycja w œwiecie
+				Vector3 pos = new Vector3(startX + c, startY + r, 0);
 
-				Vector2 pos = new Vector2(c + offsetX, r);
-				GameObject tile = Instantiate(tilePrefab, pos, Quaternion.identity);
+				GameObject go = Instantiate(tilePrefab, pos, Quaternion.identity);
+				go.name = $"Inventory_Tile_{r}_{c}";
+				go.transform.parent = transform; // Porz¹dek w hierarchii
 
-				// kolory indeksy 2 i 3 (ale to chyba zmienie na osobne)
-				SpriteRenderer sr = tile.GetComponent<SpriteRenderer>();
-				sr.color = color2;
+				Tile tile = go.GetComponent<Tile>();
+				tile.boardType = BoardType.Player; // Traktujemy to jako strefê gracza (dozwolon¹ do stawiania)
+				tile.isInventory = true; // WA¯NE: Dodaj bool isInventory w Tile.cs (instrukcja ni¿ej)
 
-				inventoryTiles[r, c] = tile;
+				// Kolorowanie na "szachownicê"
+				SpriteRenderer sr = go.GetComponent<SpriteRenderer>();
+				if (sr != null)
+				{
+					sr.color = (r + c) % 2 == 0 ? inventoryColor1 : inventoryColor2;
+				}
+				inventoryTiles[r, c] = go;
 			}
 		}
 	}
 
-	void SpawnRandomPieces()
-	{
-		// losowe pola
-		int kingRow = Random.Range(0, rows);
-		int kingCol = Random.Range(0, cols);
+	
+	public void AddPieceToInventory(PieceType type, GameObject prefab)
+    {
+        // Szukamy wolnego miejsca w inventoryTiles[,]
+        for (int r = 0; r < rows; r++)
+        {
+            for (int c = 0; c < cols; c++)
+            {
+                // Musimy pobraæ komponent Tile z GameObjectu w tablicy
+                GameObject tileGO = inventoryTiles[r, c];
+                Tile tile = tileGO.GetComponent<Tile>();
 
+                if (!tile.isOccupied)
+                {
+                    // Tworzymy now¹, grywaln¹ figurê
+                    Vector3 pos = tile.transform.position;
+                    pos.z = -1;
+                    GameObject newPieceGO = Instantiate(prefab, pos, Quaternion.identity);
+                    Piece piece = newPieceGO.GetComponent<Piece>();
 
-		Vector3 kingPos = inventoryTiles[kingRow, kingCol].transform.position;
-		kingPos.z = -1;
-		Instantiate(kingPrefab, kingPos, Quaternion.identity);
-
-		// dwa pionki w innych polach
-		for (int i = 0; i < 2; i++)
-		{
-			int r, c;
-			do
-			{
-				r = Random.Range(0, rows);
-				c = Random.Range(0, cols);
-			} while ((r == kingRow && c == kingCol)); // unikam pola krpola
-
-			Vector3 pawnPos = inventoryTiles[r, c].transform.position;
-			pawnPos.z = -1;
-			Instantiate(pawnPrefab, pawnPos, Quaternion.identity);
-
-		}
-
-
-	}
+                    // Konfiguracja
+                    piece.owner = PieceOwner.Player;
+                    piece.pieceType = type;
+                    piece.currentTile = tile;
+                    
+                    tile.isOccupied = true;
+                    tile.currentPiece = piece;
+                    
+                    return; // Zrobione, wychodzimy
+                }
+            }
+        }
+        Debug.Log("Ekwipunek pe³ny! Sprzedaj coœ albo zwolnij miejsce.");
+        // Opcjonalnie: Zwróæ kasê jeœli nie ma miejsca
+    }
 }

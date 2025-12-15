@@ -151,6 +151,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 510459230bf997c4ca369e7992d9866a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Piece
+  owner: 0
+  pieceType: 1
+  currentTile: {fileID: 0}
 --- !u!50 &-8443200359421046280
 Rigidbody2D:
   serializedVersion: 5

@@ -5,22 +5,32 @@ public class GameProgress : MonoBehaviour
 {
 	public static GameProgress Instance { get; private set; }
 
-	[Header("Waluta / ekonomia")]
-	public int coins = 0;
-	public int coinsPerWin = 10;
-	public int coinsPerLoss = 5;
+	[Header("Waluta")]
+	public int coins = 100; // Na start dajmy trochê kasy na testy
+	public int coinsPerWin = 50;
+	public int coinsPerLoss = 10;
 
-	[Header("Rozmiar planszy gracza (dla obu: player + enemy)")]
-	public int playerBoardSize = 3;     // 3 oznacza 3x3
-	public int maxPlayerBoardSize = 5;  // max 5x5
-
-	[Header("Rozmiar planszy centralnej")]
-	public int centerBoardSize = 3;          // 3 oznacza 3x3
-	public int maxCenterBoardSize = 5;
-	public int gamesPerCenterUpgrade = 3;    // co ile gier powiêkszaæ œrodek
-
-	[Header("Statystyki meta")]
+	[Header("Statystyki")]
 	public int gamesPlayed = 0;
+
+	[Header("Ustawienia Planszy")]
+	// 1. NAPRAWA: Dodajemy brakuj¹c¹ zmienn¹ playerBoardSize
+	public int playerBoardSize = 5;
+
+	// 2. NAPRAWA: Zamieniamy metodê GetCurrentCenterSize na w³aœciwoœæ centerBoardSize
+	// Dziêki temu BoardManager mo¿e odwo³aæ siê do GameProgress.Instance.centerBoardSize
+	public int centerBoardSize
+	{
+		get
+		{
+			// Startuje od 3. Co ka¿de 3 gry dodaje 2 do rozmiaru (3->5->7)
+			int upgrades = gamesPlayed / 3;
+			int size = 3 + (upgrades * 2);
+
+			// Opcjonalnie limit, np. do 9x9
+			return Mathf.Min(size, 9);
+		}
+	}
 
 	private void Awake()
 	{
@@ -29,7 +39,6 @@ public class GameProgress : MonoBehaviour
 			Destroy(gameObject);
 			return;
 		}
-
 		Instance = this;
 		DontDestroyOnLoad(gameObject);
 	}
@@ -37,7 +46,6 @@ public class GameProgress : MonoBehaviour
 	public void AddCoins(int amount)
 	{
 		coins += amount;
-		if (coins < 0) coins = 0;
 	}
 
 	public bool SpendCoins(int amount)
@@ -47,34 +55,14 @@ public class GameProgress : MonoBehaviour
 		return true;
 	}
 
-	/// <summary>
-	/// Wywo³uj na koñcu ka¿dej gry (po wygranej/przegranej).
-	/// </summary>
 	public void RegisterMatchResult(bool playerWon)
 	{
-		// 1. Monety
-		if (playerWon)
-			AddCoins(coinsPerWin);
-		else
-			AddCoins(coinsPerLoss);
-
-		// 2. Licznik gier
 		gamesPlayed++;
-
-		// 3. Auto-upgrade œrodka co X gier
-		if (gamesPlayed % gamesPerCenterUpgrade == 0)
-		{
-			if (centerBoardSize < maxCenterBoardSize)
-			{
-				centerBoardSize++;
-				Debug.Log("Center board upgraded to: " + centerBoardSize + "x" + centerBoardSize);
-			}
-		}
+		if (playerWon) AddCoins(coinsPerWin);
+		else AddCoins(coinsPerLoss);
 	}
 
-	/// <summary>
-	/// Metoda pomocnicza do ³adowania scen.
-	/// </summary>
+	// Prosta metoda do ³adowania scen
 	public void LoadScene(string sceneName)
 	{
 		SceneManager.LoadScene(sceneName);

@@ -1,77 +1,74 @@
 using UnityEngine;
+using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
 	public static GameManager Instance { get; private set; }
 
-	public GamePhase currentPhase = GamePhase.Battle; // na razie od razu walka
+	public GamePhase currentPhase = GamePhase.Placement; // Zaczynamy od rozstawiania!
 	public Turn currentTurn = Turn.Player;
-
-
 
 	private void Awake()
 	{
-		if (Instance != null && Instance != this)
-		{
-			Destroy(gameObject);
-			return;
-		}
 		Instance = this;
 	}
 
 	public bool CanPieceMove(Piece piece)
 	{
-		if (currentPhase != GamePhase.Battle)
-			return false;
+		// W fazie Placement sprawdzamy tylko czy pionek należy do gracza
+		if (currentPhase == GamePhase.Placement)
+			return piece.owner == PieceOwner.Player;
 
-		if (currentTurn == Turn.Player && piece.owner != PieceOwner.Player)
-			return false;
+		// W walce standardowe zasady
+		if (currentPhase == GamePhase.Battle)
+		{
+			if (currentTurn == Turn.Player && piece.owner != PieceOwner.Player) return false;
+			if (currentTurn == Turn.Enemy && piece.owner != PieceOwner.Enemy) return false;
+			return true;
+		}
+		return false;
+	}
 
-		if (currentTurn == Turn.Enemy && piece.owner != PieceOwner.Enemy)
-			return false;
+	// Przycisk "START BATTLE" powinien wywołać tę metodę
+	public void StartBattle()
+	{
+		currentPhase = GamePhase.Battle;
+		currentTurn = Turn.Player;
+		Debug.Log("Faza bitwy rozpoczęta!");
+	}
 
-		return true;
+	public void EndPlayerMove()
+	{
+		Debug.Log("Koniec tury gracza. Tura Enemy...");
+		currentTurn = Turn.Enemy;
+		// Uruchamiamy AI z małym opóźnieniem, żeby było widać, że myśli
+		StartCoroutine(EnemyMoveRoutine());
+	}
+
+	private IEnumerator EnemyMoveRoutine()
+	{
+		yield return new WaitForSeconds(1.0f); // Czekaj 1 sekundę
+
+		if (EnemyAI.Instance != null)
+		{
+			EnemyAI.Instance.MakeMove();
+		}
+		else
+		{
+			Debug.LogError("Brak skryptu EnemyAI!");
+			EndEnemyMove(); // Awaryjne oddanie tury
+		}
+	}
+
+	public void EndEnemyMove()
+	{
+		Debug.Log("Koniec tury Enemy. Tura Gracza.");
+		currentTurn = Turn.Player;
 	}
 
 	public void GameOver(bool playerWon)
 	{
-		if (GameProgress.Instance != null)
-		{
-			GameProgress.Instance.RegisterMatchResult(playerWon);
-			GameProgress.Instance.LoadScene("Shop");
-		}
-		else
-		{
-			UnityEngine.SceneManagement.SceneManager.LoadScene("Shop");
-		}
-	}
-
-        public void EndPlayerMove()
-        {
-                currentTurn = Turn.Enemy;
-
-                if (EnemyAI.Instance != null)
-                        EnemyAI.Instance.MakeMove();
-                else
-                        EndEnemyMove();
-        }
-
-	public void EndEnemyMove()
-	{
-		currentTurn = Turn.Player;
-	}
-
-	public void EndMatch(bool playerWon)
-	{
-		if (GameProgress.Instance != null)
-		{
-			GameProgress.Instance.RegisterMatchResult(playerWon);
-			GameProgress.Instance.LoadScene("Shop");
-		}
-		else
-		{
-			// awaryjnie, gdyby singleton nie istnia³
-			UnityEngine.SceneManagement.SceneManager.LoadScene("Shop");
-		}
+		Debug.Log(playerWon ? "WYGRANA!" : "PRZEGRANA!");
+		// Tutaj logika powrotu do sklepu
 	}
 }

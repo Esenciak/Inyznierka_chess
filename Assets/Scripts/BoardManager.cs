@@ -27,7 +27,7 @@ public class BoardManager : MonoBehaviour
 	private int playerStartRow;
 	private int centerStartRow;
 	private int enemyStartRow;
-	private int totalRows;
+	public int totalRows { get; private set; }
 
 	private int playerStartCol;
 	private int centerStartCol;
@@ -300,5 +300,22 @@ public class BoardManager : MonoBehaviour
 		CreateAndGenerateBoards();
 	}
 
+
+	public Tile GetTileAtPosition(Vector2 worldPosition)
+	{
+		// Rzucamy promieñ, który przebija wszystko (All)
+		RaycastHit2D[] hits = Physics2D.RaycastAll(worldPosition, Vector2.zero);
+
+		foreach (var hit in hits)
+		{
+			// Szukamy obiektu, który MA komponent Tile, ale NIE jest tym, co aktualnie trzymamy
+			Tile tile = hit.collider.GetComponent<Tile>();
+			if (tile != null)
+			{
+				return tile;
+			}
+		}
+		return null;
+	}
 
 }

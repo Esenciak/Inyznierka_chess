@@ -12,4 +12,35 @@ public class Tile : MonoBehaviour
 
 	public bool isOccupied;
 	public Piece currentPiece;
+
+	// Pamiêæ koloru 
+	private Color originalColor;
+	private SpriteRenderer sr;
+
+	public bool isInventory = false;
+
+	private void Awake()
+	{
+		sr = GetComponent<SpriteRenderer>();
+	}
+
+	private void Start()
+	{
+		// Zapamiêtaj kolor ustawiony przy generowaniu planszy
+		if (sr != null) originalColor = sr.color;
+	}
+
+	public void SetHighlight(bool active)
+	{
+		if (sr == null) return;
+
+		if (active)
+		{
+			sr.color = Color.green; // Kolor podœwietlenia
+		}
+		else
+		{
+			sr.color = originalColor; // Wróæ do zapamiêtanego orygina³u
+		}
+	}
 }

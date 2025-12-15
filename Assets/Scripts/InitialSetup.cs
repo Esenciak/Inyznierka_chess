@@ -50,7 +50,11 @@ public class InitialSetup : MonoBehaviour
 			return;
 		}
 
-		GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
+		Vector3 spawnPos = tile.transform.position;
+		spawnPos.z = -1f;
+
+		GameObject pieceGO = Instantiate(prefab, spawnPos, Quaternion.identity);
+
 		Piece piece = pieceGO.GetComponent<Piece>();
 
 		if (piece == null)
@@ -58,7 +62,7 @@ public class InitialSetup : MonoBehaviour
 			Debug.LogError("Prefab nie ma komponentu Piece!");
 			return;
 		}
-	
+
 		piece.owner = owner;
 		piece.pieceType = type;
 		piece.currentTile = tile;

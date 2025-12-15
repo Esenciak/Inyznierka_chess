@@ -46,6 +46,6 @@ public class EnemyAI : MonoBehaviour
 		Tile target = movesList[Random.Range(0, movesList.Count)];
 
 		// wykonaje ruch "jak gracz"
-		piece.MoveToTileFromAI(target);
+		//piece.MoveToTileFromAI(target);
 	}
 }

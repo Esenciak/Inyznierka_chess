@@ -165,12 +165,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
   rows: 2
   cols: 3
+  offsetFromBoard: {x: 2, y: 0}
   tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
-  pawnPrefab: {fileID: 3002512713483526407, guid: 308823bf762d7674ab8537160504a26f, type: 3}
-  kingPrefab: {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
-  inventoryColors:
-  - {r: 0.20272136, g: 0.21509439, b: 0.2025134, a: 0}
-  - {r: 0.6814453, g: 0.690566, b: 0.68429554, a: 0}
+  inventoryColor1: {r: 0.3, g: 0.3, b: 0.3, a: 1}
+  inventoryColor2: {r: 0.4, g: 0.4, b: 0.4, a: 1}
 --- !u!1 &555778721
 GameObject:
   m_ObjectHideFlags: 0
@@ -263,6 +261,7 @@ MonoBehaviour:
   boardType: 0
   isOccupied: 0
   currentPiece: {fileID: 0}
+  isInventory: 0
 --- !u!1 &683028852
 GameObject:
   m_ObjectHideFlags: 0
@@ -433,8 +432,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fef69473cbbb7e445877bce6e7d49926, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
-  currentPhase: 1
-  currentTurn: 1
+  currentPhase: 0
+  currentTurn: 0
 --- !u!1 &1050997031
 GameObject:
   m_ObjectHideFlags: 0
@@ -620,6 +619,50 @@ MonoBehaviour:
   pawnPrefab: {fileID: 3002512713483526407, guid: 308823bf762d7674ab8537160504a26f, type: 3}
   enemyKingPrefab: {fileID: 1361584432996271375, guid: 87b757d746625214dbf7cd7c49046d43, type: 3}
   enemyPawnPrefab: {fileID: 5078288275362618545, guid: f883beabdedf17f459e545ff677136f1, type: 3}
+--- !u!1 &1991147887
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1991147888}
+  - component: {fileID: 1991147889}
+  m_Layer: 0
+  m_Name: EnemyAI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1991147888
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1991147887}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 4.70892, y: -0.6435, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1991147889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1991147887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a95a0f76794a9ad46984e27b1a330598, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAI
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -629,3 +672,4 @@ SceneRoots:
   - {fileID: 217820001}
   - {fileID: 893085086}
   - {fileID: 1521412800}
+  - {fileID: 1991147888}
