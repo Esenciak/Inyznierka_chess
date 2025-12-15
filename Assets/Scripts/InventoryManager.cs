@@ -43,7 +43,7 @@ public class InventoryManager : MonoBehaviour
 
 				GameObject go = Instantiate(tilePrefab, pos, Quaternion.identity);
 				go.name = $"Inventory_Tile_{r}_{c}";
-				go.transform.parent = transform; // Porz¹dek w hierarchii
+				go.transform.parent = null; // Porz¹dek w hierarchii
 
 				Tile tile = go.GetComponent<Tile>();
 				tile.boardType = BoardType.Player; // Traktujemy to jako strefê gracza (dozwolon¹ do stawiania)
