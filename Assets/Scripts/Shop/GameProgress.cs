@@ -2,30 +2,28 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
-// Ma³a klasa do przechowywania danych o figurze
+// To jest ta Twoja struktura danych (zamiast Stringa/Inta mamy obiekt)
+// [System.Serializable] jest KLUCZOWE - pozwala Unity widzieæ i zapisywaæ tê klasê
 [System.Serializable]
-public class SavedPiece
+public class SavedPieceData
 {
-	public PieceType type;
-	public int row;
-	public int col;
+	public PieceType type; // Jaka to figura?
+	public int x;          // Kolumna (Col)
+	public int y;          // Wiersz (Row)
 }
 
 public class GameProgress : MonoBehaviour
 {
 	public static GameProgress Instance { get; private set; }
 
-	[Header("Waluta")]
-	public int coins = 100;
-	public int coinsPerWin = 50;
-	public int coinsPerLoss = 10;
-
 	[Header("Statystyki")]
+	public int coins = 100;
 	public int gamesPlayed = 0;
 
 	[Header("Ustawienia Planszy")]
 	public int playerBoardSize = 3;
 
+	// Dynamiczny rozmiar œrodka
 	public int centerBoardSize
 	{
 		get
@@ -36,7 +34,8 @@ public class GameProgress : MonoBehaviour
 	}
 
 	// --- PAMIÊÆ ARMII ---
-	public List<SavedPiece> savedArmy = new List<SavedPiece>();
+	// Tu trzymamy zapisany uk³ad (to jest bezpieczniejsze ni¿ GameObjecty)
+	public List<SavedPieceData> myArmy = new List<SavedPieceData>();
 
 	private void Awake()
 	{
@@ -46,23 +45,14 @@ public class GameProgress : MonoBehaviour
 			return;
 		}
 		Instance = this;
-		DontDestroyOnLoad(gameObject);
+		DontDestroyOnLoad(gameObject); // To sprawia, ¿e GameProgress prze¿ywa zmianê sceny
 	}
-
-	public void AddCoins(int amount) => coins += amount;
 
 	public bool SpendCoins(int amount)
 	{
 		if (coins < amount) return false;
 		coins -= amount;
 		return true;
-	}
-
-	public void RegisterMatchResult(bool playerWon)
-	{
-		gamesPlayed++;
-		if (playerWon) AddCoins(coinsPerWin);
-		else AddCoins(coinsPerLoss);
 	}
 
 	public void LoadScene(string sceneName)

@@ -119,56 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &217820000
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 217820001}
-  - component: {fileID: 217820002}
-  m_Layer: 0
-  m_Name: 'InventoryManager '
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!4 &217820001
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217820000}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &217820002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 217820000}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f7f6d1bf3b9565d44955f4d545d50e84, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
-  rows: 2
-  cols: 3
-  tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
-  kingPrefab: {fileID: 0}
-  inventoryColor1: {r: 0.3, g: 0.3, b: 0.3, a: 1}
-  inventoryColor2: {r: 0.4, g: 0.4, b: 0.4, a: 1}
 --- !u!1 &555778721
 GameObject:
   m_ObjectHideFlags: 0
@@ -641,6 +591,5 @@ SceneRoots:
   m_Roots:
   - {fileID: 1050997034}
   - {fileID: 555778723}
-  - {fileID: 217820001}
   - {fileID: 893085086}
   - {fileID: 1991147888}

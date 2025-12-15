@@ -109,8 +109,42 @@ public class ShopManager : MonoBehaviour
 
 	public void StartGame()
 	{
-		SaveArmyConfig(); // 1. Zapisz to co stoi na planszy
-		GameProgress.Instance.LoadScene("Battle"); // 2. Zmieñ scenê
+		SaveBoardLayout(); // 1. Najpierw ZAPISZ uk³ad
+		GameProgress.Instance.LoadScene("Battle"); // 2. Potem zmieñ scenê
+	}
+
+	void SaveBoardLayout()
+	{
+		// Czyœcimy star¹ pamiêæ, ¿eby nie dublowaæ armii przy kolejnych grach
+		GameProgress.Instance.myArmy.Clear();
+
+		// Pobieramy wymiary planszy gracza z BoardManagera (bo tam uk³adasz figury)
+		int rows = BoardManager.Instance.PlayerRows;
+		int cols = BoardManager.Instance.PlayerCols;
+
+		// Przeszukujemy ka¿dy kafelek
+		for (int r = 0; r < rows; r++)
+		{
+			for (int c = 0; c < cols; c++)
+			{
+				// Pytamy BoardManagera: "Co stoi na polu [r,c]?"
+				Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
+
+				// Jeœli kafelek istnieje I jest zajêty I ma figurê
+				if (tile != null && tile.isOccupied && tile.currentPiece != null)
+				{
+					// Tworzymy wpis do naszej bazy danych
+					SavedPieceData data = new SavedPieceData();
+					data.type = tile.currentPiece.pieceType; // Np. Rook
+					data.x = c; // Pozycja X
+					data.y = r; // Pozycja Y
+
+					// Dodajemy do listy w GameProgress
+					GameProgress.Instance.myArmy.Add(data);
+				}
+			}
+		}
+		Debug.Log($"Zapisano {GameProgress.Instance.myArmy.Count} figur do bitwy.");
 	}
 
 	void UpdateUI()
@@ -158,33 +192,33 @@ public class ShopManager : MonoBehaviour
 		return piecePrefabs[0];
 	}
 
-	void SaveArmyConfig()
-	{
-		// Czyœcimy star¹ pamiêæ
-		GameProgress.Instance.savedArmy.Clear();
+//	void SaveArmyConfig()
+//	{
+//		// Czyœcimy star¹ pamiêæ
+//		GameProgress.Instance.savedArmy.Clear();
 
-		int rows = BoardManager.Instance.PlayerRows;
-		int cols = BoardManager.Instance.PlayerCols;
+//		int rows = BoardManager.Instance.PlayerRows;
+//		int cols = BoardManager.Instance.PlayerCols;
 
-		// Przeszukujemy planszê gracza (Player Board)
-		for (int r = 0; r < rows; r++)
-		{
-			for (int c = 0; c < cols; c++)
-			{
-				Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
+//		// Przeszukujemy planszê gracza (Player Board)
+//		for (int r = 0; r < rows; r++)
+//		{
+//			for (int c = 0; c < cols; c++)
+//			{
+//				Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
 
-				// Jeœli na kafelku stoi figura
-				if (tile != null && tile.isOccupied && tile.currentPiece != null)
-				{
-					SavedPiece data = new SavedPiece();
-					data.type = tile.currentPiece.pieceType;
-					data.row = r;
-					data.col = c;
+//				// Jeœli na kafelku stoi figura
+//				if (tile != null && tile.isOccupied && tile.currentPiece != null)
+//				{
+//					SavedPiece data = new SavedPiece();
+//					data.type = tile.currentPiece.pieceType;
+//					data.row = r;
+//					data.col = c;
 
-					GameProgress.Instance.savedArmy.Add(data);
-				}
-			}
-		}
-		Debug.Log($"Zapisano {GameProgress.Instance.savedArmy.Count} figur do bitwy.");
-	}
+//					GameProgress.Instance.savedArmy.Add(data);
+//				}
+//			}
+//		}
+//		Debug.Log($"Zapisano {GameProgress.Instance.savedArmy.Count} figur do bitwy.");
+//	}
 }
