@@ -109,7 +109,8 @@ public class ShopManager : MonoBehaviour
 
 	public void StartGame()
 	{
-		GameProgress.Instance.LoadScene("Battle");
+		SaveArmyConfig(); // Zapisz armiê
+		GameProgress.Instance.LoadScene("Battle"); // Za³aduj bitwê
 	}
 
 	void UpdateUI()
@@ -155,5 +156,36 @@ public class ShopManager : MonoBehaviour
 			case PieceType.queen: return piecePrefabs[4];
 		}
 		return piecePrefabs[0];
+	}
+
+	void SaveArmyConfig()
+	{
+		// 1. Wyczyœæ star¹ pamiêæ
+		GameProgress.Instance.savedArmy.Clear();
+
+		// 2. Pobierz rozmiar planszy gracza
+		int rows = BoardManager.Instance.PlayerRows;
+		int cols = BoardManager.Instance.PlayerCols;
+
+		// 3. Przeszukaj ka¿dy kafelek na planszy gracza
+		for (int r = 0; r < rows; r++)
+		{
+			for (int c = 0; c < cols; c++)
+			{
+				Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
+
+				// Jeœli na kafelku jest figura
+				if (tile != null && tile.isOccupied && tile.currentPiece != null)
+				{
+					SavedPiece data = new SavedPiece();
+					data.type = tile.currentPiece.pieceType;
+					data.row = r;
+					data.col = c;
+
+					GameProgress.Instance.savedArmy.Add(data);
+				}
+			}
+		}
+		Debug.Log($"Zapisano {GameProgress.Instance.savedArmy.Count} figur do bitwy.");
 	}
 }

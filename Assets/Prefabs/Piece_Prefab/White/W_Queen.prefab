@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 3444327617232469239}
   - component: {fileID: 6142232998448435002}
   - component: {fileID: 6655925524277931280}
+  - component: {fileID: -7733213296710493153}
   m_Layer: 9
   m_Name: W_Queen
   m_TagString: Untagged
@@ -181,3 +182,15 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 0
+--- !u!114 &-7733213296710493153
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3869002206912999649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6160227cfaaaf67419a264219ac69b97, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PieceMovement

@@ -192,10 +192,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7f6d1bf3b9565d44955f4d545d50e84, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
-  rows: 5
+  rows: 4
   cols: 2
-  offsetFromBoard: {x: 2, y: 0}
   tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
+  kingPrefab: {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
   inventoryColor1: {r: 0.3, g: 0.3, b: 0.3, a: 1}
   inventoryColor2: {r: 0.4, g: 0.4, b: 0.4, a: 1}
 --- !u!114 &107597321

@@ -4,35 +4,33 @@ using UnityEngine.SceneManagement;
 public class BoardManager : MonoBehaviour
 {
 	public static BoardManager Instance { get; private set; }
-	public bool IsReady { get; private set; }
+	public bool IsReady { get; private set; } = false;
 
+	[Header("Ustawienia Rozmiarów")]
 	public int PlayerRows = 3;
 	public int PlayerCols = 3;
-
 	public int CenterRows = 5;
 	public int CenterCols = 5;
 
+	[Header("Prefabrykaty i Kolory")]
 	public GameObject tilePrefab;
-
 	public Color[] playerColors;
 	public Color[] enemyColors;
 
+	[Header("Pozycje (Offsety)")]
 	public Vector2 playerOffset = new Vector2(0, -5);
 	public Vector2 enemyOffset = new Vector2(0, 5);
 	public Vector2 centerOffset = new Vector2(0, 0);
 
+	// Tablice
 	private GameObject[,] playerBoard;
 	private GameObject[,] enemyBoard;
 	private GameObject[,] centerBoard;
 
-	private int playerStartRow;
-	private int centerStartRow;
-	private int enemyStartRow;
+	// Zmienne globalne
+	private int playerStartRow, centerStartRow, enemyStartRow;
 	public int totalRows { get; private set; }
-
-	private int playerStartCol;
-	private int centerStartCol;
-	private int enemyStartCol;
+	private int playerStartCol, centerStartCol, enemyStartCol;
 
 	private void Awake()
 	{
@@ -44,61 +42,43 @@ public class BoardManager : MonoBehaviour
 		Instance = this;
 	}
 
-	private void Update()
-	{
-		if (Input.GetKeyDown(KeyCode.R))
-		{
-			RefreshBoards();
-		}
-	}
-
-
 	private void Start()
 	{
 		if (GameProgress.Instance != null)
 		{
-			int sizePlayer = GameProgress.Instance.playerBoardSize;
-			int sizeCenter = GameProgress.Instance.centerBoardSize;
-
-			PlayerRows = sizePlayer;
-			PlayerCols = sizePlayer;
-
-			CenterRows = sizeCenter;
-			CenterCols = sizeCenter;
+			PlayerRows = GameProgress.Instance.playerBoardSize;
+			PlayerCols = GameProgress.Instance.playerBoardSize;
+			CenterRows = GameProgress.Instance.centerBoardSize;
+			CenterCols = GameProgress.Instance.centerBoardSize;
 		}
-
-		if (CenterRows % 2 == 0) CenterRows += 1;
-		if (CenterCols % 2 == 0) CenterCols += 1;
 
 		RecalculateGlobalLayout();
 		offsetCalculation();
-		CreateAndGenerateBoards();
+
+		string sceneName = SceneManager.GetActiveScene().name;
+
+		if (sceneName == "Shop")
+		{
+			GenerateShopLayout();
+		}
+		else
+		{
+			GenerateBattleLayout();
+		}
 
 		IsReady = true;
 	}
 
-	private void RecalculateGlobalLayout()
+	void GenerateShopLayout()
 	{
-		playerStartRow = 0;
-		centerStartRow = PlayerRows;
-		enemyStartRow = PlayerRows + CenterRows;
-		totalRows = PlayerRows + CenterRows + PlayerRows;
-
-		centerStartCol = 0;
-
-		int diff = CenterCols - PlayerCols;
-		if (diff < 0) diff = 0;
-
-		playerStartCol = diff / 2;
-		enemyStartCol = diff / 2;
+		ClearAllBoards();
+		playerBoard = new GameObject[PlayerRows, PlayerCols];
+		GenerateBoard(playerBoard, playerColors, playerOffset, BoardType.Player, playerStartRow, playerStartCol);
 	}
 
-	private void CreateAndGenerateBoards()
+	void GenerateBattleLayout()
 	{
-		DestroyBoard(playerBoard);
-		DestroyBoard(enemyBoard);
-		DestroyBoard(centerBoard);
-
+		ClearAllBoards();
 		playerBoard = new GameObject[PlayerRows, PlayerCols];
 		enemyBoard = new GameObject[PlayerRows, PlayerCols];
 		centerBoard = new GameObject[CenterRows, CenterCols];
@@ -108,35 +88,11 @@ public class BoardManager : MonoBehaviour
 		GenerateBoard(centerBoard, playerColors, enemyColors, centerOffset, BoardType.Center, centerStartRow, centerStartCol);
 	}
 
-	private void DestroyBoard(GameObject[,] board)
+	void ClearAllBoards()
 	{
-		if (board == null) return;
-		foreach (var go in board)
-			if (go != null) Destroy(go);
-	}
-
-	private void offsetCalculation()
-	{
-		float CenterWidth = CenterCols;
-		float CenterHeight = CenterRows;
-
-		float playerWidth = PlayerCols;
-		float playerHeight = PlayerRows;
-
-		float enemyWidth = PlayerCols;
-
-		float centerX = 0f;
-
-		float playerOffsetX = centerX + (CenterWidth - playerWidth) / 2f;
-		float enemyOffsetX = centerX + (CenterWidth - enemyWidth) / 2f;
-
-		float centerY = 0f;
-		float playerOffsetY = centerY - playerHeight;
-		float enemyOffsetY = centerY + CenterHeight;
-
-		playerOffset = new Vector2(playerOffsetX, playerOffsetY);
-		enemyOffset = new Vector2(enemyOffsetX, enemyOffsetY);
-		centerOffset = new Vector2(0f, 0f);
+		DestroyBoard(playerBoard);
+		DestroyBoard(enemyBoard);
+		DestroyBoard(centerBoard);
 	}
 
 	private void GenerateBoard(GameObject[,] board, Color[] colors, Vector2 offset, BoardType boardType, int startGlobalRow, int startGlobalCol)
@@ -148,175 +104,168 @@ public class BoardManager : MonoBehaviour
 		{
 			for (int c = 0; c < cols; c++)
 			{
-				Vector2 pos = new Vector2(c + offset.x, r + offset.y);
+				// Ustawiamy Z na 0, ¿eby na pewno by³o widaæ
+				Vector3 pos = new Vector3(c + offset.x, r + offset.y, 0);
 				GameObject tileGO = Instantiate(tilePrefab, pos, Quaternion.identity);
+				tileGO.transform.parent = null;
 
+				// --- POPRAWKA KOLORÓW ---
 				if (colors != null && colors.Length > 0)
 				{
-					SpriteRenderer sr = tileGO.GetComponent<SpriteRenderer>();
-
 					int gx = Mathf.RoundToInt(offset.x) + c;
 					int gy = Mathf.RoundToInt(offset.y) + r;
 					int idx = ((gx + gy) % colors.Length + colors.Length) % colors.Length;
 
-					sr.color = new Color(colors[idx].r, colors[idx].g, colors[idx].b);
+					SpriteRenderer sr = tileGO.GetComponent<SpriteRenderer>();
+					if (sr != null)
+					{
+						// Tu dodajemy 1.0f na koñcu, ¿eby Alpha by³a 100% (nieprzezroczysta)
+						sr.color = new Color(colors[idx].r, colors[idx].g, colors[idx].b, 1.0f);
+					}
 				}
+				// -------------------------
 
-				Tile tileComponent = tileGO.GetComponent<Tile>();
-				if (tileComponent != null)
+				Tile tile = tileGO.GetComponent<Tile>();
+				if (tile != null)
 				{
-					tileComponent.row = r;
-					tileComponent.col = c;
-					tileComponent.boardType = boardType;
-
-					tileComponent.globalRow = startGlobalRow + r;
-					tileComponent.globalCol = startGlobalCol + c;
+					tile.row = r;
+					tile.col = c;
+					tile.boardType = boardType;
+					tile.globalRow = startGlobalRow + r;
+					tile.globalCol = startGlobalCol + c;
+					tile.isInventory = false;
 				}
-
 				board[r, c] = tileGO;
 			}
 		}
 	}
 
-	private void GenerateBoard(GameObject[,] board, Color[] playerColor, Color[] enemyColor, Vector2 offset, BoardType boardType, int startGlobalRow, int startGlobalCol)
+	// Wersja dla œrodka (Gradient)
+	private void GenerateBoard(GameObject[,] board, Color[] colA, Color[] colB, Vector2 offset, BoardType boardType, int startGlobalRow, int startGlobalCol)
 	{
 		int rows = board.GetLength(0);
 		int cols = board.GetLength(1);
-
-		int len = Mathf.Min(playerColor != null ? playerColor.Length : 0, enemyColor != null ? enemyColor.Length : 0);
-		if (len <= 0) len = 1;
+		int len = Mathf.Min(colA.Length, colB.Length);
+		if (len == 0) len = 1;
 
 		for (int r = 0; r < rows; r++)
 		{
 			for (int c = 0; c < cols; c++)
 			{
-				Vector2 pos = new Vector2(c + offset.x, r + offset.y);
+				Vector3 pos = new Vector3(c + offset.x, r + offset.y, 0);
 				GameObject tileGO = Instantiate(tilePrefab, pos, Quaternion.identity);
+				tileGO.transform.parent = null;
 
 				float t = (rows > 1) ? (float)r / (rows - 1) : 0f;
-
 				int gx = Mathf.RoundToInt(offset.x) + c;
 				int gy = Mathf.RoundToInt(offset.y) + r;
 				int idx = ((gx + gy) % len + len) % len;
 
-				Color a = (playerColor != null && playerColor.Length > 0) ? playerColor[idx % playerColor.Length] : Color.white;
-				Color b = (enemyColor != null && enemyColor.Length > 0) ? enemyColor[idx % enemyColor.Length] : Color.white;
+				Color blended = Color.Lerp(colA[idx % colA.Length], colB[idx % colB.Length], t);
 
-				Color blended = Color.Lerp(a, b, t);
+				// Tutaj te¿ wymuszamy pe³n¹ widocznoœæ (Alpha = 1)
+				blended.a = 1.0f;
 
 				SpriteRenderer sr = tileGO.GetComponent<SpriteRenderer>();
-				if (sr != null) sr.color = new Color(blended.r, blended.g, blended.b);
+				if (sr != null) sr.color = blended;
 
-				Tile tileComponent = tileGO.GetComponent<Tile>();
-				if (tileComponent != null)
+				Tile tile = tileGO.GetComponent<Tile>();
+				if (tile != null)
 				{
-					tileComponent.row = r;
-					tileComponent.col = c;
-					tileComponent.boardType = boardType;
-
-					tileComponent.globalRow = startGlobalRow + r;
-					tileComponent.globalCol = startGlobalCol + c;
+					tile.row = r;
+					tile.col = c;
+					tile.boardType = boardType;
+					tile.globalRow = startGlobalRow + r;
+					tile.globalCol = startGlobalCol + c;
 				}
-
 				board[r, c] = tileGO;
 			}
 		}
 	}
 
-	public Tile GetTile(BoardType boardType, int row, int col)
+	// --- Helpery ---
+	private void DestroyBoard(GameObject[,] board)
 	{
-		GameObject[,] boardArray = null;
+		if (board == null) return;
+		foreach (var go in board) if (go != null) Destroy(go);
+	}
 
-		switch (boardType)
+	private void RecalculateGlobalLayout()
+	{
+		playerStartRow = 0;
+		centerStartRow = PlayerRows;
+		enemyStartRow = PlayerRows + CenterRows;
+		totalRows = PlayerRows + CenterRows + PlayerRows;
+
+		int diff = CenterCols - PlayerCols;
+		if (diff < 0) diff = 0;
+		playerStartCol = diff / 2;
+		centerStartCol = 0;
+		enemyStartCol = diff / 2;
+	}
+
+	private void offsetCalculation()
+	{
+		float centerX = 0f;
+		float pOffX = centerX + (CenterCols - PlayerCols) / 2f;
+		float pOffY = -PlayerRows;
+		float eOffY = CenterRows;
+
+		if (SceneManager.GetActiveScene().name == "Shop")
 		{
-			case BoardType.Player: boardArray = playerBoard; break;
-			case BoardType.Center: boardArray = centerBoard; break;
-			case BoardType.Enemy: boardArray = enemyBoard; break;
+			pOffX += 3.5f;
+			pOffY = 0;
 		}
 
-		if (boardArray == null) return null;
-
-		int rows = boardArray.GetLength(0);
-		int cols = boardArray.GetLength(1);
-
-		if (row < 0 || row >= rows || col < 0 || col >= cols) return null;
-
-		GameObject tileGO = boardArray[row, col];
-		if (tileGO == null) return null;
-
-		return tileGO.GetComponent<Tile>();
+		playerOffset = new Vector2(pOffX, pOffY);
+		enemyOffset = new Vector2(pOffX, eOffY);
+		centerOffset = Vector2.zero;
 	}
+
+	// --- PUBLIC API ---
 
 	public Tile GetTileGlobal(int globalRow, int globalCol)
 	{
-		if (globalRow < 0 || globalRow >= totalRows) return null;
-		if (globalCol < 0 || globalCol >= CenterCols) return null;
-
-		if (globalRow < centerStartRow)
-		{
-			int localRow = globalRow - playerStartRow;
-			int localCol = globalCol - playerStartCol;
-			return GetTile(BoardType.Player, localRow, localCol);
-		}
-		else if (globalRow < enemyStartRow)
-		{
-			int localRow = globalRow - centerStartRow;
-			int localCol = globalCol - centerStartCol;
-			return GetTile(BoardType.Center, localRow, localCol);
-		}
+		if (globalRow < playerStartRow + PlayerRows)
+			return GetTile(BoardType.Player, globalRow - playerStartRow, globalCol - playerStartCol);
+		else if (globalRow < centerStartRow + CenterRows)
+			return GetTile(BoardType.Center, globalRow - centerStartRow, globalCol - centerStartCol);
 		else
+			return GetTile(BoardType.Enemy, globalRow - enemyStartRow, globalCol - enemyStartCol);
+	}
+
+	public Tile GetTile(BoardType type, int row, int col)
+	{
+		GameObject[,] targetBoard = null;
+		switch (type)
 		{
-			int localRow = globalRow - enemyStartRow;
-			int localCol = globalCol - enemyStartCol;
-			return GetTile(BoardType.Enemy, localRow, localCol);
+			case BoardType.Player: targetBoard = playerBoard; break;
+			case BoardType.Center: targetBoard = centerBoard; break;
+			case BoardType.Enemy: targetBoard = enemyBoard; break;
 		}
+
+		if (targetBoard == null) return null;
+		if (row < 0 || row >= targetBoard.GetLength(0)) return null;
+		if (col < 0 || col >= targetBoard.GetLength(1)) return null;
+
+		GameObject go = targetBoard[row, col];
+		if (go == null) return null;
+		return go.GetComponent<Tile>();
 	}
 
-	public void ResizeCenterBoard(int newRows, int newCols)
+	public Tile GetTileAtPosition(Vector2 worldPos)
 	{
-		if (newRows % 2 == 0) newRows += 1;
-		if (newCols % 2 == 0) newCols += 1;
-
-		CenterRows = newRows;
-		CenterCols = newCols;
-
-		RecalculateGlobalLayout();
-		offsetCalculation();
-		CreateAndGenerateBoards();
-	}
-
-	public void ResizePlayerAndEnemyBoards(int newRows, int newCols)
-	{
-		PlayerRows = newRows;
-		PlayerCols = newCols;
-
-		RecalculateGlobalLayout();
-		offsetCalculation();
-		CreateAndGenerateBoards();
-	}
-	public void RefreshBoards()
-	{
-		RecalculateGlobalLayout();
-		offsetCalculation();
-		CreateAndGenerateBoards();
-	}
-
-
-	public Tile GetTileAtPosition(Vector2 worldPosition)
-	{
-		// Rzucamy promieñ, który przebija wszystko (All)
-		RaycastHit2D[] hits = Physics2D.RaycastAll(worldPosition, Vector2.zero);
-
-		foreach (var hit in hits)
+		RaycastHit2D hit = Physics2D.Raycast(worldPos, Vector2.zero);
+		if (hit.collider != null)
 		{
-			// Szukamy obiektu, który MA komponent Tile, ale NIE jest tym, co aktualnie trzymamy
-			Tile tile = hit.collider.GetComponent<Tile>();
-			if (tile != null)
-			{
-				return tile;
-			}
+			return hit.collider.GetComponent<Tile>();
 		}
 		return null;
 	}
 
+	public Tile GetPlayerCenterTile()
+	{
+		if (playerBoard == null) return null;
+		return GetTile(BoardType.Player, PlayerRows / 2, PlayerCols / 2);
+	}
 }
