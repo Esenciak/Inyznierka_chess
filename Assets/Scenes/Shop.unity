@@ -173,10 +173,11 @@ MonoBehaviour:
   tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
   piecePrefabs:
   - {fileID: 3002512713483526407, guid: 308823bf762d7674ab8537160504a26f, type: 3}
-  - {fileID: 8693811134986804410, guid: d2c460f7fe38d184b8e4bd19e3d5617c, type: 3}
-  - {fileID: 8683770127193551573, guid: 3f8eeadc38b10534d866a87d04521e29, type: 3}
-  - {fileID: 6673001445477641656, guid: 5b58a5cfb60fb6c46872ee99e367b35a, type: 3}
+  - {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
   - {fileID: 3869002206912999649, guid: 0e491f804da3d274fa39ea7d63f83431, type: 3}
+  - {fileID: 6673001445477641656, guid: 5b58a5cfb60fb6c46872ee99e367b35a, type: 3}
+  - {fileID: 8683770127193551573, guid: 3f8eeadc38b10534d866a87d04521e29, type: 3}
+  - {fileID: 8693811134986804410, guid: d2c460f7fe38d184b8e4bd19e3d5617c, type: 3}
   coinsText: {fileID: 2144873314}
   centerBoardSizeText: {fileID: 343690567}
   roundText: {fileID: 1165650851}
@@ -196,6 +197,7 @@ MonoBehaviour:
   cols: 2
   tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
   kingPrefab: {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
+  inventoryOffset: {x: 0, y: 1}
   inventoryColor1: {r: 0.3, g: 0.3, b: 0.3, a: 1}
   inventoryColor2: {r: 0.4, g: 0.4, b: 0.4, a: 1}
 --- !u!114 &107597321
@@ -237,10 +239,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameProgress
   coins: 100
-  coinsPerWin: 50
-  coinsPerLoss: 10
   gamesPlayed: 0
   playerBoardSize: 3
+  myArmy: []
 --- !u!1 &343690565
 GameObject:
   m_ObjectHideFlags: 0

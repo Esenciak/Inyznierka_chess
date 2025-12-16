@@ -6,9 +6,9 @@ public class PieceMovement : MonoBehaviour
 	private bool isDragging = false;
 	private Piece pieceComponent;
 
-	// Sortowanie warstw, ¿eby podnoszona figura by³a nad innymi
-	private int originalSortingOrder;
+	// Do obs³ugi wygl¹du (¿eby figura by³a "nad" innymi podczas przeci¹gania)
 	private SpriteRenderer sr;
+	private int originalOrder;
 
 	void Start()
 	{
@@ -24,10 +24,11 @@ public class PieceMovement : MonoBehaviour
 			isDragging = true;
 			startPosition = transform.position;
 
+			// Wizualny efekt podniesienia
 			if (sr)
 			{
-				originalSortingOrder = sr.sortingOrder;
-				sr.sortingOrder = 100; // Figurka na wierzch
+				originalOrder = sr.sortingOrder;
+				sr.sortingOrder = 100; // Na wierzch
 			}
 			transform.localScale *= 1.1f; // Lekkie powiêkszenie
 		}
@@ -37,6 +38,7 @@ public class PieceMovement : MonoBehaviour
 	{
 		if (isDragging)
 		{
+			// Przesuwamy figurê za kursorem
 			Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 			transform.position = new Vector3(mousePos.x, mousePos.y, -5);
 		}
@@ -47,47 +49,63 @@ public class PieceMovement : MonoBehaviour
 		if (!isDragging) return;
 		isDragging = false;
 
-		if (sr) sr.sortingOrder = originalSortingOrder;
+		// Reset wizualny
+		if (sr) sr.sortingOrder = originalOrder;
 		transform.localScale /= 1.1f;
 
-		Vector3 dropPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-		Tile hitTile = BoardManager.Instance.GetTileAtPosition(dropPos);
+		// --- KLUCZOWA POPRAWKA: RaycastAll ---
+		// Strzelamy promieniem, przebijaj¹c figurê, któr¹ trzymamy, ¿eby znaleŸæ kafelek pod spodem
+		Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+		RaycastHit2D[] hits = Physics2D.RaycastAll(mousePos, Vector2.zero);
 
-		if (hitTile != null)
+		Tile targetTile = null;
+
+		foreach (var hit in hits)
 		{
-			// Mo¿emy postawiæ figurê jeœli:
-			// 1. To plansza gracza LUB Ekwipunek
-			// 2. Kafelek jest pusty
-			bool validBoard = (hitTile.boardType == BoardType.Player || hitTile.isInventory);
-
-			if (validBoard && !hitTile.isOccupied)
+			Tile t = hit.collider.GetComponent<Tile>();
+			if (t != null)
 			{
-				MoveToTile(hitTile);
-				return;
+				targetTile = t;
+				break; // ZnaleŸliœmy kafelek!
 			}
 		}
 
-		// Jeœli upuœciliœmy w z³ym miejscu -> wracamy na start
+		// Jeœli trafiliœmy na kafelek...
+		if (targetTile != null)
+		{
+			// Sprawdzamy czy to legalne miejsce (Plansza Gracza LUB Inventory)
+			bool isAllowedBoard = (targetTile.boardType == BoardType.Player || targetTile.isInventory);
+
+			// Oraz czy kafelek jest wolny
+			if (isAllowedBoard && !targetTile.isOccupied)
+			{
+				MoveToTile(targetTile);
+				return; // Sukces, koñczymy
+			}
+		}
+
+		// Jeœli upuœciliœmy w z³ym miejscu (np. na zajête pole, albo poza planszê) -> wracamy
 		transform.position = startPosition;
 	}
 
 	void MoveToTile(Tile newTile)
 	{
-		// Zwolnij stary kafelek
+		// 1. Zwalniamy stary kafelek
 		if (pieceComponent.currentTile != null)
 		{
 			pieceComponent.currentTile.isOccupied = false;
 			pieceComponent.currentTile.currentPiece = null;
 		}
 
-		// Zajmij nowy
+		// 2. Zajmujemy nowy
 		newTile.isOccupied = true;
 		newTile.currentPiece = pieceComponent;
 		pieceComponent.currentTile = newTile;
 
-		// Ustaw pozycjê
+		// 3. Ustawiamy pozycjê
 		transform.position = new Vector3(newTile.transform.position.x, newTile.transform.position.y, -1);
-		// Aktualizuj startPosition na wypadek kolejnego ruchu
+
+		// Aktualizuj startPosition, ¿eby przy kolejnym ruchu wraca³ w to nowe miejsce
 		startPosition = transform.position;
 	}
 }
