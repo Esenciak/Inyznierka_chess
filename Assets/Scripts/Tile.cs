@@ -14,7 +14,7 @@ public class Tile : MonoBehaviour
 	public Piece currentPiece;
 
 	// Pamiêæ koloru 
-	private Color originalColor;
+	public Color originalColor { get; set; }
 	private SpriteRenderer sr;
 
 	public bool isInventory = false;

@@ -132,6 +132,7 @@ GameObject:
   - component: {fileID: 107597321}
   - component: {fileID: 107597319}
   - component: {fileID: 107597320}
+  - component: {fileID: 107597323}
   m_Layer: 0
   m_Name: Manager
   m_TagString: Untagged
@@ -197,7 +198,7 @@ MonoBehaviour:
   cols: 2
   tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
   kingPrefab: {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
-  inventoryOffset: {x: 0, y: 1}
+  inventoryOffset: {x: -7, y: -2}
   inventoryColor1: {r: 0.3, g: 0.3, b: 0.3, a: 1}
   inventoryColor2: {r: 0.4, g: 0.4, b: 0.4, a: 1}
 --- !u!114 &107597321
@@ -239,9 +240,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameProgress
   coins: 100
-  gamesPlayed: 0
+  gamesPlayed: 6
   playerBoardSize: 3
   myArmy: []
+--- !u!114 &107597323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 107597317}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fef69473cbbb7e445877bce6e7d49926, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  currentPhase: 1
+  currentTurn: 0
 --- !u!1 &343690565
 GameObject:
   m_ObjectHideFlags: 0

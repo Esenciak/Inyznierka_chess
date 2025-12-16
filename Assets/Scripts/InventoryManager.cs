@@ -26,7 +26,7 @@ public class InventoryManager : MonoBehaviour
 
 	void GenerateInventory()
 	{
-		float startX = BoardManager.Instance.playerOffset.x + BoardManager.Instance.PlayerCols + 1.0f;
+		float startX = BoardManager.Instance.playerOffset.x + BoardManager.Instance.PlayerCols + inventoryOffset.x;
 		float startY = BoardManager.Instance.playerOffset.y + inventoryOffset.y;
 
 		inventoryTiles = new GameObject[rows, cols];

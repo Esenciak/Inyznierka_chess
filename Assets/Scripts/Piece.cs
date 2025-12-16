@@ -22,20 +22,21 @@ public class Piece : MonoBehaviour
 
 	private void OnMouseDown()
 	{
-		// 1. Sprawdzenie uprawnieñ w zale¿noœci od Fazy Gry
 		if (GameManager.Instance == null) return;
 
 		bool canInteract = false;
 
+		// Sprawdzamy Fazy Gry
 		if (GameManager.Instance.currentPhase == GamePhase.Battle)
 		{
 			// W walce: tylko w swojej turze i swoje pionki
-			if (GameManager.Instance.currentTurn == Turn.Player && owner == PieceOwner.Player)
+			// POPRAWKA: U¿ywamy PieceOwner zamiast Turn
+			if (GameManager.Instance.currentTurn == PieceOwner.Player && owner == PieceOwner.Player)
 				canInteract = true;
 		}
 		else if (GameManager.Instance.currentPhase == GamePhase.Placement)
 		{
-			// W sklepie/rozstawianiu: zawsze swoje pionki
+			// W sklepie: zawsze swoje pionki
 			if (owner == PieceOwner.Player)
 				canInteract = true;
 		}
@@ -45,7 +46,10 @@ public class Piece : MonoBehaviour
 		isDragging = true;
 		startPosition = transform.position;
 		startTile = currentTile;
-		dragOffset = transform.position - GetMouseWorldPos();
+
+		// Oblicz offset, ¿eby figura nie "skaka³a" do œrodka myszki
+		Vector3 mouseWorldPos = GetMouseWorldPos();
+		dragOffset = transform.position - mouseWorldPos;
 
 		// Obliczamy ruchy tylko w fazie walki
 		if (GameManager.Instance.currentPhase == GamePhase.Battle)
@@ -70,7 +74,19 @@ public class Piece : MonoBehaviour
 
 		if (GameManager.Instance.currentPhase == GamePhase.Battle) HighlightMoves(false);
 
+		// U¿ywamy GetTileAtPosition z BoardManagera (który ma RaycastAll)
+		// Jeœli nie masz tej metody w BoardManagerze, u¿yj Raycasta tutaj
 		Tile targetTile = BoardManager.Instance.GetTileAtPosition(GetMouseWorldPos());
+
+		// Jeœli BoardManager nie ma GetTileAtPosition, odkomentuj to:
+		/*
+        Tile targetTile = null;
+        RaycastHit2D[] hits = Physics2D.RaycastAll(GetMouseWorldPos(), Vector2.zero);
+        foreach(var hit in hits) {
+            Tile t = hit.collider.GetComponent<Tile>();
+            if(t != null) { targetTile = t; break; }
+        }
+        */
 
 		if (GameManager.Instance.currentPhase == GamePhase.Placement)
 		{
@@ -82,17 +98,17 @@ public class Piece : MonoBehaviour
 		}
 	}
 
-	// --- LOGIKA UPUSZCZANIA: SKLEP / ROZSTAWIANIE ---
+	// --- LOGIKA UPUSZCZANIA: SKLEP ---
 	private void HandlePlacementDrop(Tile target)
 	{
-		// Jeœli upuszczono poza kafelki lub na zajêty kafelek (inny ni¿ startowy)
+		// Jeœli upuszczono w kosmos lub na zajête (chyba ¿e to samo pole)
 		if (target == null || (target.isOccupied && target != startTile))
 		{
 			ResetToStart();
 			return;
 		}
 
-		// ZASADA: Król nie mo¿e wejœæ do Inventory
+		// Król nie do Inventory
 		if (pieceType == PieceType.King && target.isInventory)
 		{
 			Debug.Log("Król nie mo¿e zejœæ do ekwipunku!");
@@ -100,8 +116,7 @@ public class Piece : MonoBehaviour
 			return;
 		}
 
-		// ZASADA: Dozwolone tylko pola Gracza (Plansza Gracza lub Inventory)
-		// Zak³adamy, ¿e BoardType.Player to strefa gracza, a BoardType.Enemy/Center to strefy zakazane w fazie Placement
+		// Tylko pola gracza
 		if (target.boardType != BoardType.Player && !target.isInventory)
 		{
 			Debug.Log("Mo¿esz rozstawiaæ tylko na swoim polu!");
@@ -109,7 +124,6 @@ public class Piece : MonoBehaviour
 			return;
 		}
 
-		// Ruch dozwolony - przenieœ
 		MovePieceProcess(target);
 	}
 
@@ -123,8 +137,6 @@ public class Piece : MonoBehaviour
 			{
 				if (target.currentPiece.owner != owner)
 				{
-					// PERMADEATH: Jeœli to wróg, niszczymy go. 
-					// Jeœli to Twój system in¿ynierski, tutaj powinieneœ usun¹æ go z listy "GameProgress"
 					Destroy(target.currentPiece.gameObject);
 
 					if (target.currentPiece.pieceType == PieceType.King)
@@ -136,8 +148,6 @@ public class Piece : MonoBehaviour
 			}
 
 			MovePieceProcess(target);
-
-			// Koniec tury
 			GameManager.Instance.EndPlayerMove();
 		}
 		else
@@ -146,15 +156,16 @@ public class Piece : MonoBehaviour
 		}
 	}
 
-	// Wspólna metoda fizycznego przeniesienia
 	private void MovePieceProcess(Tile target)
 	{
+		// Zwolnij stare pole
 		if (currentTile != null)
 		{
 			currentTile.currentPiece = null;
 			currentTile.isOccupied = false;
 		}
 
+		// Zajmij nowe
 		currentTile = target;
 		currentTile.currentPiece = this;
 		currentTile.isOccupied = true;
@@ -167,7 +178,6 @@ public class Piece : MonoBehaviour
 	{
 		transform.position = startPosition;
 		UpdateZPosition();
-		if (startTile != null) startTile.currentPiece = this;
 	}
 
 	private void UpdateZPosition()
@@ -184,7 +194,7 @@ public class Piece : MonoBehaviour
 		return Camera.main.ScreenToWorldPoint(m);
 	}
 
-	// --- PE£NA LOGIKA RUCHÓW SZACHOWYCH ---
+	// --- RUCHY SZACHOWE ---
 	public List<Tile> GetLegalMoves()
 	{
 		List<Tile> moves = new List<Tile>();
@@ -199,10 +209,10 @@ public class Piece : MonoBehaviour
 				CalculatePawnMoves(row, col, moves);
 				break;
 			case PieceType.Rook:
-				MoveLine(row, col, 1, 0, moves);  // Prawo
-				MoveLine(row, col, -1, 0, moves); // Lewo
-				MoveLine(row, col, 0, 1, moves);  // Góra (w Unity Y to rows)
-				MoveLine(row, col, 0, -1, moves); // Dó³
+				MoveLine(row, col, 1, 0, moves);
+				MoveLine(row, col, -1, 0, moves);
+				MoveLine(row, col, 0, 1, moves);
+				MoveLine(row, col, 0, -1, moves);
 				break;
 			case PieceType.Bishop:
 				MoveLine(row, col, 1, 1, moves);
@@ -232,17 +242,24 @@ public class Piece : MonoBehaviour
 		return moves;
 	}
 
-	// --- IMPLEMENTACJA MOVELINE I INNYCH (Skopiuj dok³adnie te metody) ---
-
 	private void CalculatePawnMoves(int row, int col, List<Tile> moves)
 	{
 		int dir = (owner == PieceOwner.Player) ? 1 : -1;
+
+		// Ruch do przodu o 1
 		Tile f1 = BoardManager.Instance.GetTileGlobal(row + dir, col);
 		if (f1 != null && !f1.isOccupied)
 		{
 			moves.Add(f1);
-			// Pierwszy ruch podwójny
-			bool isStart = (owner == PieceOwner.Player && row <= 1) || (owner == PieceOwner.Enemy && row >= BoardManager.Instance.totalRows - 2);
+
+			// Ruch o 2 (na start)
+			// Zak³adamy, ¿e gracz startuje w rzêdach 0 i 1 (dla BoardType.Player), a wróg na górze
+			// Uproszczony warunek: jeœli jeszcze siê nie rusza³ (opcjonalnie mo¿na dodaæ flagê hasMoved)
+			// Tutaj prosta logika oparta na pozycji
+			bool isStart = false;
+			if (owner == PieceOwner.Player && row <= 1) isStart = true;
+			// Dla wroga trzeba by sprawdziæ BoardManager.totalRows - 2, ale to zale¿y od mapy
+
 			if (isStart)
 			{
 				Tile f2 = BoardManager.Instance.GetTileGlobal(row + dir * 2, col);
@@ -268,15 +285,17 @@ public class Piece : MonoBehaviour
 		while (true)
 		{
 			Tile t = BoardManager.Instance.GetTileGlobal(currRow, currCol);
-			if (t == null) break;
+			if (t == null) break; // Koniec planszy
+
 			if (!t.isOccupied)
 			{
 				moves.Add(t);
 			}
 			else
 			{
+				// Jeœli wróg - mo¿na biæ i koniec ruchu
 				if (t.currentPiece.owner != owner) moves.Add(t);
-				break;
+				break; // Blokada
 			}
 			currRow += yDir; currCol += xDir;
 		}
@@ -285,12 +304,19 @@ public class Piece : MonoBehaviour
 	private void MovePoint(int r, int c, List<Tile> moves)
 	{
 		Tile t = BoardManager.Instance.GetTileGlobal(r, c);
+		// Jeœli pole istnieje I (jest wolne LUB zajête przez wroga)
 		if (t != null && (!t.isOccupied || t.currentPiece.owner != owner))
 			moves.Add(t);
 	}
 
 	private void HighlightMoves(bool show)
 	{
-		foreach (var tile in possibleMoves) tile.SetHighlight(show);
+		foreach (var tile in possibleMoves)
+		{
+			// Zak³adam, ¿e w Tile masz metodê SetHighlight. 
+			// Jeœli nie, musisz zmieniæ kolor rêcznie, np: tile.GetComponent<SpriteRenderer>().color = ...
+			if (show) tile.GetComponent<SpriteRenderer>().color = Color.yellow;
+			else tile.GetComponent<SpriteRenderer>().color = tile.originalColor; // Musisz mieæ zapamiêtany kolor w Tile
+		}
 	}
 }

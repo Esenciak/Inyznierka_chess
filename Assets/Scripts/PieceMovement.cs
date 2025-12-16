@@ -1,12 +1,11 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PieceMovement : MonoBehaviour
 {
 	private Vector3 startPosition;
 	private bool isDragging = false;
 	private Piece pieceComponent;
-
-	// Do obs³ugi wygl¹du (¿eby figura by³a "nad" innymi podczas przeci¹gania)
 	private SpriteRenderer sr;
 	private int originalOrder;
 
@@ -18,27 +17,34 @@ public class PieceMovement : MonoBehaviour
 
 	void OnMouseDown()
 	{
-		// Pozwalamy ruszaæ tylko naszymi figurami
-		if (pieceComponent != null && pieceComponent.owner == PieceOwner.Player)
-		{
-			isDragging = true;
-			startPosition = transform.position;
+		// 1. Sprawdzamy czy to figura gracza
+		if (pieceComponent.owner != PieceOwner.Player) return;
 
-			// Wizualny efekt podniesienia
-			if (sr)
+		// 2. Jeœli to BITWA, sprawdzamy czy jest NASZA TURA
+		if (SceneManager.GetActiveScene().name == "Battle")
+		{
+			if (GameManager.Instance.currentTurn != PieceOwner.Player)
 			{
-				originalOrder = sr.sortingOrder;
-				sr.sortingOrder = 100; // Na wierzch
+				Debug.Log("To nie twoja tura!");
+				return;
 			}
-			transform.localScale *= 1.1f; // Lekkie powiêkszenie
 		}
+
+		isDragging = true;
+		startPosition = transform.position;
+
+		if (sr)
+		{
+			originalOrder = sr.sortingOrder;
+			sr.sortingOrder = 100; // Na wierzch
+		}
+		transform.localScale *= 1.1f;
 	}
 
 	void OnMouseDrag()
 	{
 		if (isDragging)
 		{
-			// Przesuwamy figurê za kursorem
 			Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 			transform.position = new Vector3(mousePos.x, mousePos.y, -5);
 		}
@@ -49,12 +55,9 @@ public class PieceMovement : MonoBehaviour
 		if (!isDragging) return;
 		isDragging = false;
 
-		// Reset wizualny
 		if (sr) sr.sortingOrder = originalOrder;
 		transform.localScale /= 1.1f;
 
-		// --- KLUCZOWA POPRAWKA: RaycastAll ---
-		// Strzelamy promieniem, przebijaj¹c figurê, któr¹ trzymamy, ¿eby znaleŸæ kafelek pod spodem
 		Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 		RaycastHit2D[] hits = Physics2D.RaycastAll(mousePos, Vector2.zero);
 
@@ -66,46 +69,67 @@ public class PieceMovement : MonoBehaviour
 			if (t != null)
 			{
 				targetTile = t;
-				break; // ZnaleŸliœmy kafelek!
+				break;
 			}
 		}
 
-		// Jeœli trafiliœmy na kafelek...
 		if (targetTile != null)
 		{
-			// Sprawdzamy czy to legalne miejsce (Plansza Gracza LUB Inventory)
-			bool isAllowedBoard = (targetTile.boardType == BoardType.Player || targetTile.isInventory);
+			// --- LOGIKA WALIDACJI RUCHU ---
+			bool isBattle = SceneManager.GetActiveScene().name == "Battle";
+			bool isAllowed = false;
 
-			// Oraz czy kafelek jest wolny
-			if (isAllowedBoard && !targetTile.isOccupied)
+			if (isBattle)
+			{
+				// W bitwie mo¿na iœæ na: Swoje, Œrodek i Wroga (Atak)
+				// UWAGA: Tu w przysz³oœci dodasz logikê "Czy ruch jest zgodny z zasadami szachów"
+				if (targetTile.boardType == BoardType.Player ||
+					targetTile.boardType == BoardType.Center ||
+					targetTile.boardType == BoardType.Enemy)
+				{
+					isAllowed = true;
+				}
+			}
+			else // SKLEP
+			{
+				// W sklepie tylko: Inventory lub Plansza Gracza
+				if (targetTile.isInventory || targetTile.boardType == BoardType.Player)
+				{
+					isAllowed = true;
+				}
+			}
+
+			// Jeœli miejsce dozwolone i wolne (lub atakujemy - tu prosta wersja tylko na wolne)
+			if (isAllowed && !targetTile.isOccupied)
 			{
 				MoveToTile(targetTile);
-				return; // Sukces, koñczymy
+
+				// Jeœli to bitwa -> ZMIEÑ TURÊ
+				if (isBattle)
+				{
+					GameManager.Instance.SwitchTurn();
+				}
+				return;
 			}
 		}
 
-		// Jeœli upuœciliœmy w z³ym miejscu (np. na zajête pole, albo poza planszê) -> wracamy
+		// Nieudany ruch -> powrót
 		transform.position = startPosition;
 	}
 
 	void MoveToTile(Tile newTile)
 	{
-		// 1. Zwalniamy stary kafelek
 		if (pieceComponent.currentTile != null)
 		{
 			pieceComponent.currentTile.isOccupied = false;
 			pieceComponent.currentTile.currentPiece = null;
 		}
 
-		// 2. Zajmujemy nowy
 		newTile.isOccupied = true;
 		newTile.currentPiece = pieceComponent;
 		pieceComponent.currentTile = newTile;
 
-		// 3. Ustawiamy pozycjê
 		transform.position = new Vector3(newTile.transform.position.x, newTile.transform.position.y, -1);
-
-		// Aktualizuj startPosition, ¿eby przy kolejnym ruchu wraca³ w to nowe miejsce
 		startPosition = transform.position;
 	}
 }

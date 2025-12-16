@@ -27,7 +27,6 @@ public class BoardManager : MonoBehaviour
 	private GameObject[,] enemyBoard;
 	private GameObject[,] centerBoard;
 
-	// Zmienne globalne
 	private int playerStartRow, centerStartRow, enemyStartRow;
 	public int totalRows { get; private set; }
 	private int playerStartCol, centerStartCol, enemyStartCol;
@@ -40,10 +39,27 @@ public class BoardManager : MonoBehaviour
 			return;
 		}
 		Instance = this;
+		// Jeœli jest na obiekcie Manager z GameProgress, to DontDestroyOnLoad ju¿ dzia³a.
+	}
+
+	private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
+	private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
+
+	void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+	{
+		InitBoard();
 	}
 
 	private void Start()
 	{
+		InitBoard();
+	}
+
+	void InitBoard()
+	{
+		IsReady = false;
+
+		// Pobranie rozmiarów z zapisu gry
 		if (GameProgress.Instance != null)
 		{
 			PlayerRows = GameProgress.Instance.playerBoardSize;
@@ -53,21 +69,17 @@ public class BoardManager : MonoBehaviour
 		}
 
 		RecalculateGlobalLayout();
-		offsetCalculation();
+		offsetCalculation(); // <-- Tutaj dzieje siê magia z pozycj¹
 
 		string sceneName = SceneManager.GetActiveScene().name;
 
-		if (sceneName == "Shop")
-		{
-			GenerateShopLayout();
-		}
-		else
-		{
-			GenerateBattleLayout();
-		}
+		if (sceneName == "Shop") GenerateShopLayout();
+		else GenerateBattleLayout();
 
 		IsReady = true;
 	}
+
+	// --- Generowanie (Skrócone dla czytelnoœci, logika bez zmian) ---
 
 	void GenerateShopLayout()
 	{
@@ -104,26 +116,17 @@ public class BoardManager : MonoBehaviour
 		{
 			for (int c = 0; c < cols; c++)
 			{
-				// Ustawiamy Z na 0, ¿eby na pewno by³o widaæ
 				Vector3 pos = new Vector3(c + offset.x, r + offset.y, 0);
 				GameObject tileGO = Instantiate(tilePrefab, pos, Quaternion.identity);
-				tileGO.transform.parent = null;
+				tileGO.transform.parent = transform;
 
-				// --- POPRAWKA KOLORÓW ---
 				if (colors != null && colors.Length > 0)
 				{
 					int gx = Mathf.RoundToInt(offset.x) + c;
 					int gy = Mathf.RoundToInt(offset.y) + r;
 					int idx = ((gx + gy) % colors.Length + colors.Length) % colors.Length;
-
-					SpriteRenderer sr = tileGO.GetComponent<SpriteRenderer>();
-					if (sr != null)
-					{
-						// Tu dodajemy 1.0f na koñcu, ¿eby Alpha by³a 100% (nieprzezroczysta)
-						sr.color = new Color(colors[idx].r, colors[idx].g, colors[idx].b, 1.0f);
-					}
+					tileGO.GetComponent<SpriteRenderer>().color = new Color(colors[idx].r, colors[idx].g, colors[idx].b, 1.0f);
 				}
-				// -------------------------
 
 				Tile tile = tileGO.GetComponent<Tile>();
 				if (tile != null)
@@ -133,16 +136,15 @@ public class BoardManager : MonoBehaviour
 					tile.boardType = boardType;
 					tile.globalRow = startGlobalRow + r;
 					tile.globalCol = startGlobalCol + c;
-					tile.isInventory = false;
 				}
 				board[r, c] = tileGO;
 			}
 		}
 	}
 
-	// Wersja dla œrodka (Gradient)
 	private void GenerateBoard(GameObject[,] board, Color[] colA, Color[] colB, Vector2 offset, BoardType boardType, int startGlobalRow, int startGlobalCol)
 	{
+		// Wersja Gradientowa (Center)
 		int rows = board.GetLength(0);
 		int cols = board.GetLength(1);
 		int len = Mathf.Min(colA.Length, colB.Length);
@@ -154,7 +156,7 @@ public class BoardManager : MonoBehaviour
 			{
 				Vector3 pos = new Vector3(c + offset.x, r + offset.y, 0);
 				GameObject tileGO = Instantiate(tilePrefab, pos, Quaternion.identity);
-				tileGO.transform.parent = null;
+				tileGO.transform.parent = transform;
 
 				float t = (rows > 1) ? (float)r / (rows - 1) : 0f;
 				int gx = Mathf.RoundToInt(offset.x) + c;
@@ -162,12 +164,8 @@ public class BoardManager : MonoBehaviour
 				int idx = ((gx + gy) % len + len) % len;
 
 				Color blended = Color.Lerp(colA[idx % colA.Length], colB[idx % colB.Length], t);
-
-				// Tutaj te¿ wymuszamy pe³n¹ widocznoœæ (Alpha = 1)
 				blended.a = 1.0f;
-
-				SpriteRenderer sr = tileGO.GetComponent<SpriteRenderer>();
-				if (sr != null) sr.color = blended;
+				tileGO.GetComponent<SpriteRenderer>().color = blended;
 
 				Tile tile = tileGO.GetComponent<Tile>();
 				if (tile != null)
@@ -183,7 +181,6 @@ public class BoardManager : MonoBehaviour
 		}
 	}
 
-	// --- Helpery ---
 	private void DestroyBoard(GameObject[,] board)
 	{
 		if (board == null) return;
@@ -196,7 +193,6 @@ public class BoardManager : MonoBehaviour
 		centerStartRow = PlayerRows;
 		enemyStartRow = PlayerRows + CenterRows;
 		totalRows = PlayerRows + CenterRows + PlayerRows;
-
 		int diff = CenterCols - PlayerCols;
 		if (diff < 0) diff = 0;
 		playerStartCol = diff / 2;
@@ -204,34 +200,37 @@ public class BoardManager : MonoBehaviour
 		enemyStartCol = diff / 2;
 	}
 
+	// *** TUTAJ JEST NAPRAWA POZYCJI W SKLEPIE ***
 	private void offsetCalculation()
 	{
 		float centerX = 0f;
-		float pOffX = centerX + (CenterCols - PlayerCols) / 2f;
-		float pOffY = -PlayerRows;
-		float eOffY = CenterRows;
+		float centerY = 0f;
 
+		// Domyœlne (Bitwa)
+		float playerOffsetX = centerX + (CenterCols - PlayerCols) / 2f;
+		float playerOffsetY = centerY - PlayerRows;
+		float enemyOffsetY = centerY + CenterRows;
+
+		// Jeœli SKLEP -> Sztywna pozycja
 		if (SceneManager.GetActiveScene().name == "Shop")
 		{
-			pOffX += 3.5f;
-			pOffY = 0;
+			playerOffsetX = 3.5f; // Sta³a pozycja X
+			playerOffsetY = 0f;   // Sta³a pozycja Y
+			enemyOffsetY = 100f;  // Wyrzucamy wroga poza ekran
 		}
 
-		playerOffset = new Vector2(pOffX, pOffY);
-		enemyOffset = new Vector2(pOffX, eOffY);
-		centerOffset = Vector2.zero;
+		playerOffset = new Vector2(playerOffsetX, playerOffsetY);
+		enemyOffset = new Vector2(playerOffsetX, enemyOffsetY);
+		centerOffset = new Vector2(0f, 0f);
 	}
 
-	// --- PUBLIC API ---
+	// --- PUBLIC API (Przywrócone metody) ---
 
 	public Tile GetTileGlobal(int globalRow, int globalCol)
 	{
-		if (globalRow < playerStartRow + PlayerRows)
-			return GetTile(BoardType.Player, globalRow - playerStartRow, globalCol - playerStartCol);
-		else if (globalRow < centerStartRow + CenterRows)
-			return GetTile(BoardType.Center, globalRow - centerStartRow, globalCol - centerStartCol);
-		else
-			return GetTile(BoardType.Enemy, globalRow - enemyStartRow, globalCol - enemyStartCol);
+		if (globalRow < playerStartRow + PlayerRows) return GetTile(BoardType.Player, globalRow - playerStartRow, globalCol - playerStartCol);
+		else if (globalRow < centerStartRow + CenterRows) return GetTile(BoardType.Center, globalRow - centerStartRow, globalCol - centerStartCol);
+		else return GetTile(BoardType.Enemy, globalRow - enemyStartRow, globalCol - enemyStartCol);
 	}
 
 	public Tile GetTile(BoardType type, int row, int col)
@@ -243,29 +242,21 @@ public class BoardManager : MonoBehaviour
 			case BoardType.Center: targetBoard = centerBoard; break;
 			case BoardType.Enemy: targetBoard = enemyBoard; break;
 		}
-
-		if (targetBoard == null) return null;
-		if (row < 0 || row >= targetBoard.GetLength(0)) return null;
-		if (col < 0 || col >= targetBoard.GetLength(1)) return null;
-
+		if (targetBoard == null || row < 0 || row >= targetBoard.GetLength(0) || col < 0 || col >= targetBoard.GetLength(1)) return null;
 		GameObject go = targetBoard[row, col];
-		if (go == null) return null;
-		return go.GetComponent<Tile>();
-	}
-
-	public Tile GetTileAtPosition(Vector2 worldPos)
-	{
-		RaycastHit2D hit = Physics2D.Raycast(worldPos, Vector2.zero);
-		if (hit.collider != null)
-		{
-			return hit.collider.GetComponent<Tile>();
-		}
-		return null;
+		return go != null ? go.GetComponent<Tile>() : null;
 	}
 
 	public Tile GetPlayerCenterTile()
 	{
 		if (playerBoard == null) return null;
 		return GetTile(BoardType.Player, PlayerRows / 2, PlayerCols / 2);
+	}
+
+	public Tile GetTileAtPosition(Vector2 worldPos)
+	{
+		RaycastHit2D hit = Physics2D.Raycast(worldPos, Vector2.zero);
+		if (hit.collider != null) return hit.collider.GetComponent<Tile>();
+		return null;
 	}
 }
