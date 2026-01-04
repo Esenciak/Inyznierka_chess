@@ -240,7 +240,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameProgress
   coins: 100
-  gamesPlayed: 1
+  gamesPlayed: 5
   playerBoardSize: 3
   myArmy: []
 --- !u!114 &107597323

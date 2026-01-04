@@ -7,7 +7,7 @@
   - Layers:
     - Default, TransparentFX, Ignore Raycast, Water, UI, LogicTile, Background, Tile, Piece
 - Active game object:
-  - Name: BoardTile
+  - Name: W_Pawn
   - Tag: Untagged
-  - Layer: Tile
+  - Layer: Piece
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->

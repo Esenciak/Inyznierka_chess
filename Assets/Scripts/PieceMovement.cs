@@ -20,13 +20,18 @@ public class PieceMovement : MonoBehaviour
 	{
 		if (pieceComponent.owner != PieceOwner.Player) return;
 
-		if (SceneManager.GetActiveScene().name == "Battle")
+		bool isBattle = SceneManager.GetActiveScene().name == "Battle";
+
+		if (isBattle)
 		{
 			if (GameManager.Instance.currentTurn != PieceOwner.Player)
 			{
 				Debug.Log("To nie twoja tura!");
 				return;
 			}
+
+			// --- W£¥CZ PODŒWIETLENIE (TYLKO W BITWIE) ---
+			pieceComponent.ToggleHighlight(true);
 		}
 
 		isDragging = true;
@@ -57,6 +62,15 @@ public class PieceMovement : MonoBehaviour
 		if (sr) sr.sortingOrder = originalOrder;
 		transform.localScale /= 1.1f;
 
+		bool isBattle = SceneManager.GetActiveScene().name == "Battle";
+
+		// --- WY£¥CZ PODŒWIETLENIE (TYLKO W BITWIE) ---
+		if (isBattle)
+		{
+			pieceComponent.ToggleHighlight(false);
+		}
+
+		// Raycast i szukanie kafelka
 		Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 		RaycastHit2D[] hits = Physics2D.RaycastAll(mousePos, Vector2.zero);
 
@@ -64,22 +78,14 @@ public class PieceMovement : MonoBehaviour
 		foreach (var hit in hits)
 		{
 			Tile t = hit.collider.GetComponent<Tile>();
-			if (t != null)
-			{
-				targetTile = t;
-				break;
-			}
+			if (t != null) { targetTile = t; break; }
 		}
 
 		if (targetTile != null)
 		{
-			// Sprawdzamy, w jakiej jesteœmy scenie
-			bool isBattle = SceneManager.GetActiveScene().name == "Battle";
-
-			// --- WALIDACJA DLA SKLEPU ---
+			// LOGIKA DLA SKLEPU
 			if (!isBattle)
 			{
-				// Król nie mo¿e do inventory
 				if (pieceComponent.pieceType == PieceType.King && targetTile.isInventory)
 				{
 					Debug.Log("Król nie mo¿e do inventory!");
@@ -87,30 +93,25 @@ public class PieceMovement : MonoBehaviour
 					return;
 				}
 
-				// W sklepie mo¿na przestawiaæ dowolnie (Inventory <-> Plansza Gracza)
-				// pod warunkiem, ¿e pole jest wolne
 				if ((targetTile.isInventory || targetTile.boardType == BoardType.Player) && !targetTile.isOccupied)
 				{
 					MoveToTile(targetTile);
 					return;
 				}
 			}
-			// --- WALIDACJA DLA BITWY ---
+			// LOGIKA DLA BITWY
 			else
 			{
-				// 1. Sprawdzamy czy to legalny ruch szachowy
 				List<Tile> legalMoves = pieceComponent.GetLegalMoves();
 
 				if (legalMoves.Contains(targetTile))
 				{
-					// 2. Obs³uga bicia (jeœli na polu stoi wróg)
+					// Bicie
 					if (targetTile.isOccupied && targetTile.currentPiece != null)
 					{
 						if (targetTile.currentPiece.owner != pieceComponent.owner)
 						{
 							Destroy(targetTile.currentPiece.gameObject);
-
-							// Jeœli zbiliœmy Króla -> wygrana
 							if (targetTile.currentPiece.pieceType == PieceType.King)
 							{
 								GameManager.Instance.GameOver(true);
@@ -118,7 +119,6 @@ public class PieceMovement : MonoBehaviour
 						}
 					}
 
-					// 3. Wykonaj ruch
 					MoveToTile(targetTile);
 					GameManager.Instance.SwitchTurn();
 					return;
@@ -130,7 +130,7 @@ public class PieceMovement : MonoBehaviour
 			}
 		}
 
-		// Jeœli ruch siê nie uda³ -> wracamy
+		// Powrót przy b³êdzie
 		transform.position = startPosition;
 	}
 

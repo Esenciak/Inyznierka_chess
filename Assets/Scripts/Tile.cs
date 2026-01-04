@@ -4,20 +4,16 @@ public class Tile : MonoBehaviour
 {
 	public int row;
 	public int col;
-
 	public int globalRow;
 	public int globalCol;
 
 	public BoardType boardType;
-
+	public bool isInventory;
 	public bool isOccupied;
 	public Piece currentPiece;
 
-	// Pamiêæ koloru 
-	public Color originalColor {  get; set; }
 	private SpriteRenderer sr;
-
-	public bool isInventory = false;
+	private Color originalColor;
 
 	private void Awake()
 	{
@@ -26,21 +22,24 @@ public class Tile : MonoBehaviour
 
 	private void Start()
 	{
-		// Zapamiêtaj kolor ustawiony przy generowaniu planszy
+		// Zapamiêtujemy kolor startowy (nadany przez BoardManager)
 		if (sr != null) originalColor = sr.color;
 	}
 
+	// Tê funkcjê wywo³a Piece.cs
 	public void SetHighlight(bool active)
 	{
 		if (sr == null) return;
 
 		if (active)
 		{
-			sr.color = Color.green; // Kolor podœwietlenia
+			// Kolor podœwietlenia (np. pó³przezroczysty ¿ó³ty lub jaskrawy)
+			sr.color = Color.yellow;
 		}
 		else
 		{
-			sr.color = originalColor; // Wróæ do zapamiêtanego orygina³u
+			// Przywracamy orygina³
+			sr.color = originalColor;
 		}
 	}
 }
