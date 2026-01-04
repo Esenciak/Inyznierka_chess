@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class ShopManager : MonoBehaviour
 {
@@ -21,6 +22,7 @@ public class ShopManager : MonoBehaviour
 	public TextMeshProUGUI coinsText;
 	public TextMeshProUGUI centerBoardSizeText;
 	public TextMeshProUGUI roundText;
+	public Button startButton;
 
 	private List<GameObject> shopTiles = new List<GameObject>();
 
@@ -86,6 +88,16 @@ public class ShopManager : MonoBehaviour
 
 		GameObject sizeObj = GameObject.Find("UI_BoardSize");
 		if (sizeObj) centerBoardSizeText = sizeObj.GetComponent<TextMeshProUGUI>();
+
+		GameObject btnObj = GameObject.Find("StartButton");
+		if (btnObj != null)
+		{
+			startButton = btnObj.GetComponent<Button>();
+			// Czyœcimy stare klikniêcia (¿eby nie klika³o siê 2 razy)
+			startButton.onClick.RemoveAllListeners();
+			// Dodajemy funkcjê StartGame
+			startButton.onClick.AddListener(StartGame);
+		}
 
 		ToggleUI(true);
 	}
