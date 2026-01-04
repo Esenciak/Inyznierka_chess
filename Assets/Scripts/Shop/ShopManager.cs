@@ -50,6 +50,7 @@ public class ShopManager : MonoBehaviour
 		// Jeœli weszliœmy do Sklepu -> Generuj
 		if (scene.name == "Shop")
 		{
+			FindUIReferences();
 			InitializeShop();
 		}
 		else
@@ -64,12 +65,29 @@ public class ShopManager : MonoBehaviour
 		// Fallback: jeœli startujemy prosto ze sceny Shop
 		if (SceneManager.GetActiveScene().name == "Shop")
 		{
+			FindUIReferences();
 			InitializeShop();
 		}
 		else
 		{
 			ToggleUI(false);
 		}
+	}
+
+	void FindUIReferences()
+	{
+		// Szukamy obiektów w scenie po nazwie. 
+		// UPEWNIJ SIÊ, ¯E NAZWA£EŒ JE TAK SAMO W CANVASIE!
+		GameObject coinObj = GameObject.Find("UI_Coins");
+		if (coinObj) coinsText = coinObj.GetComponent<TextMeshProUGUI>();
+
+		GameObject roundObj = GameObject.Find("UI_Round");
+		if (roundObj) roundText = roundObj.GetComponent<TextMeshProUGUI>();
+
+		GameObject sizeObj = GameObject.Find("UI_BoardSize");
+		if (sizeObj) centerBoardSizeText = sizeObj.GetComponent<TextMeshProUGUI>();
+
+		ToggleUI(true);
 	}
 
 	void InitializeShop()
@@ -181,11 +199,28 @@ public class ShopManager : MonoBehaviour
 
 	public void TryBuyPiece(ShopItem item)
 	{
-		if (GameProgress.Instance.SpendCoins(item.price))
+		// 1. Czy staæ nas?
+		if (GameProgress.Instance.coins >= item.price)
 		{
-			InventoryManager.Instance.AddPieceToInventory(item.type, GetPrefabByType(item.type));
-			Destroy(item.gameObject);
-			UpdateUI();
+			// 2. Czy jest miejsce w ekwipunku? (AddPieceToInventory zwraca teraz bool)
+			bool success = InventoryManager.Instance.AddPieceToInventory(item.type, GetPrefabByType(item.type));
+
+			if (success)
+			{
+				// Dopiero teraz zabieramy kasê i niszczymy przedmiot
+				GameProgress.Instance.SpendCoins(item.price);
+				Destroy(item.gameObject);
+				UpdateUI();
+			}
+			else
+			{
+				Debug.Log("Nie kupiono: Brak miejsca w ekwipunku!");
+				// Tutaj mo¿na dodaæ jakiœ efekt dŸwiêkowy b³êdu lub tekst "FULL"
+			}
+		}
+		else
+		{
+			Debug.Log("Nie staæ Ciê!");
 		}
 	}
 

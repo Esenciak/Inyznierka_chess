@@ -733,11 +733,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9204701212112606780, guid: 93d1033599e6a084c844e18969831caf, type: 3}
       propertyPath: inventoryOffset.x
-      value: -3
+      value: -7
       objectReference: {fileID: 0}
     - target: {fileID: 9204701212112606780, guid: 93d1033599e6a084c844e18969831caf, type: 3}
       propertyPath: inventoryOffset.y
-      value: 3
+      value: -2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:

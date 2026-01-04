@@ -142,7 +142,7 @@ GameObject:
   - component: {fileID: 343690568}
   - component: {fileID: 343690567}
   m_Layer: 5
-  m_Name: 'CenterBoardSize_txt '
+  m_Name: UI_BoardSize
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -652,7 +652,7 @@ GameObject:
   - component: {fileID: 1165650852}
   - component: {fileID: 1165650851}
   m_Layer: 5
-  m_Name: Round_txt
+  m_Name: UI_Round
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -982,7 +982,7 @@ GameObject:
   - component: {fileID: 2144873315}
   - component: {fileID: 2144873314}
   m_Layer: 5
-  m_Name: Coins_txt
+  m_Name: UI_Coins
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
