@@ -150,20 +150,32 @@ public class ShopManager : MonoBehaviour
 
 		Vector3 pos = tileGO.transform.position;
 		pos.z = -1;
-		GameObject itemGO = Instantiate(prefab, pos, Quaternion.identity);
-		itemGO.transform.parent = tileGO.transform; // Rodzicujemy do kafelka
 
-		// Blokada ruchu w sklepie
+		// 1. Tworzymy obiekt
+		GameObject itemGO = Instantiate(prefab, pos, Quaternion.identity);
+
+		// 2. KLUCZOWA POPRAWKA: Najpierw usuwamy NetworkObject!
+		// Musimy u¿yæ DestroyImmediate, ¿eby znikn¹³ w tej milisekundzie, zanim kod pójdzie dalej
+		if (itemGO.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
+		{
+			DestroyImmediate(netObj);
+		}
+
+		// 3. Dopiero teraz bezpiecznie ustawiamy rodzica
+		itemGO.transform.parent = tileGO.transform;
+
+		// 4. Usuwamy resztê niepotrzebnych skryptów (logikê gry)
 		Destroy(itemGO.GetComponent<Piece>());
 		Destroy(itemGO.GetComponent<PieceMovement>());
 
+		// 5. Dodajemy logikê sklepow¹
 		ShopItem shopItem = itemGO.AddComponent<ShopItem>();
 		Tile tile = tileGO.GetComponent<Tile>();
 
-		// Cena nad/pod figur¹
 		Vector3 textOffset = (tile.row == 0) ? new Vector3(0, -1.2f, 0) : new Vector3(0, 1.2f, 0);
 
 		shopItem.Setup(type, prices[type], this, tile, priceTextPrefab, textOffset);
+
 		tile.isOccupied = true;
 	}
 

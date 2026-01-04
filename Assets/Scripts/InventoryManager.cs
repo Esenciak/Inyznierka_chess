@@ -122,10 +122,19 @@ public class InventoryManager : MonoBehaviour
 
 	void SpawnPiece(GameObject prefab, Tile tile, PieceType type)
 	{
+		// 1. Tworzymy obiekt
 		GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
-		pieceGO.transform.parent = tile.transform; // Rodzicujemy do kafelka
 
-		// Dodajemy logikê ruchu
+		// 2. KLUCZOWA POPRAWKA: Usuwamy NetworkObject PRZED ustawieniem rodzica
+		if (pieceGO.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
+		{
+			DestroyImmediate(netObj);
+		}
+
+		// 3. Ustawiamy rodzica
+		pieceGO.transform.parent = tile.transform;
+
+		// 4. Reszta logiki
 		if (pieceGO.GetComponent<PieceMovement>() == null)
 			pieceGO.AddComponent<PieceMovement>();
 
@@ -137,7 +146,6 @@ public class InventoryManager : MonoBehaviour
 		tile.isOccupied = true;
 		tile.currentPiece = piece;
 
-		// Ustawiamy Z, ¿eby figura by³a nad kafelkiem
 		Vector3 pos = pieceGO.transform.position;
 		pos.z = -1;
 		pieceGO.transform.position = pos;

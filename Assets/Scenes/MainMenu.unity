@@ -731,8 +731,17 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 9204701212112606780, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: inventoryOffset.x
+      value: -3
+      objectReference: {fileID: 0}
+    - target: {fileID: 9204701212112606780, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: inventoryOffset.y
+      value: 3
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 6546161023823653397, guid: 93d1033599e6a084c844e18969831caf, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 93d1033599e6a084c844e18969831caf, type: 3}

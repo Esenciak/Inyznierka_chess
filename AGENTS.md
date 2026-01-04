@@ -8,7 +8,7 @@
   - Layers:
     - Default, TransparentFX, Ignore Raycast, Water, UI, LogicTile, Background, Tile, Piece
 - Active game object:
-  - Name: NetworkManager
+  - Name: Manager
   - Tag: Untagged
   - Layer: Default
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->
