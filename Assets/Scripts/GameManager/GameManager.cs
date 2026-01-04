@@ -7,6 +7,9 @@ public class GameManager : MonoBehaviour
 {
 	public static GameManager Instance { get; private set; }
 
+	[Header("Tryb Gry")]
+	public bool isMultiplayer = false;
+
 	[Header("Stan Gry")]
 	public GamePhase currentPhase = GamePhase.Placement;
 

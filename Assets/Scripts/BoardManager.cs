@@ -59,6 +59,14 @@ public class BoardManager : MonoBehaviour
 	{
 		IsReady = false;
 
+		string sceneName = SceneManager.GetActiveScene().name;
+		if (sceneName == "MainMenu")
+		{
+			// W menu g³ównym czyœcimy planszê (jeœli jakaœ zosta³a) i koñczymy
+			ClearAllBoards();
+			return;
+		}
+
 		// Pobranie rozmiarów z zapisu gry
 		if (GameProgress.Instance != null)
 		{
@@ -70,8 +78,6 @@ public class BoardManager : MonoBehaviour
 
 		RecalculateGlobalLayout();
 		offsetCalculation(); // <-- Tutaj dzieje siê magia z pozycj¹
-
-		string sceneName = SceneManager.GetActiveScene().name;
 
 		if (sceneName == "Shop") GenerateShopLayout();
 		else GenerateBattleLayout();

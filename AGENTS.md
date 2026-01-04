@@ -2,7 +2,7 @@
 - Project name: Chess_inz
 - Unity version: Unity 6000.2.12f1
 - Active scene:
-  - Name: Shop
+  - Name: MainMenu
   - Tags:
     - Untagged, Respawn, Finish, EditorOnly, MainCamera, Player, GameController
   - Layers:
