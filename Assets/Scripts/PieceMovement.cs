@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 
 public class PieceMovement : MonoBehaviour
 {
@@ -17,10 +18,8 @@ public class PieceMovement : MonoBehaviour
 
 	void OnMouseDown()
 	{
-		// 1. Sprawdzamy czy to figura gracza
 		if (pieceComponent.owner != PieceOwner.Player) return;
 
-		// 2. Jeœli to BITWA, sprawdzamy czy jest NASZA TURA
 		if (SceneManager.GetActiveScene().name == "Battle")
 		{
 			if (GameManager.Instance.currentTurn != PieceOwner.Player)
@@ -36,7 +35,7 @@ public class PieceMovement : MonoBehaviour
 		if (sr)
 		{
 			originalOrder = sr.sortingOrder;
-			sr.sortingOrder = 100; // Na wierzch
+			sr.sortingOrder = 100;
 		}
 		transform.localScale *= 1.1f;
 	}
@@ -62,7 +61,6 @@ public class PieceMovement : MonoBehaviour
 		RaycastHit2D[] hits = Physics2D.RaycastAll(mousePos, Vector2.zero);
 
 		Tile targetTile = null;
-
 		foreach (var hit in hits)
 		{
 			Tile t = hit.collider.GetComponent<Tile>();
@@ -75,45 +73,64 @@ public class PieceMovement : MonoBehaviour
 
 		if (targetTile != null)
 		{
-			// --- LOGIKA WALIDACJI RUCHU ---
+			// Sprawdzamy, w jakiej jesteœmy scenie
 			bool isBattle = SceneManager.GetActiveScene().name == "Battle";
-			bool isAllowed = false;
 
-			if (isBattle)
+			// --- WALIDACJA DLA SKLEPU ---
+			if (!isBattle)
 			{
-				// W bitwie mo¿na iœæ na: Swoje, Œrodek i Wroga (Atak)
-				// UWAGA: Tu w przysz³oœci dodasz logikê "Czy ruch jest zgodny z zasadami szachów"
-				if (targetTile.boardType == BoardType.Player ||
-					targetTile.boardType == BoardType.Center ||
-					targetTile.boardType == BoardType.Enemy)
+				// Król nie mo¿e do inventory
+				if (pieceComponent.pieceType == PieceType.King && targetTile.isInventory)
 				{
-					isAllowed = true;
+					Debug.Log("Król nie mo¿e do inventory!");
+					transform.position = startPosition;
+					return;
+				}
+
+				// W sklepie mo¿na przestawiaæ dowolnie (Inventory <-> Plansza Gracza)
+				// pod warunkiem, ¿e pole jest wolne
+				if ((targetTile.isInventory || targetTile.boardType == BoardType.Player) && !targetTile.isOccupied)
+				{
+					MoveToTile(targetTile);
+					return;
 				}
 			}
-			else // SKLEP
+			// --- WALIDACJA DLA BITWY ---
+			else
 			{
-				// W sklepie tylko: Inventory lub Plansza Gracza
-				if (targetTile.isInventory || targetTile.boardType == BoardType.Player)
-				{
-					isAllowed = true;
-				}
-			}
+				// 1. Sprawdzamy czy to legalny ruch szachowy
+				List<Tile> legalMoves = pieceComponent.GetLegalMoves();
 
-			// Jeœli miejsce dozwolone i wolne (lub atakujemy - tu prosta wersja tylko na wolne)
-			if (isAllowed && !targetTile.isOccupied)
-			{
-				MoveToTile(targetTile);
-
-				// Jeœli to bitwa -> ZMIEÑ TURÊ
-				if (isBattle)
+				if (legalMoves.Contains(targetTile))
 				{
+					// 2. Obs³uga bicia (jeœli na polu stoi wróg)
+					if (targetTile.isOccupied && targetTile.currentPiece != null)
+					{
+						if (targetTile.currentPiece.owner != pieceComponent.owner)
+						{
+							Destroy(targetTile.currentPiece.gameObject);
+
+							// Jeœli zbiliœmy Króla -> wygrana
+							if (targetTile.currentPiece.pieceType == PieceType.King)
+							{
+								GameManager.Instance.GameOver(true);
+							}
+						}
+					}
+
+					// 3. Wykonaj ruch
+					MoveToTile(targetTile);
 					GameManager.Instance.SwitchTurn();
+					return;
 				}
-				return;
+				else
+				{
+					Debug.Log("Nielegalny ruch!");
+				}
 			}
 		}
 
-		// Nieudany ruch -> powrót
+		// Jeœli ruch siê nie uda³ -> wracamy
 		transform.position = startPosition;
 	}
 
