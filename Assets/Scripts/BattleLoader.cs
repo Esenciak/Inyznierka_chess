@@ -9,6 +9,8 @@ public class BattleLoader : MonoBehaviour
         [Header("Prefaby (Kolejno wg Enuma!)")]
         // 0:Pawn, 1:King, 2:Queen, 3:Rook, 4:Bishop, 5:Knight
         public GameObject[] piecePrefabs;
+        public GameObject[] whitePrefabs;
+        public GameObject[] blackPrefabs;
 
         private void Start()
         {
@@ -75,9 +77,9 @@ public class BattleLoader : MonoBehaviour
                 foreach (SavedPieceData data in army)
                 {
                         // 1. Gracz
-                        SpawnPiece(data.type, data.x, data.y, BoardType.Player, PieceOwner.Player);
+                        SpawnPiece(data.type, data.x, data.y, BoardType.Player, PieceOwner.Player, false);
                         // 2. Wróg (Lustrzane odbicie)
-                        SpawnPiece(data.type, data.x, data.y, BoardType.Enemy, PieceOwner.Enemy);
+                        SpawnPiece(data.type, data.x, data.y, BoardType.Enemy, PieceOwner.Enemy, true);
                 }
         }
 
@@ -105,32 +107,33 @@ public class BattleLoader : MonoBehaviour
 
                 foreach (NetworkArmyPiece data in myArmy)
                 {
-                        SpawnPiece(data.type, data.x, data.y, BoardType.Player, PieceOwner.Player);
+                        SpawnPiece(data.type, data.x, data.y, BoardType.Player, PieceOwner.Player, false);
                 }
 
                 foreach (NetworkArmyPiece data in enemyArmy)
                 {
-                        SpawnPiece(data.type, data.x, data.y, BoardType.Enemy, PieceOwner.Enemy);
+                        SpawnPiece(data.type, data.x, data.y, BoardType.Enemy, PieceOwner.Enemy, true);
                 }
         }
 
         void GenerateDebugArmy()
         {
                 // Generuje Króla i kilka pionków dla testu
-                SpawnPiece(PieceType.King, 1, 1, BoardType.Player, PieceOwner.Player);
-                SpawnPiece(PieceType.King, 1, 1, BoardType.Enemy, PieceOwner.Enemy);
+                SpawnPiece(PieceType.King, 1, 1, BoardType.Player, PieceOwner.Player, false);
+                SpawnPiece(PieceType.King, 1, 1, BoardType.Enemy, PieceOwner.Enemy, true);
 
-                SpawnPiece(PieceType.Pawn, 0, 0, BoardType.Player, PieceOwner.Player);
-                SpawnPiece(PieceType.Pawn, 0, 0, BoardType.Enemy, PieceOwner.Enemy);
+                SpawnPiece(PieceType.Pawn, 0, 0, BoardType.Player, PieceOwner.Player, false);
+                SpawnPiece(PieceType.Pawn, 0, 0, BoardType.Enemy, PieceOwner.Enemy, true);
         }
 
-        void SpawnPiece(PieceType type, int x, int y, BoardType board, PieceOwner owner)
+        void SpawnPiece(PieceType type, int x, int y, BoardType board, PieceOwner owner, bool mirrorCoordinates)
         {
-                Tile tile = BoardManager.Instance.GetTile(board, y, x);
+                Vector2Int coords = mirrorCoordinates ? MirrorCoordinates(x, y) : new Vector2Int(x, y);
+                Tile tile = BoardManager.Instance.GetTile(board, coords.y, coords.x);
 
                 if (tile != null)
                 {
-                        GameObject prefab = GetPrefabByType(type);
+                        GameObject prefab = GetPrefabByType(type, owner);
                         if (prefab != null)
                         {
                                 GameObject go = Instantiate(prefab, tile.transform.position, Quaternion.identity);
@@ -143,30 +146,47 @@ public class BattleLoader : MonoBehaviour
 
                                 tile.isOccupied = true;
                                 tile.currentPiece = piece;
-
-                                // Wróg na czerwono i bez ruchu myszką
-                                if (owner == PieceOwner.Enemy)
-                                {
-                                        go.GetComponent<SpriteRenderer>().color = new Color(1f, 0.6f, 0.6f);
-                                        if (go.GetComponent<PieceMovement>())
-                                                Destroy(go.GetComponent<PieceMovement>());
-                                }
                         }
                 }
         }
 
-        GameObject GetPrefabByType(PieceType type)
+        Vector2Int MirrorCoordinates(int x, int y)
         {
-                // 0:Pawn, 1:King, 2:Queen, 3:Rook, 4:Bishop, 5:Knight
+                int mirroredX = BoardManager.Instance.PlayerCols - 1 - x;
+                int mirroredY = BoardManager.Instance.PlayerRows - 1 - y;
+                return new Vector2Int(mirroredX, mirroredY);
+        }
+
+        GameObject GetPrefabByType(PieceType type, PieceOwner owner)
+        {
+                GameObject[] set = GetPrefabSet(owner);
+                if (set == null || set.Length < 6)
+                {
+                        set = piecePrefabs;
+                }
+
                 switch (type)
                 {
-                        case PieceType.Pawn: return piecePrefabs[0];
-                        case PieceType.King: return piecePrefabs[1];
-                        case PieceType.queen: return piecePrefabs[2];
-                        case PieceType.Rook: return piecePrefabs[3];
-                        case PieceType.Bishop: return piecePrefabs[4];
-                        case PieceType.Knight: return piecePrefabs[5];
+                        case PieceType.Pawn: return set[0];
+                        case PieceType.King: return set[1];
+                        case PieceType.queen: return set[2];
+                        case PieceType.Rook: return set[3];
+                        case PieceType.Bishop: return set[4];
+                        case PieceType.Knight: return set[5];
                 }
-                return piecePrefabs[0];
+                return set[0];
+        }
+
+        GameObject[] GetPrefabSet(PieceOwner owner)
+        {
+                bool localWhite = GameProgress.Instance == null || GameProgress.Instance.IsLocalPlayerWhite();
+                bool isLocalPiece = owner == PieceOwner.Player;
+
+                if (localWhite)
+                {
+                        return isLocalPiece ? whitePrefabs : blackPrefabs;
+                }
+
+                return isLocalPiece ? blackPrefabs : whitePrefabs;
         }
 }

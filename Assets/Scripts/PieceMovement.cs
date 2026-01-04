@@ -4,149 +4,154 @@ using System.Collections.Generic;
 
 public class PieceMovement : MonoBehaviour
 {
-	private Vector3 startPosition;
-	private bool isDragging = false;
-	private Piece pieceComponent;
-	private SpriteRenderer sr;
-	private int originalOrder;
+        private Vector3 startPosition;
+        private bool isDragging = false;
+        private Piece pieceComponent;
+        private SpriteRenderer sr;
+        private int originalOrder;
 
-	void Start()
-	{
-		pieceComponent = GetComponent<Piece>();
-		sr = GetComponent<SpriteRenderer>();
-	}
+        void Start()
+        {
+                pieceComponent = GetComponent<Piece>();
+                sr = GetComponent<SpriteRenderer>();
+        }
 
-	void OnMouseDown()
-	{
-		if (pieceComponent.owner != PieceOwner.Player) return;
+        void OnMouseDown()
+        {
+                if (pieceComponent.owner != PieceOwner.Player) return;
 
-		bool isBattle = SceneManager.GetActiveScene().name == "Battle";
+                bool isBattle = SceneManager.GetActiveScene().name == "Battle";
 
-		if (isBattle)
-		{
-			if (GameManager.Instance.currentTurn != PieceOwner.Player)
-			{
-				Debug.Log("To nie twoja tura!");
-				return;
-			}
+                if (isBattle)
+                {
+                        if (GameManager.Instance.currentTurn != PieceOwner.Player)
+                        {
+                                Debug.Log("To nie twoja tura!");
+                                return;
+                        }
 
-			// --- W£•CZ PODåWIETLENIE (TYLKO W BITWIE) ---
-			pieceComponent.ToggleHighlight(true);
-		}
+                        // --- W≈ÅƒÑCZ POD≈öWIETLENIE (TYLKO W BITWIE) ---
+                        pieceComponent.ToggleHighlight(true);
+                }
 
-		isDragging = true;
-		startPosition = transform.position;
+                isDragging = true;
+                startPosition = transform.position;
 
-		if (sr)
-		{
-			originalOrder = sr.sortingOrder;
-			sr.sortingOrder = 100;
-		}
-		transform.localScale *= 1.1f;
-	}
+                if (sr)
+                {
+                        originalOrder = sr.sortingOrder;
+                        sr.sortingOrder = 100;
+                }
+                transform.localScale *= 1.1f;
+        }
 
-	void OnMouseDrag()
-	{
-		if (isDragging)
-		{
-			Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-			transform.position = new Vector3(mousePos.x, mousePos.y, -5);
-		}
-	}
+        void OnMouseDrag()
+        {
+                if (isDragging)
+                {
+                        Vector3 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                        transform.position = new Vector3(mousePos.x, mousePos.y, -5);
+                }
+        }
 
-	void OnMouseUp()
-	{
-		if (!isDragging) return;
-		isDragging = false;
+        void OnMouseUp()
+        {
+                if (!isDragging) return;
+                isDragging = false;
 
-		if (sr) sr.sortingOrder = originalOrder;
-		transform.localScale /= 1.1f;
+                if (sr) sr.sortingOrder = originalOrder;
+                transform.localScale /= 1.1f;
 
-		bool isBattle = SceneManager.GetActiveScene().name == "Battle";
+                bool isBattle = SceneManager.GetActiveScene().name == "Battle";
 
-		// --- WY£•CZ PODåWIETLENIE (TYLKO W BITWIE) ---
-		if (isBattle)
-		{
-			pieceComponent.ToggleHighlight(false);
-		}
+                // --- WYCZ POD≈öWIETLENIE (TYLKO W BITWIE) ---
+                if (isBattle)
+                {
+                        pieceComponent.ToggleHighlight(false);
+                }
 
-		// Raycast i szukanie kafelka
-		Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-		RaycastHit2D[] hits = Physics2D.RaycastAll(mousePos, Vector2.zero);
+                // Raycast i szukanie kafelka
+                Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                RaycastHit2D[] hits = Physics2D.RaycastAll(mousePos, Vector2.zero);
 
-		Tile targetTile = null;
-		foreach (var hit in hits)
-		{
-			Tile t = hit.collider.GetComponent<Tile>();
-			if (t != null) { targetTile = t; break; }
-		}
+                Tile targetTile = null;
+                foreach (var hit in hits)
+                {
+                        Tile t = hit.collider.GetComponent<Tile>();
+                        if (t != null) { targetTile = t; break; }
+                }
 
-		if (targetTile != null)
-		{
-			// LOGIKA DLA SKLEPU
-			if (!isBattle)
-			{
-				if (pieceComponent.pieceType == PieceType.King && targetTile.isInventory)
-				{
-					Debug.Log("KrÛl nie moøe do inventory!");
-					transform.position = startPosition;
-					return;
-				}
+                if (targetTile != null)
+                {
+                        // LOGIKA DLA SKLEPU
+                        if (!isBattle)
+                        {
+                                if (pieceComponent.pieceType == PieceType.King && targetTile.isInventory)
+                                {
+                                        Debug.Log("Kr√≥l nie mo≈ºe do inventory!");
+                                        transform.position = startPosition;
+                                        return;
+                                }
 
-				if ((targetTile.isInventory || targetTile.boardType == BoardType.Player) && !targetTile.isOccupied)
-				{
-					MoveToTile(targetTile);
-					return;
-				}
-			}
-			// LOGIKA DLA BITWY
-			else
-			{
-				List<Tile> legalMoves = pieceComponent.GetLegalMoves();
+                                if ((targetTile.isInventory || targetTile.boardType == BoardType.Player) && !targetTile.isOccupied)
+                                {
+                                        MoveToTile(targetTile);
+                                        return;
+                                }
+                        }
+                        // LOGIKA DLA BITWY
+                        else
+                        {
+                                List<Tile> legalMoves = pieceComponent.GetLegalMoves();
 
-				if (legalMoves.Contains(targetTile))
-				{
-					// Bicie
-					if (targetTile.isOccupied && targetTile.currentPiece != null)
-					{
-						if (targetTile.currentPiece.owner != pieceComponent.owner)
-						{
-							Destroy(targetTile.currentPiece.gameObject);
-							if (targetTile.currentPiece.pieceType == PieceType.King)
-							{
-								GameManager.Instance.GameOver(true);
-							}
-						}
-					}
+                                if (legalMoves.Contains(targetTile))
+                                {
+                                        Piece capturedPiece = null;
+                                        // Bicie
+                                        if (targetTile.isOccupied && targetTile.currentPiece != null)
+                                        {
+                                                if (targetTile.currentPiece.owner != pieceComponent.owner)
+                                                {
+                                                        capturedPiece = targetTile.currentPiece;
+                                                        Destroy(targetTile.currentPiece.gameObject);
+                                                }
+                                        }
 
-					MoveToTile(targetTile);
-					GameManager.Instance.SwitchTurn();
-					return;
-				}
-				else
-				{
-					Debug.Log("Nielegalny ruch!");
-				}
-			}
-		}
+                                        MoveToTile(targetTile);
 
-		// PowrÛt przy b≥Ídzie
-		transform.position = startPosition;
-	}
+                                        if (capturedPiece != null && capturedPiece.pieceType == PieceType.King && GameManager.Instance != null)
+                                        {
+                                                GameManager.Instance.GameOver(pieceComponent.owner == PieceOwner.Player);
+                                                return;
+                                        }
 
-	void MoveToTile(Tile newTile)
-	{
-		if (pieceComponent.currentTile != null)
-		{
-			pieceComponent.currentTile.isOccupied = false;
-			pieceComponent.currentTile.currentPiece = null;
-		}
+                                        GameManager.Instance.SwitchTurn();
+                                        return;
+                                }
+                                else
+                                {
+                                        Debug.Log("Nielegalny ruch!");
+                                }
+                        }
+                }
 
-		newTile.isOccupied = true;
-		newTile.currentPiece = pieceComponent;
-		pieceComponent.currentTile = newTile;
+                // Powr√≥t przy b≈Çƒôdzie
+                transform.position = startPosition;
+        }
 
-		transform.position = new Vector3(newTile.transform.position.x, newTile.transform.position.y, -1);
-		startPosition = transform.position;
-	}
+        void MoveToTile(Tile newTile)
+        {
+                if (pieceComponent.currentTile != null)
+                {
+                        pieceComponent.currentTile.isOccupied = false;
+                        pieceComponent.currentTile.currentPiece = null;
+                }
+
+                newTile.isOccupied = true;
+                newTile.currentPiece = pieceComponent;
+                pieceComponent.currentTile = newTile;
+
+                transform.position = new Vector3(newTile.transform.position.x, newTile.transform.position.y, -1);
+                startPosition = transform.position;
+        }
 }

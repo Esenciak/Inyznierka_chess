@@ -6,306 +6,322 @@ using UnityEngine.UI;
 
 public class ShopManager : MonoBehaviour
 {
-	[Header("Ustawienia Sklepu")]
-	public int shopRows = 2;
-	public int shopCols = 3;
-	public Vector2 shopOffset = new Vector2(-5, 0);
+        [Header("Ustawienia Sklepu")]
+        public int shopRows = 2;
+        public int shopCols = 3;
+        public Vector2 shopOffset = new Vector2(-5, 0);
 
-	[Header("Prefabrykaty")]
-	public GameObject tilePrefab;
-	public GameObject priceTextPrefab; // Pusty obiekt z TextMeshPro (nie UI!)
+        [Header("Prefabrykaty")]
+        public GameObject tilePrefab;
+        public GameObject priceTextPrefab; // Pusty obiekt z TextMeshPro (nie UI!)
 
-	// 0:Pawn, 1:King, 2:Queen, 3:Rook, 4:Bishop, 5:Knight
-	public GameObject[] piecePrefabs;
+        // 0:Pawn, 1:King, 2:Queen, 3:Rook, 4:Bishop, 5:Knight
+        public GameObject[] piecePrefabs;
+        public GameObject[] whitePiecePrefabs;
+        public GameObject[] blackPiecePrefabs;
 
-	[Header("UI - Teksty")]
-	public TextMeshProUGUI coinsText;
-	public TextMeshProUGUI centerBoardSizeText;
-	public TextMeshProUGUI roundText;
-	public Button startButton;
+        [Header("UI - Teksty")]
+        public TextMeshProUGUI coinsText;
+        public TextMeshProUGUI centerBoardSizeText;
+        public TextMeshProUGUI roundText;
+        public Button startButton;
 
-	private List<GameObject> shopTiles = new List<GameObject>();
+        private List<GameObject> shopTiles = new List<GameObject>();
 
-	private Dictionary<PieceType, int> prices = new Dictionary<PieceType, int>()
-	{
-		{ PieceType.Pawn, 10 },
-		{ PieceType.King, 0 },
-		{ PieceType.queen, 100 },
-		{ PieceType.Rook, 50 },
-		{ PieceType.Bishop, 30 },
-		{ PieceType.Knight, 30 }
-	};
+        private Dictionary<PieceType, int> prices = new Dictionary<PieceType, int>()
+        {
+                { PieceType.Pawn, 10 },
+                { PieceType.King, 0 },
+                { PieceType.queen, 100 },
+                { PieceType.Rook, 50 },
+                { PieceType.Bishop, 30 },
+                { PieceType.Knight, 30 }
+        };
 
-	// --- ZARZ•DZANIE SCENAMI ---
-	private void OnEnable()
-	{
-		SceneManager.sceneLoaded += OnSceneLoaded;
-	}
+        // --- ZARZƒÑDZANIE SCENAMI ---
+        private void OnEnable()
+        {
+                SceneManager.sceneLoaded += OnSceneLoaded;
+        }
 
-	private void OnDisable()
-	{
-		SceneManager.sceneLoaded -= OnSceneLoaded;
-	}
+        private void OnDisable()
+        {
+                SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
 
-	void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-	{
-		// Jeúli weszliúmy do Sklepu -> Generuj
-		if (scene.name == "Shop")
-		{
-			FindUIReferences();
-			InitializeShop();
-		}
-		else
-		{
-			// W Menu i Bitwie czyúcimy sklep
-			CleanupShop();
-		}
-	}
+        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+                // Je≈õli weszli≈õmy do Sklepu -> Generuj
+                if (scene.name == "Shop")
+                {
+                        FindUIReferences();
+                        InitializeShop();
+                }
+                else
+                {
+                        // W Menu i Bitwie czy≈õcimy sklep
+                        CleanupShop();
+                }
+        }
 
-	private void Start()
-	{
-		// Fallback: jeúli startujemy prosto ze sceny Shop
-		if (SceneManager.GetActiveScene().name == "Shop")
-		{
-			FindUIReferences();
-			InitializeShop();
-		}
-		else
-		{
-			ToggleUI(false);
-		}
-	}
+        private void Start()
+        {
+                // Fallback: je≈õli startujemy prosto ze sceny Shop
+                if (SceneManager.GetActiveScene().name == "Shop")
+                {
+                        FindUIReferences();
+                        InitializeShop();
+                }
+                else
+                {
+                        ToggleUI(false);
+                }
+        }
 
-	void FindUIReferences()
-	{
-		// Szukamy obiektÛw w scenie po nazwie. 
-		// UPEWNIJ SI , ØE NAZWA£Eå JE TAK SAMO W CANVASIE!
-		GameObject coinObj = GameObject.Find("UI_Coins");
-		if (coinObj) coinsText = coinObj.GetComponent<TextMeshProUGUI>();
+        void FindUIReferences()
+        {
+                // Szukamy obiekt√≥w w scenie po nazwie.
+                // UPEWNIJ SIƒò, ≈ªE NAZWA≈ÅE≈ö JE TAK SAMO W CANVASIE!
+                GameObject coinObj = GameObject.Find("UI_Coins");
+                if (coinObj) coinsText = coinObj.GetComponent<TextMeshProUGUI>();
 
-		GameObject roundObj = GameObject.Find("UI_Round");
-		if (roundObj) roundText = roundObj.GetComponent<TextMeshProUGUI>();
+                GameObject roundObj = GameObject.Find("UI_Round");
+                if (roundObj) roundText = roundObj.GetComponent<TextMeshProUGUI>();
 
-		GameObject sizeObj = GameObject.Find("UI_BoardSize");
-		if (sizeObj) centerBoardSizeText = sizeObj.GetComponent<TextMeshProUGUI>();
+                GameObject sizeObj = GameObject.Find("UI_BoardSize");
+                if (sizeObj) centerBoardSizeText = sizeObj.GetComponent<TextMeshProUGUI>();
 
-		GameObject btnObj = GameObject.Find("StartButton");
-		if (btnObj != null)
-		{
-			startButton = btnObj.GetComponent<Button>();
-			// Czyúcimy stare klikniÍcia (øeby nie klika≥o siÍ 2 razy)
-			startButton.onClick.RemoveAllListeners();
-			// Dodajemy funkcjÍ StartGame
-			startButton.onClick.AddListener(StartGame);
-		}
+                GameObject btnObj = GameObject.Find("StartButton");
+                if (btnObj != null)
+                {
+                        startButton = btnObj.GetComponent<Button>();
+                        // Czy≈õcimy stare klikniƒôcia (≈ºeby nie klika≈Ço siƒô 2 razy)
+                        startButton.onClick.RemoveAllListeners();
+                        // Dodajemy funkcjƒô StartGame
+                        startButton.onClick.AddListener(StartGame);
+                }
 
-		ToggleUI(true);
-	}
+                ToggleUI(true);
+        }
 
-	void InitializeShop()
-	{
-		CleanupShop();
-		GenerateShopGrid();
-		RefillShop();
-		ToggleUI(true);
-		UpdateUI();
-	}
+        void InitializeShop()
+        {
+                ApplyPiecePrefabsForLocalPlayer();
+                CleanupShop();
+                GenerateShopGrid();
+                RefillShop();
+                ToggleUI(true);
+                UpdateUI();
+        }
 
-	void CleanupShop()
-	{
-		foreach (var tile in shopTiles)
-		{
-			if (tile != null) Destroy(tile);
-		}
-		shopTiles.Clear();
-		ToggleUI(false);
-	}
+        void CleanupShop()
+        {
+                foreach (var tile in shopTiles)
+                {
+                        if (tile != null) Destroy(tile);
+                }
+                shopTiles.Clear();
+                ToggleUI(false);
+        }
 
-	void ToggleUI(bool state)
-	{
-		if (coinsText) coinsText.gameObject.SetActive(state);
-		if (centerBoardSizeText) centerBoardSizeText.gameObject.SetActive(state);
-		if (roundText) roundText.gameObject.SetActive(state);
-	}
-	// ----------------------------
+        void ToggleUI(bool state)
+        {
+                if (coinsText) coinsText.gameObject.SetActive(state);
+                if (centerBoardSizeText) centerBoardSizeText.gameObject.SetActive(state);
+                if (roundText) roundText.gameObject.SetActive(state);
+        }
+        // ----------------------------
 
-	void GenerateShopGrid()
-	{
-		for (int r = 0; r < shopRows; r++)
-		{
-			for (int c = 0; c < shopCols; c++)
-			{
-				Vector3 pos = new Vector3(shopOffset.x + c, shopOffset.y + r, 0);
-				GameObject tile = Instantiate(tilePrefab, pos, Quaternion.identity);
-				tile.transform.parent = transform; // Porzπdek w hierarchii
+        void GenerateShopGrid()
+        {
+                for (int r = 0; r < shopRows; r++)
+                {
+                        for (int c = 0; c < shopCols; c++)
+                        {
+                                Vector3 pos = new Vector3(shopOffset.x + c, shopOffset.y + r, 0);
+                                GameObject tile = Instantiate(tilePrefab, pos, Quaternion.identity);
+                                tile.transform.parent = transform; // PorzƒÖdek w hierarchii
 
-				tile.GetComponent<SpriteRenderer>().color = new Color(0.6f, 0.5f, 0.2f);
-				Tile t = tile.GetComponent<Tile>();
-				t.row = r;
+                                tile.GetComponent<SpriteRenderer>().color = new Color(0.6f, 0.5f, 0.2f);
+                                Tile t = tile.GetComponent<Tile>();
+                                t.row = r;
 
-				shopTiles.Add(tile);
-			}
-		}
-	}
+                                shopTiles.Add(tile);
+                        }
+                }
+        }
 
-	public void RefillShop()
-	{
-		foreach (var tileGO in shopTiles)
-		{
-			if (tileGO == null) continue;
+        public void RefillShop()
+        {
+                foreach (var tileGO in shopTiles)
+                {
+                        if (tileGO == null) continue;
 
-			Tile tile = tileGO.GetComponent<Tile>();
+                        Tile tile = tileGO.GetComponent<Tile>();
 
-			// Czyúcimy stare (szukamy w dzieciach lub przez Raycast)
-			ShopItem existingItem = tileGO.GetComponentInChildren<ShopItem>();
-			if (existingItem == null)
-			{
-				RaycastHit2D hit = Physics2D.Raycast(tileGO.transform.position, Vector2.zero);
-				if (hit.collider != null) existingItem = hit.collider.GetComponent<ShopItem>();
-			}
+                        // Czy≈õcimy stare (szukamy w dzieciach lub przez Raycast)
+                        ShopItem existingItem = tileGO.GetComponentInChildren<ShopItem>();
+                        if (existingItem == null)
+                        {
+                                RaycastHit2D hit = Physics2D.Raycast(tileGO.transform.position, Vector2.zero);
+                                if (hit.collider != null) existingItem = hit.collider.GetComponent<ShopItem>();
+                        }
 
-			if (existingItem != null) Destroy(existingItem.gameObject);
+                        if (existingItem != null) Destroy(existingItem.gameObject);
 
-			tile.isOccupied = false;
-			SpawnRandomShopItem(tileGO);
-		}
-	}
+                        tile.isOccupied = false;
+                        SpawnRandomShopItem(tileGO);
+                }
+        }
 
-	void SpawnRandomShopItem(GameObject tileGO)
-	{
-		PieceType type = GetRandomPieceType();
-		GameObject prefab = GetPrefabByType(type);
+        void SpawnRandomShopItem(GameObject tileGO)
+        {
+                PieceType type = GetRandomPieceType();
+                GameObject prefab = GetPrefabByType(type);
 
-		if (prefab == null) return;
+                if (prefab == null) return;
 
-		Vector3 pos = tileGO.transform.position;
-		pos.z = -1;
+                Vector3 pos = tileGO.transform.position;
+                pos.z = -1;
 
-		// 1. Tworzymy obiekt
-		GameObject itemGO = Instantiate(prefab, pos, Quaternion.identity);
+                // 1. Tworzymy obiekt
+                GameObject itemGO = Instantiate(prefab, pos, Quaternion.identity);
 
-		// 2. KLUCZOWA POPRAWKA: Najpierw usuwamy NetworkObject!
-		// Musimy uøyÊ DestroyImmediate, øeby zniknπ≥ w tej milisekundzie, zanim kod pÛjdzie dalej
-		if (itemGO.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
-		{
-			DestroyImmediate(netObj);
-		}
+                // 2. KLUCZOWA POPRAWKA: Najpierw usuwamy NetworkObject!
+                // Musimy u≈ºyƒá DestroyImmediate, ≈ºeby zniknƒÖ≈Ç w tej milisekundzie, zanim kod p√≥jdzie dalej
+                if (itemGO.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
+                {
+                        DestroyImmediate(netObj);
+                }
 
-		// 3. Dopiero teraz bezpiecznie ustawiamy rodzica
-		itemGO.transform.parent = tileGO.transform;
+                // 3. Dopiero teraz bezpiecznie ustawiamy rodzica
+                itemGO.transform.parent = tileGO.transform;
 
-		// 4. Usuwamy resztÍ niepotrzebnych skryptÛw (logikÍ gry)
-		Destroy(itemGO.GetComponent<Piece>());
-		Destroy(itemGO.GetComponent<PieceMovement>());
+                // 4. Usuwamy resztƒô niepotrzebnych skrypt√≥w (logikƒô gry)
+                Destroy(itemGO.GetComponent<Piece>());
+                Destroy(itemGO.GetComponent<PieceMovement>());
 
-		// 5. Dodajemy logikÍ sklepowπ
-		ShopItem shopItem = itemGO.AddComponent<ShopItem>();
-		Tile tile = tileGO.GetComponent<Tile>();
+                // 5. Dodajemy logikƒô sklepowƒÖ
+                ShopItem shopItem = itemGO.AddComponent<ShopItem>();
+                Tile tile = tileGO.GetComponent<Tile>();
 
-		Vector3 textOffset = (tile.row == 0) ? new Vector3(0, -1.2f, 0) : new Vector3(0, 1.2f, 0);
+                Vector3 textOffset = (tile.row == 0) ? new Vector3(0, -1.2f, 0) : new Vector3(0, 1.2f, 0);
 
-		shopItem.Setup(type, prices[type], this, tile, priceTextPrefab, textOffset);
+                shopItem.Setup(type, prices[type], this, tile, priceTextPrefab, textOffset);
 
-		tile.isOccupied = true;
-	}
+                tile.isOccupied = true;
+        }
 
-	public void TryBuyPiece(ShopItem item)
-	{
-		// 1. Czy staÊ nas?
-		if (GameProgress.Instance.coins >= item.price)
-		{
-			// 2. Czy jest miejsce w ekwipunku? (AddPieceToInventory zwraca teraz bool)
-			bool success = InventoryManager.Instance.AddPieceToInventory(item.type, GetPrefabByType(item.type));
+        public void TryBuyPiece(ShopItem item)
+        {
+                // 1. Czy staƒá nas?
+                if (GameProgress.Instance.coins >= item.price)
+                {
+                        // 2. Czy jest miejsce w ekwipunku? (AddPieceToInventory zwraca teraz bool)
+                        bool success = InventoryManager.Instance.AddPieceToInventory(item.type, GetPrefabByType(item.type));
 
-			if (success)
-			{
-				// Dopiero teraz zabieramy kasÍ i niszczymy przedmiot
-				GameProgress.Instance.SpendCoins(item.price);
-				Destroy(item.gameObject);
-				UpdateUI();
-			}
-			else
-			{
-				Debug.Log("Nie kupiono: Brak miejsca w ekwipunku!");
-				// Tutaj moøna dodaÊ jakiú efekt düwiÍkowy b≥Ídu lub tekst "FULL"
-			}
-		}
-		else
-		{
-			Debug.Log("Nie staÊ CiÍ!");
-		}
-	}
+                        if (success)
+                        {
+                                // Dopiero teraz zabieramy kasƒô i niszczymy przedmiot
+                                GameProgress.Instance.SpendCoins(item.price);
+                                Destroy(item.gameObject);
+                                UpdateUI();
+                        }
+                        else
+                        {
+                                Debug.Log("Nie kupiono: Brak miejsca w ekwipunku!");
+                                // Tutaj mo≈ºna dodaƒá jaki≈õ efekt d≈∫wiƒôkowy b≈Çƒôdu lub tekst "FULL"
+                        }
+                }
+                else
+                {
+                        Debug.Log("Nie staƒá Ciƒô!");
+                }
+        }
 
-	// --- START GRY (MULTIPLAYER + SINGLEPLAYER) ---
-	public void StartGame()
-	{
-		// 1. Zapisz obecny stan planszy do GameProgress
-		SaveBoardLayout();
+        // --- START GRY (MULTIPLAYER + SINGLEPLAYER) ---
+        public void StartGame()
+        {
+                // 1. Zapisz obecny stan planszy do GameProgress
+                SaveBoardLayout();
 
-		// 2. Sprawdü tryb gry
-		if (GameManager.Instance.isMultiplayer && BattleSession.Instance != null)
-		{
-			Debug.Log("Multiplayer: Zg≥aszam gotowoúÊ do serwera...");
-			// Wyúlij armiÍ do Hosta i czekaj na zmianÍ sceny
-			BattleSession.Instance.PlayerReady(GameProgress.Instance.myArmy);
-		}
-		else
-		{
-			// Singleplayer: £aduj od razu
-			Debug.Log("Singleplayer: Start bitwy!");
-			GameProgress.Instance.LoadScene("Battle");
-		}
-	}
+                // 2. Sprawd≈∫ tryb gry
+                if (GameManager.Instance.isMultiplayer && BattleSession.Instance != null)
+                {
+                        Debug.Log("Multiplayer: Zg≈Çaszam gotowo≈õƒá do serwera...");
+                        // Wy≈õlij armiƒô do Hosta i czekaj na zmianƒô sceny
+                        BattleSession.Instance.PlayerReady(GameProgress.Instance.myArmy);
+                }
+                else
+                {
+                        // Singleplayer: ≈Çaduj od razu
+                        Debug.Log("Singleplayer: Start bitwy!");
+                        GameProgress.Instance.LoadScene("Battle");
+                }
+        }
 
-	void SaveBoardLayout()
-	{
-		GameProgress.Instance.myArmy.Clear();
-		int rows = BoardManager.Instance.PlayerRows;
-		int cols = BoardManager.Instance.PlayerCols;
-		for (int r = 0; r < rows; r++)
-		{
-			for (int c = 0; c < cols; c++)
-			{
-				Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
-				if (tile != null && tile.isOccupied && tile.currentPiece != null)
-				{
-					SavedPieceData data = new SavedPieceData();
-					data.type = tile.currentPiece.pieceType;
-					data.x = c; data.y = r;
-					GameProgress.Instance.myArmy.Add(data);
-				}
-			}
-		}
-	}
+        void SaveBoardLayout()
+        {
+                GameProgress.Instance.myArmy.Clear();
+                int rows = BoardManager.Instance.PlayerRows;
+                int cols = BoardManager.Instance.PlayerCols;
+                for (int r = 0; r < rows; r++)
+                {
+                        for (int c = 0; c < cols; c++)
+                        {
+                                Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
+                                if (tile != null && tile.isOccupied && tile.currentPiece != null)
+                                {
+                                        SavedPieceData data = new SavedPieceData();
+                                        data.type = tile.currentPiece.pieceType;
+                                        data.x = c; data.y = r;
+                                        GameProgress.Instance.myArmy.Add(data);
+                                }
+                        }
+                }
+        }
 
-	void UpdateUI()
-	{
-		if (coinsText != null) coinsText.text = "Coins: " + GameProgress.Instance.coins;
-		if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
-		if (roundText != null) roundText.text = "Round: " + (GameProgress.Instance.gamesPlayed + 1);
-	}
+        void UpdateUI()
+        {
+                if (coinsText != null) coinsText.text = "Coins: " + GameProgress.Instance.coins;
+                if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
+                if (roundText != null) roundText.text = "Round: " + (GameProgress.Instance.gamesPlayed + 1);
+        }
 
-	PieceType GetRandomPieceType()
-	{
-		int rand = Random.Range(0, 100);
-		if (rand < 40) return PieceType.Pawn;
-		if (rand < 60) return PieceType.Knight;
-		if (rand < 80) return PieceType.Bishop;
-		if (rand < 95) return PieceType.Rook;
-		return PieceType.queen;
-	}
+        PieceType GetRandomPieceType()
+        {
+                int rand = Random.Range(0, 100);
+                if (rand < 40) return PieceType.Pawn;
+                if (rand < 60) return PieceType.Knight;
+                if (rand < 80) return PieceType.Bishop;
+                if (rand < 95) return PieceType.Rook;
+                return PieceType.queen;
+        }
 
-	GameObject GetPrefabByType(PieceType type)
-	{
-		switch (type)
-		{
-			case PieceType.Pawn: return piecePrefabs[0];
-			case PieceType.King: return piecePrefabs[1];
-			case PieceType.queen: return piecePrefabs[2];
-			case PieceType.Rook: return piecePrefabs[3];
-			case PieceType.Bishop: return piecePrefabs[4];
-			case PieceType.Knight: return piecePrefabs[5];
-		}
-		return piecePrefabs[0];
-	}
+        GameObject GetPrefabByType(PieceType type)
+        {
+                switch (type)
+                {
+                        case PieceType.Pawn: return piecePrefabs[0];
+                        case PieceType.King: return piecePrefabs[1];
+                        case PieceType.queen: return piecePrefabs[2];
+                        case PieceType.Rook: return piecePrefabs[3];
+                        case PieceType.Bishop: return piecePrefabs[4];
+                        case PieceType.Knight: return piecePrefabs[5];
+                }
+                return piecePrefabs[0];
+        }
+
+        void ApplyPiecePrefabsForLocalPlayer()
+        {
+                bool useWhite = GameProgress.Instance == null || GameProgress.Instance.IsLocalPlayerWhite();
+                if (useWhite && whitePiecePrefabs != null && whitePiecePrefabs.Length == 6)
+                {
+                        piecePrefabs = whitePiecePrefabs;
+                }
+                else if (!useWhite && blackPiecePrefabs != null && blackPiecePrefabs.Length == 6)
+                {
+                        piecePrefabs = blackPiecePrefabs;
+                }
+        }
 }

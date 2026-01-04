@@ -5,109 +5,131 @@ using System.Collections;
 
 public class GameManager : MonoBehaviour
 {
-	public static GameManager Instance { get; private set; }
+        public static GameManager Instance { get; private set; }
 
-	[Header("Tryb Gry")]
-	public bool isMultiplayer = false;
+        [Header("Tryb Gry")]
+        public bool isMultiplayer = false;
 
-	[Header("Stan Gry")]
-	public GamePhase currentPhase = GamePhase.Placement;
+        [Header("Stan Gry")]
+        public GamePhase currentPhase = GamePhase.Placement;
 
-	// ZMIANA: Używamy PieceOwner zamiast "Turn", żeby pasowało do kodu Piece.cs
-	public PieceOwner currentTurn = PieceOwner.Player;
+        // ZMIANA: Używamy PieceOwner zamiast "Turn", żeby pasowało do kodu Piece.cs
+        public PieceOwner currentTurn = PieceOwner.Player;
 
-	private void Awake()
-	{
-		// Singleton - zapewnia, że jest tylko jeden GameManager
-		if (Instance != null && Instance != this)
-		{
-			Destroy(gameObject);
-			return;
-		}
-		Instance = this;
-	}
+        [Header("Nagrody")]
+        public int winReward = 20;
+        public int loseReward = 10;
 
-	public bool CanPieceMove(Piece piece)
-	{
-		// 1. Faza Placement (Sklep):
-		// Pozwalamy ruszać tylko naszymi figurami (np. przestawiać je na planszy)
-		if (currentPhase == GamePhase.Placement)
-		{
-			return piece.owner == PieceOwner.Player;
-		}
+        private bool gameEnded = false;
 
-		// 2. Faza Battle (Walka):
-		// Sprawdzamy czyja jest tura i czy ruszamy właściwą figurą
-		if (currentPhase == GamePhase.Battle)
-		{
-			// Jeśli tura Gracza -> ruszamy tylko Player
-			if (currentTurn == PieceOwner.Player && piece.owner == PieceOwner.Player)
-				return true;
+        private void Awake()
+        {
+                // Singleton - zapewnia, że jest tylko jeden GameManager
+                if (Instance != null && Instance != this)
+                {
+                        Destroy(gameObject);
+                        return;
+                }
+                Instance = this;
+        }
 
-			// Jeśli tura Wroga -> ruszamy tylko Enemy (dla AI)
-			if (currentTurn == PieceOwner.Enemy && piece.owner == PieceOwner.Enemy)
-				return true;
-		}
+        public bool CanPieceMove(Piece piece)
+        {
+                // 1. Faza Placement (Sklep):
+                // Pozwalamy ruszać tylko naszymi figurami (np. przestawiać je na planszy)
+                if (currentPhase == GamePhase.Placement)
+                {
+                        return piece.owner == PieceOwner.Player;
+                }
 
-		return false;
-	}
+                // 2. Faza Battle (Walka):
+                // Sprawdzamy czyja jest tura i czy ruszamy właściwą figurą
+                if (currentPhase == GamePhase.Battle)
+                {
+                        // Jeśli tura Gracza -> ruszamy tylko Player
+                        if (currentTurn == PieceOwner.Player && piece.owner == PieceOwner.Player)
+                                return true;
 
-	// Metoda wywoływana przez przycisk "Start" (przejście ze Sklepu do Bitwy)
-	public void StartBattle()
-	{
-		currentPhase = GamePhase.Battle;
-		currentTurn = PieceOwner.Player; // Zawsze zaczyna gracz
-		Debug.Log("Faza bitwy rozpoczęta!");
-	}
+                        // Jeśli tura Wroga -> ruszamy tylko Enemy (dla AI)
+                        if (currentTurn == PieceOwner.Enemy && piece.owner == PieceOwner.Enemy)
+                                return true;
+                }
 
-	// --- System Tur ---
+                return false;
+        }
 
-	public void SwitchTurn()
-	{
-		if (currentTurn == PieceOwner.Player)
-		{
-			EndPlayerMove();
-		}
-		else
-		{
-			EndEnemyMove();
-		}
-	}
+        // Metoda wywoływana przez przycisk "Start" (przejście ze Sklepu do Bitwy)
+        public void StartBattle()
+        {
+                currentPhase = GamePhase.Battle;
+                currentTurn = PieceOwner.Player; // Zawsze zaczyna gracz
+                gameEnded = false;
+                Debug.Log("Faza bitwy rozpoczęta!");
+        }
 
-	public void EndPlayerMove()
-	{
-		Debug.Log("Koniec tury gracza. Tura Enemy...");
-		currentTurn = PieceOwner.Enemy;
+        // --- System Tur ---
 
-		// Uruchamiamy AI z opóźnieniem
-		StartCoroutine(EnemyMoveRoutine());
-	}
+        public void SwitchTurn()
+        {
+                if (currentTurn == PieceOwner.Player)
+                {
+                        EndPlayerMove();
+                }
+                else
+                {
+                        EndEnemyMove();
+                }
+        }
 
-	private IEnumerator EnemyMoveRoutine()
-	{
-		yield return new WaitForSeconds(1.0f); // "Myślenie" AI
+        public void EndPlayerMove()
+        {
+                Debug.Log("Koniec tury gracza. Tura Enemy...");
+                currentTurn = PieceOwner.Enemy;
 
-		if (EnemyAI.Instance != null)
-		{
-			EnemyAI.Instance.MakeMove();
-		}
-		else
-		{
-			// Zabezpieczenie: jeśli nie ma AI, oddaj turę
-			Debug.LogError("Brak skryptu EnemyAI na scenie!");
-			SwitchTurn();
-		}
-	}
+                // Uruchamiamy AI z opóźnieniem
+                StartCoroutine(EnemyMoveRoutine());
+        }
 
-	public void EndEnemyMove()
-	{
-		Debug.Log("Koniec tury Enemy. Tura Gracza.");
-		currentTurn = PieceOwner.Player;
-	}
+        private IEnumerator EnemyMoveRoutine()
+        {
+                yield return new WaitForSeconds(1.0f); // "Myślenie" AI
 
-	public void GameOver(bool playerWon)
-	{
-		Debug.Log(playerWon ? "WYGRANA!" : "PRZEGRANA!");
-		// Tu później dodasz logikę powrotu do sklepu i przyznawania monet
-	}
+                if (EnemyAI.Instance != null)
+                {
+                        EnemyAI.Instance.MakeMove();
+                }
+                else
+                {
+                        // Zabezpieczenie: jeśli nie ma AI, oddaj turę
+                        Debug.LogError("Brak skryptu EnemyAI na scenie!");
+                        SwitchTurn();
+                }
+        }
+
+        public void EndEnemyMove()
+        {
+                Debug.Log("Koniec tury Enemy. Tura Gracza.");
+                currentTurn = PieceOwner.Player;
+        }
+
+        public void GameOver(bool playerWon)
+        {
+                if (gameEnded) return;
+
+                gameEnded = true;
+                Debug.Log(playerWon ? "WYGRANA!" : "PRZEGRANA!");
+
+                if (GameProgress.Instance != null)
+                {
+                        GameProgress.Instance.CompleteRound(playerWon, winReward, loseReward);
+                        GameProgress.Instance.LoadScene("Shop");
+                }
+                else
+                {
+                        Debug.LogWarning("GameProgress jest null - nie mogę zapisać nagrody.");
+                }
+
+                currentPhase = GamePhase.Placement;
+                currentTurn = PieceOwner.Player;
+        }
 }

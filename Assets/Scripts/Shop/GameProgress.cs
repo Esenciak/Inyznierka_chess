@@ -3,60 +3,84 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 
 // To jest ta Twoja struktura danych (zamiast Stringa/Inta mamy obiekt)
-// [System.Serializable] jest KLUCZOWE - pozwala Unity widzieæ i zapisywaæ tê klasê
+// [System.Serializable] jest KLUCZOWE - pozwala Unity widzieÄ‡ i zapisywaÄ‡ tÄ™ klasÄ™
 [System.Serializable]
 public class SavedPieceData
 {
-	public PieceType type; // Jaka to figura?
-	public int x;          // Kolumna (Col)
-	public int y;          // Wiersz (Row)
+        public PieceType type; // Jaka to figura?
+        public int x;          // Kolumna (Col)
+        public int y;          // Wiersz (Row)
 }
 
 public class GameProgress : MonoBehaviour
 {
-	public static GameProgress Instance { get; private set; }
+        public static GameProgress Instance { get; private set; }
 
-	[Header("Statystyki")]
-	public int coins = 100;
-	public int gamesPlayed = 0;
+        [Header("Statystyki")]
+        public int coins = 100;
+        public int gamesPlayed = 0;
 
-	[Header("Ustawienia Planszy")]
-	public int playerBoardSize = 3;
+        [Header("Tryb gracza")]
+        public bool isHostPlayer = true;
 
-	// Dynamiczny rozmiar œrodka
-	public int centerBoardSize
-	{
-		get
-		{
-			int upgrades = gamesPlayed / 3;
-			return Mathf.Min(3 + (upgrades * 2), 9);
-		}
-	}
+        [Header("Ustawienia Planszy")]
+        public int playerBoardSize = 3;
 
-	// --- PAMIÊÆ ARMII ---
-	// Tu trzymamy zapisany uk³ad (to jest bezpieczniejsze ni¿ GameObjecty)
-	public List<SavedPieceData> myArmy = new List<SavedPieceData>();
+        // Dynamiczny rozmiar Å›rodka
+        public int centerBoardSize
+        {
+                get
+                {
+                        int upgrades = gamesPlayed / 3;
+                        return Mathf.Min(3 + (upgrades * 2), 9);
+                }
+        }
 
-	private void Awake()
-	{
-		if (Instance != null && Instance != this)
-		{
-			Destroy(gameObject);
-			return;
-		}
-		Instance = this;
-		DontDestroyOnLoad(gameObject); // To sprawia, ¿e GameProgress prze¿ywa zmianê sceny
-	}
+        // --- PAMIÄ˜Ä† ARMII ---
+        // Tu trzymamy zapisany ukÅ‚ad (to jest bezpieczniejsze niÅ¼ GameObjecty)
+        public List<SavedPieceData> myArmy = new List<SavedPieceData>();
 
-	public bool SpendCoins(int amount)
-	{
-		if (coins < amount) return false;
-		coins -= amount;
-		return true;
-	}
+        private void Awake()
+        {
+                if (Instance != null && Instance != this)
+                {
+                        Destroy(gameObject);
+                        return;
+                }
+                Instance = this;
+                DontDestroyOnLoad(gameObject); // To sprawia, Å¼e GameProgress przetrwa zmianÄ™ sceny
+        }
 
-	public void LoadScene(string sceneName)
-	{
-		SceneManager.LoadScene(sceneName);
-	}
+        public bool SpendCoins(int amount)
+        {
+                if (coins < amount) return false;
+                coins -= amount;
+                return true;
+        }
+
+        public void AddCoins(int amount)
+        {
+                coins += amount;
+        }
+
+        public bool IsLocalPlayerWhite()
+        {
+                if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                {
+                        return isHostPlayer;
+                }
+
+                return true;
+        }
+
+        public void CompleteRound(bool playerWon, int winReward, int loseReward)
+        {
+                gamesPlayed++;
+                AddCoins(playerWon ? winReward : loseReward);
+        }
+
+        public void LoadScene(string sceneName)
+        {
+                SceneManager.LoadScene(sceneName);
+        }
 }

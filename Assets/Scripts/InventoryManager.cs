@@ -5,172 +5,190 @@ using System.Collections.Generic;
 
 public class InventoryManager : MonoBehaviour
 {
-	public static InventoryManager Instance { get; private set; }
+        public static InventoryManager Instance { get; private set; }
 
-	[Header("Ustawienia Ekwipunku")]
-	public int rows = 5;
-	public int cols = 2;
-	public GameObject tilePrefab;
-	public GameObject kingPrefab;
-	public Vector2 inventoryOffset = new Vector2(0, 5);
+        [Header("Ustawienia Ekwipunku")]
+        public int rows = 5;
+        public int cols = 2;
+        public GameObject tilePrefab;
+        public GameObject kingPrefab;
+        public GameObject whiteKingPrefab;
+        public GameObject blackKingPrefab;
+        public Vector2 inventoryOffset = new Vector2(0, 5);
 
-	public Color inventoryColor1 = new Color(0.3f, 0.3f, 0.3f);
-	public Color inventoryColor2 = new Color(0.4f, 0.4f, 0.4f);
+        public Color inventoryColor1 = new Color(0.3f, 0.3f, 0.3f);
+        public Color inventoryColor2 = new Color(0.4f, 0.4f, 0.4f);
 
-	private List<GameObject> inventoryTiles = new List<GameObject>();
+        private List<GameObject> inventoryTiles = new List<GameObject>();
 
-	private void Awake() => Instance = this;
+        private void Awake() => Instance = this;
 
-	private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
-	private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
+        private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
+        private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
 
-	void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-	{
-		if (scene.name == "Shop")
-		{
-			// Zmieniamy na Coroutine, ¿eby poczekaæ na BoardManagera
-			StartCoroutine(InitializeInventoryRoutine());
-		}
-		else if (scene.name == "MainMenu")
-		{
-			ClearInventory();
-		}
-	}
+        void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+                if (scene.name == "Shop")
+                {
+                        // Zmieniamy na Coroutine, Å¼eby poczekaÄ‡ na BoardManagera
+                        StartCoroutine(InitializeInventoryRoutine());
+                }
+                else if (scene.name == "MainMenu")
+                {
+                        ClearInventory();
+                }
+        }
 
-	private void Start()
-	{
-		// Fallback dla testowania samej sceny Shop
-		if (SceneManager.GetActiveScene().name == "Shop")
-		{
-			StartCoroutine(InitializeInventoryRoutine());
-		}
-	}
+        private void Start()
+        {
+                // Fallback dla testowania samej sceny Shop
+                if (SceneManager.GetActiveScene().name == "Shop")
+                {
+                        StartCoroutine(InitializeInventoryRoutine());
+                }
+        }
 
-	// --- POPRAWKA: Czekamy na BoardManagera ---
-	IEnumerator InitializeInventoryRoutine()
-	{
-		// Czekamy, a¿ BoardManager powstanie (jeœli jest null)
-		while (BoardManager.Instance == null)
-		{
-			yield return null;
-		}
+        // --- POPRAWKA: Czekamy na BoardManagera ---
+        IEnumerator InitializeInventoryRoutine()
+        {
+                // Czekamy, aÅ¼ BoardManager powstanie (jeÅ›li jest null)
+                while (BoardManager.Instance == null)
+                {
+                        yield return null;
+                }
 
-		// Czekamy jeszcze jedn¹ klatkê dla pewnoœci, ¿e BoardManager obliczy³ offsety
-		yield return new WaitForEndOfFrame();
+                // Ustawienie odpowiedniego krÃ³la przed generowaniem pÅ‚ytek
+                SelectKingPrefab();
 
-		ClearInventory();
-		GenerateInventory();
+                // Czekamy jeszcze jednÄ… klatkÄ™ dla pewnoÅ›ci, Å¼e BoardManager obliczy offsety
+                yield return new WaitForEndOfFrame();
 
-		// Króla te¿ spawnujemy z ma³ym opóŸnieniem
-		SpawnKingOnBoard();
-	}
-	// ------------------------------------------
+                ClearInventory();
+                GenerateInventory();
 
-	void ClearInventory()
-	{
-		foreach (var go in inventoryTiles)
-		{
-			if (go != null) Destroy(go);
-		}
-		inventoryTiles.Clear();
-	}
+                // KrÃ³la teÅ¼ spawnujemy z maÅ‚ym opÃ³Åºnieniem
+                SpawnKingOnBoard();
+        }
+        // ------------------------------------------
 
-	void GenerateInventory()
-	{
-		if (BoardManager.Instance == null)
-		{
-			Debug.LogError("BoardManager nadal jest null! Nie mogê stworzyæ Inventory.");
-			return;
-		}
+        void ClearInventory()
+        {
+                foreach (var go in inventoryTiles)
+                {
+                        if (go != null) Destroy(go);
+                }
+                inventoryTiles.Clear();
+        }
 
-		float startX = BoardManager.Instance.playerOffset.x + BoardManager.Instance.PlayerCols + inventoryOffset.x;
-		float startY = BoardManager.Instance.playerOffset.y + inventoryOffset.y;
+        void GenerateInventory()
+        {
+                if (BoardManager.Instance == null)
+                {
+                        Debug.LogError("BoardManager nadal jest null! Nie mogÄ™ stworzyÄ‡ Inventory.");
+                        return;
+                }
 
-		for (int r = 0; r < rows; r++)
-		{
-			for (int c = 0; c < cols; c++)
-			{
-				Vector3 pos = new Vector3(startX + c, startY + r, 0);
-				GameObject go = Instantiate(tilePrefab, pos, Quaternion.identity);
-				go.name = $"Inv_Tile_{r}_{c}";
-				go.transform.parent = transform;
+                float startX = BoardManager.Instance.playerOffset.x + BoardManager.Instance.PlayerCols + inventoryOffset.x;
+                float startY = BoardManager.Instance.playerOffset.y + inventoryOffset.y;
 
-				Tile tile = go.GetComponent<Tile>();
-				tile.isInventory = true;
-				tile.boardType = BoardType.Player;
+                for (int r = 0; r < rows; r++)
+                {
+                        for (int c = 0; c < cols; c++)
+                        {
+                                Vector3 pos = new Vector3(startX + c, startY + r, 0);
+                                GameObject go = Instantiate(tilePrefab, pos, Quaternion.identity);
+                                go.name = $"Inv_Tile_{r}_{c}";
+                                go.transform.parent = transform;
 
-				SpriteRenderer sr = go.GetComponent<SpriteRenderer>();
-				if (sr != null) sr.color = (r + c) % 2 == 0 ? inventoryColor1 : inventoryColor2;
+                                Tile tile = go.GetComponent<Tile>();
+                                tile.isInventory = true;
+                                tile.boardType = BoardType.Player;
 
-				inventoryTiles.Add(go);
-			}
-		}
-		Debug.Log($"Inventory wygenerowane: {inventoryTiles.Count} slotów.");
-	}
+                                SpriteRenderer sr = go.GetComponent<SpriteRenderer>();
+                                if (sr != null) sr.color = (r + c) % 2 == 0 ? inventoryColor1 : inventoryColor2;
 
-	void SpawnKingOnBoard()
-	{
-		if (BoardManager.Instance == null) return;
+                                inventoryTiles.Add(go);
+                        }
+                }
+                Debug.Log($"Inventory wygenerowane: {inventoryTiles.Count} slotÃ³w.");
+        }
 
-		Tile centerTile = BoardManager.Instance.GetPlayerCenterTile();
-		if (centerTile != null && kingPrefab != null && !centerTile.isOccupied)
-		{
-			SpawnPiece(kingPrefab, centerTile, PieceType.King);
-		}
-	}
+        void SpawnKingOnBoard()
+        {
+                if (BoardManager.Instance == null) return;
 
-	public bool AddPieceToInventory(PieceType type, GameObject prefab)
-	{
-		// Zabezpieczenie przed pust¹ list¹
-		if (inventoryTiles == null || inventoryTiles.Count == 0)
-		{
-			Debug.LogError("B³¹d: Próba dodania do Inventory, ale lista jest pusta! Czy scena Shop za³adowa³a siê poprawnie?");
-			// Próba ratunkowa: spróbuj wygenerowaæ teraz
-			if (BoardManager.Instance != null) GenerateInventory();
-			if (inventoryTiles.Count == 0) return false;
-		}
+                Tile centerTile = BoardManager.Instance.GetPlayerCenterTile();
+                if (centerTile != null && kingPrefab != null && !centerTile.isOccupied)
+                {
+                        SpawnPiece(kingPrefab, centerTile, PieceType.King);
+                }
+        }
 
-		foreach (var tileGO in inventoryTiles)
-		{
-			if (tileGO == null) continue;
-			Tile tile = tileGO.GetComponent<Tile>();
+        public bool AddPieceToInventory(PieceType type, GameObject prefab)
+        {
+                // Zabezpieczenie przed pustÄ… listÄ…
+                if (inventoryTiles == null || inventoryTiles.Count == 0)
+                {
+                        Debug.LogError("BÅ‚Ä…d: PrÃ³ba dodania do Inventory, ale lista jest pusta! Czy scena Shop zaÅ‚adowaÅ‚a siÄ™ poprawnie?");
+                        // PrÃ³ba ratunkowa: sprÃ³buj wygenerowaÄ‡ teraz
+                        if (BoardManager.Instance != null) GenerateInventory();
+                        if (inventoryTiles.Count == 0) return false;
+                }
 
-			if (!tile.isOccupied)
-			{
-				SpawnPiece(prefab, tile, type);
-				return true;
-			}
-		}
+                foreach (var tileGO in inventoryTiles)
+                {
+                        if (tileGO == null) continue;
+                        Tile tile = tileGO.GetComponent<Tile>();
 
-		Debug.Log("Ekwipunek pe³ny!");
-		return false;
-	}
+                        if (!tile.isOccupied)
+                        {
+                                SpawnPiece(prefab, tile, type);
+                                return true;
+                        }
+                }
 
-	void SpawnPiece(GameObject prefab, Tile tile, PieceType type)
-	{
-		GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
+                Debug.Log("Ekwipunek peÅ‚ny!");
+                return false;
+        }
 
-		// Fix dla NetworkObject (DestroyImmediate jest wymagane, ¿eby unikn¹æ b³êdów parentowania)
-		if (pieceGO.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
-		{
-			DestroyImmediate(netObj);
-		}
+        void SpawnPiece(GameObject prefab, Tile tile, PieceType type)
+        {
+                GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
 
-		pieceGO.transform.parent = tile.transform;
+                // Fix dla NetworkObject (DestroyImmediate jest wymagane, Å¼eby uniknÄ…Ä‡ bÅ‚Ä™dÃ³w parentowania)
+                if (pieceGO.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
+                {
+                        DestroyImmediate(netObj);
+                }
 
-		if (pieceGO.GetComponent<PieceMovement>() == null)
-			pieceGO.AddComponent<PieceMovement>();
+                pieceGO.transform.parent = tile.transform;
 
-		Piece piece = pieceGO.GetComponent<Piece>();
-		piece.owner = PieceOwner.Player;
-		piece.pieceType = type;
-		piece.currentTile = tile;
+                if (pieceGO.GetComponent<PieceMovement>() == null)
+                        pieceGO.AddComponent<PieceMovement>();
 
-		tile.isOccupied = true;
-		tile.currentPiece = piece;
+                Piece piece = pieceGO.GetComponent<Piece>();
+                piece.owner = PieceOwner.Player;
+                piece.pieceType = type;
+                piece.currentTile = tile;
 
-		Vector3 pos = pieceGO.transform.position;
-		pos.z = -1;
-		pieceGO.transform.position = pos;
-	}
+                tile.isOccupied = true;
+                tile.currentPiece = piece;
+
+                Vector3 pos = pieceGO.transform.position;
+                pos.z = -1;
+                pieceGO.transform.position = pos;
+        }
+
+        void SelectKingPrefab()
+        {
+                bool useWhite = GameProgress.Instance == null || GameProgress.Instance.IsLocalPlayerWhite();
+                if (useWhite && whiteKingPrefab != null)
+                {
+                        kingPrefab = whiteKingPrefab;
+                }
+                else if (!useWhite && blackKingPrefab != null)
+                {
+                        kingPrefab = blackKingPrefab;
+                }
+        }
 }

@@ -1,59 +1,71 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI; // Jeúli uøywasz starego UI, lub TMPro jeúli nowego
+using UnityEngine.UI; // Je≈õli u≈ºywasz starego UI, lub TMPro je≈õli nowego
 using TMPro;
 public class ConnectionMenu : MonoBehaviour
 {
-	[Header("UI References")]
-	public Button hostBtn;
-	public Button clientBtn;
-	public Button singleplayerBtn;
+        [Header("UI References")]
+        public Button hostBtn;
+        public Button clientBtn;
+        public Button singleplayerBtn;
 
-	void Start()
-	{
-		// Przypisanie funkcji do przyciskÛw
-		hostBtn.onClick.AddListener(StartHost);
-		clientBtn.onClick.AddListener(StartClient);
+        void Start()
+        {
+                // Przypisanie funkcji do przycisk√≥w
+                hostBtn.onClick.AddListener(StartHost);
+                clientBtn.onClick.AddListener(StartClient);
 
-		if (singleplayerBtn != null)
-			singleplayerBtn.onClick.AddListener(StartSingleplayer);
-	}
+                if (singleplayerBtn != null)
+                        singleplayerBtn.onClick.AddListener(StartSingleplayer);
+        }
 
-	void StartHost()
-	{
-		Debug.Log("StartujÍ jako HOST...");
+        void StartHost()
+        {
+                Debug.Log("Startuj jako HOST...");
 
-		// 1. To musi byÊ aktywne, øeby gra wiedzia≥a, øe to multiplayer
-		if (GameManager.Instance != null)
-		{
-			GameManager.Instance.isMultiplayer = true;
-		}
-		else
-		{
-			Debug.LogError("GameManager jest null! Upewnij siÍ, øe obiekt Manager jest w≥πczony w scenie.");
-			return;
-		}
+                // 1. To musi byƒá aktywne, ≈ºeby gra wiedzia≈Ça, ≈ºe to multiplayer
+                if (GameManager.Instance != null)
+                {
+                        GameManager.Instance.isMultiplayer = true;
+                        if (GameProgress.Instance != null)
+                        {
+                                GameProgress.Instance.isHostPlayer = true;
+                        }
+                }
+                else
+                {
+                        Debug.LogError("GameManager jest null! Upewnij siƒô, ≈ºe obiekt Manager jest w≈ÇƒÖczony w scenie.");
+                        return;
+                }
 
-		// 2. Start Hosta
-		NetworkManager.Singleton.StartHost();
+                // 2. Start Hosta
+                NetworkManager.Singleton.StartHost();
 
-		// 3. £adowanie sceny
-		NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
-	}
-	void StartClient()
-	{
-		Debug.Log("Do≥πczam jako KLIENT...");
-		GameManager.Instance.isMultiplayer = true;
+                // 3. ≈Åadowanie sceny
+                NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
+        }
+        void StartClient()
+        {
+                Debug.Log("Do≈ÇƒÖczam jako KLIENT...");
+                GameManager.Instance.isMultiplayer = true;
+                if (GameProgress.Instance != null)
+                {
+                        GameProgress.Instance.isHostPlayer = false;
+                }
 
-		// Klient tylko siÍ ≥πczy. To Host przeniesie go do sklepu automatycznie.
-		NetworkManager.Singleton.StartClient();
-	}
+                // Klient tylko siƒô ≈ÇƒÖczy. To Host przeniesie go do sklepu automatycznie.
+                NetworkManager.Singleton.StartClient();
+        }
 
-	void StartSingleplayer()
-	{
-		Debug.Log("Tryb Singleplayer");
-		GameManager.Instance.isMultiplayer = false;
-		SceneManager.LoadScene("Shop");
-	}
+        void StartSingleplayer()
+        {
+                Debug.Log("Tryb Singleplayer");
+                GameManager.Instance.isMultiplayer = false;
+                if (GameProgress.Instance != null)
+                {
+                        GameProgress.Instance.isHostPlayer = true;
+                }
+                SceneManager.LoadScene("Shop");
+        }
 }
