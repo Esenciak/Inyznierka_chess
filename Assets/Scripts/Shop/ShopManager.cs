@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class ShopManager : MonoBehaviour
 {
@@ -11,9 +12,7 @@ public class ShopManager : MonoBehaviour
 
 	[Header("Prefabrykaty")]
 	public GameObject tilePrefab;
-
-	// WA¯NE: Dodaj tu pusty obiekt z komponentem TextMeshPro (nie UI!)
-	public GameObject priceTextPrefab;
+	public GameObject priceTextPrefab; // Pusty obiekt z TextMeshPro (nie UI!)
 
 	// 0:Pawn, 1:King, 2:Queen, 3:Rook, 4:Bishop, 5:Knight
 	public GameObject[] piecePrefabs;
@@ -35,12 +34,70 @@ public class ShopManager : MonoBehaviour
 		{ PieceType.Knight, 30 }
 	};
 
+	// --- ZARZ¥DZANIE SCENAMI ---
+	private void OnEnable()
+	{
+		SceneManager.sceneLoaded += OnSceneLoaded;
+	}
+
+	private void OnDisable()
+	{
+		SceneManager.sceneLoaded -= OnSceneLoaded;
+	}
+
+	void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+	{
+		// Jeœli weszliœmy do Sklepu -> Generuj
+		if (scene.name == "Shop")
+		{
+			InitializeShop();
+		}
+		else
+		{
+			// W Menu i Bitwie czyœcimy sklep
+			CleanupShop();
+		}
+	}
+
 	private void Start()
 	{
+		// Fallback: jeœli startujemy prosto ze sceny Shop
+		if (SceneManager.GetActiveScene().name == "Shop")
+		{
+			InitializeShop();
+		}
+		else
+		{
+			ToggleUI(false);
+		}
+	}
+
+	void InitializeShop()
+	{
+		CleanupShop();
 		GenerateShopGrid();
 		RefillShop();
+		ToggleUI(true);
 		UpdateUI();
 	}
+
+	void CleanupShop()
+	{
+		foreach (var tile in shopTiles)
+		{
+			if (tile != null) Destroy(tile);
+		}
+		shopTiles.Clear();
+		ToggleUI(false);
+	}
+
+	void ToggleUI(bool state)
+	{
+		if (coinsText) coinsText.gameObject.SetActive(state);
+		if (centerBoardSizeText) centerBoardSizeText.gameObject.SetActive(state);
+		if (roundText) roundText.gameObject.SetActive(state);
+	}
+	// ----------------------------
 
 	void GenerateShopGrid()
 	{
@@ -50,12 +107,9 @@ public class ShopManager : MonoBehaviour
 			{
 				Vector3 pos = new Vector3(shopOffset.x + c, shopOffset.y + r, 0);
 				GameObject tile = Instantiate(tilePrefab, pos, Quaternion.identity);
-				tile.transform.parent = null;
+				tile.transform.parent = transform; // Porz¹dek w hierarchii
 
-				// Ustawiamy kolor "pó³ki" (br¹zowy/drewniany)
 				tile.GetComponent<SpriteRenderer>().color = new Color(0.6f, 0.5f, 0.2f);
-
-				// Zapisujemy informacjê o wierszu w kafelku (przydatne do logiki cen)
 				Tile t = tile.GetComponent<Tile>();
 				t.row = r;
 
@@ -68,24 +122,21 @@ public class ShopManager : MonoBehaviour
 	{
 		foreach (var tileGO in shopTiles)
 		{
+			if (tileGO == null) continue;
+
 			Tile tile = tileGO.GetComponent<Tile>();
-			if (tile.isOccupied && tile.currentPiece != null) // Tutaj currentPiece nie bêdzie u¿ywane przez ShopItem, ale czyœcimy
+
+			// Czyœcimy stare (szukamy w dzieciach lub przez Raycast)
+			ShopItem existingItem = tileGO.GetComponentInChildren<ShopItem>();
+			if (existingItem == null)
 			{
-				// Czyœcimy stare obiekty (ShopItem nie jest Piece, wiêc szukamy dzieci lub komponentów)
-				// W tym systemie ShopItem jest na pozycji kafelka. U¿yjmy prostej metody:
-				// Szukamy obiektów w promieniu kafelka, które maj¹ ShopItem
-				ShopItem existingItem = tileGO.GetComponentInChildren<ShopItem>();
-				if (existingItem == null)
-				{
-					// Alternatywnie: Raycast w miejscu kafelka
-					RaycastHit2D hit = Physics2D.Raycast(tileGO.transform.position, Vector2.zero);
-					if (hit.collider != null) existingItem = hit.collider.GetComponent<ShopItem>();
-				}
-
-				if (existingItem != null) Destroy(existingItem.gameObject);
-
-				tile.isOccupied = false;
+				RaycastHit2D hit = Physics2D.Raycast(tileGO.transform.position, Vector2.zero);
+				if (hit.collider != null) existingItem = hit.collider.GetComponent<ShopItem>();
 			}
+
+			if (existingItem != null) Destroy(existingItem.gameObject);
+
+			tile.isOccupied = false;
 			SpawnRandomShopItem(tileGO);
 		}
 	}
@@ -100,21 +151,19 @@ public class ShopManager : MonoBehaviour
 		Vector3 pos = tileGO.transform.position;
 		pos.z = -1;
 		GameObject itemGO = Instantiate(prefab, pos, Quaternion.identity);
+		itemGO.transform.parent = tileGO.transform; // Rodzicujemy do kafelka
 
-		// 1. USUWANIE LOGIKI GRY I RUCHU (NAPRAWA BUGU Z PRZECI¥GANIEM)
+		// Blokada ruchu w sklepie
 		Destroy(itemGO.GetComponent<Piece>());
-		Destroy(itemGO.GetComponent<PieceMovement>()); // <--- TO ZABLOKUJE PRZECI¥GANIE
+		Destroy(itemGO.GetComponent<PieceMovement>());
 
-		// 2. DODANIE LOGIKI SKLEPU
 		ShopItem shopItem = itemGO.AddComponent<ShopItem>();
-
 		Tile tile = tileGO.GetComponent<Tile>();
 
-		// Obliczamy pozycjê ceny: Jeœli rz¹d 0 (dó³) -> cena pod (-1.2), Jeœli rz¹d 1 (góra) -> cena nad (+1.2)
+		// Cena nad/pod figur¹
 		Vector3 textOffset = (tile.row == 0) ? new Vector3(0, -1.2f, 0) : new Vector3(0, 1.2f, 0);
 
 		shopItem.Setup(type, prices[type], this, tile, priceTextPrefab, textOffset);
-
 		tile.isOccupied = true;
 	}
 
@@ -123,18 +172,30 @@ public class ShopManager : MonoBehaviour
 		if (GameProgress.Instance.SpendCoins(item.price))
 		{
 			InventoryManager.Instance.AddPieceToInventory(item.type, GetPrefabByType(item.type));
-			Destroy(item.gameObject); // To przywróci kolor kafelka (OnDestroy w ShopItem)
+			Destroy(item.gameObject);
 			UpdateUI();
 		}
 	}
 
-	// --- Reszta metod (StartGame, SaveBoardLayout, UpdateUI...) bez zmian ---
-	// (Wklej tu metody z poprzedniej wersji ShopManager.cs)
-
+	// --- START GRY (MULTIPLAYER + SINGLEPLAYER) ---
 	public void StartGame()
 	{
+		// 1. Zapisz obecny stan planszy do GameProgress
 		SaveBoardLayout();
-		GameProgress.Instance.LoadScene("Battle");
+
+		// 2. SprawdŸ tryb gry
+		if (GameManager.Instance.isMultiplayer && BattleSession.Instance != null)
+		{
+			Debug.Log("Multiplayer: Zg³aszam gotowoœæ do serwera...");
+			// Wyœlij armiê do Hosta i czekaj na zmianê sceny
+			BattleSession.Instance.PlayerReady(GameProgress.Instance.myArmy);
+		}
+		else
+		{
+			// Singleplayer: £aduj od razu
+			Debug.Log("Singleplayer: Start bitwy!");
+			GameProgress.Instance.LoadScene("Battle");
+		}
 	}
 
 	void SaveBoardLayout()
@@ -161,7 +222,7 @@ public class ShopManager : MonoBehaviour
 	void UpdateUI()
 	{
 		if (coinsText != null) coinsText.text = "Coins: " + GameProgress.Instance.coins;
-		if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board Size: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
+		if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
 		if (roundText != null) roundText.text = "Round: " + (GameProgress.Instance.gamesPlayed + 1);
 	}
 

@@ -273,6 +273,22 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7575345968173978695, guid: fce44e61a78836446bfd91934bcd336e, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 3236634451
+      objectReference: {fileID: 0}
+    - target: {fileID: 7575345968173978695, guid: fce44e61a78836446bfd91934bcd336e, type: 3}
+      propertyPath: ActiveSceneSynchronization
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7575345968173978695, guid: fce44e61a78836446bfd91934bcd336e, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7575345968173978695, guid: fce44e61a78836446bfd91934bcd336e, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 3085445012
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

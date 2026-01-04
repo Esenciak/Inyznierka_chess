@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Collections.Generic;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -8,28 +10,65 @@ public class InventoryManager : MonoBehaviour
 	public int rows = 5;
 	public int cols = 2;
 	public GameObject tilePrefab;
-	public GameObject kingPrefab; // PRZYPISZ TU KRÓLA!
+	public GameObject kingPrefab; // Król (przypisz w Inspectorze!)
 	public Vector2 inventoryOffset = new Vector2(0, 5);
 
 	public Color inventoryColor1 = new Color(0.3f, 0.3f, 0.3f);
 	public Color inventoryColor2 = new Color(0.4f, 0.4f, 0.4f);
 
-	private GameObject[,] inventoryTiles;
+	// Lista kafelków (zamiast tablicy, ³atwiej czyœciæ)
+	private List<GameObject> inventoryTiles = new List<GameObject>();
 
 	private void Awake() => Instance = this;
 
+	private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
+	private void OnDisable() => SceneManager.sceneLoaded -= OnSceneLoaded;
+
+	void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+	{
+		// Generujemy inventory TYLKO w sklepie
+		if (scene.name == "Shop")
+		{
+			InitializeInventory();
+		}
+		else
+		{
+			// W Menu i Bitwie czyœcimy (lub zostawiamy w bitwie, zale¿nie od preferencji)
+			// Tutaj: czyœcimy w Menu
+			if (scene.name == "MainMenu") ClearInventory();
+		}
+	}
+
 	private void Start()
 	{
+		if (SceneManager.GetActiveScene().name == "Shop")
+		{
+			InitializeInventory();
+		}
+	}
+
+	void InitializeInventory()
+	{
+		ClearInventory();
 		GenerateInventory();
+		// OpóŸnienie, ¿eby BoardManager zd¹¿y³ ustawiæ planszê zanim postawimy Króla
 		Invoke("SpawnKingOnBoard", 0.1f);
+	}
+
+	void ClearInventory()
+	{
+		foreach (var go in inventoryTiles)
+		{
+			if (go != null) Destroy(go);
+		}
+		inventoryTiles.Clear();
 	}
 
 	void GenerateInventory()
 	{
+		// Pozycja inventory wzglêdem planszy gracza
 		float startX = BoardManager.Instance.playerOffset.x + BoardManager.Instance.PlayerCols + inventoryOffset.x;
 		float startY = BoardManager.Instance.playerOffset.y + inventoryOffset.y;
-
-		inventoryTiles = new GameObject[rows, cols];
 
 		for (int r = 0; r < rows; r++)
 		{
@@ -38,7 +77,7 @@ public class InventoryManager : MonoBehaviour
 				Vector3 pos = new Vector3(startX + c, startY + r, 0);
 				GameObject go = Instantiate(tilePrefab, pos, Quaternion.identity);
 				go.name = $"Inv_Tile_{r}_{c}";
-				go.transform.parent = null;
+				go.transform.parent = transform; // Przypisz do Managera
 
 				Tile tile = go.GetComponent<Tile>();
 				tile.isInventory = true;
@@ -47,17 +86,21 @@ public class InventoryManager : MonoBehaviour
 				SpriteRenderer sr = go.GetComponent<SpriteRenderer>();
 				if (sr != null) sr.color = (r + c) % 2 == 0 ? inventoryColor1 : inventoryColor2;
 
-				inventoryTiles[r, c] = go;
+				inventoryTiles.Add(go);
 			}
 		}
 	}
 
 	void SpawnKingOnBoard()
 	{
+		// Stawiamy Króla na œrodku planszy gracza
 		Tile centerTile = BoardManager.Instance.GetPlayerCenterTile();
 		if (centerTile != null && kingPrefab != null)
 		{
-			SpawnPiece(kingPrefab, centerTile, PieceType.King);
+			if (!centerTile.isOccupied)
+			{
+				SpawnPiece(kingPrefab, centerTile, PieceType.King);
+			}
 		}
 	}
 
@@ -65,7 +108,9 @@ public class InventoryManager : MonoBehaviour
 	{
 		foreach (var tileGO in inventoryTiles)
 		{
+			if (tileGO == null) continue;
 			Tile tile = tileGO.GetComponent<Tile>();
+
 			if (!tile.isOccupied)
 			{
 				SpawnPiece(prefab, tile, type);
@@ -78,8 +123,9 @@ public class InventoryManager : MonoBehaviour
 	void SpawnPiece(GameObject prefab, Tile tile, PieceType type)
 	{
 		GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
+		pieceGO.transform.parent = tile.transform; // Rodzicujemy do kafelka
 
-		// Dodajemy skrypt ruchu automatycznie
+		// Dodajemy logikê ruchu
 		if (pieceGO.GetComponent<PieceMovement>() == null)
 			pieceGO.AddComponent<PieceMovement>();
 
@@ -91,6 +137,7 @@ public class InventoryManager : MonoBehaviour
 		tile.isOccupied = true;
 		tile.currentPiece = piece;
 
+		// Ustawiamy Z, ¿eby figura by³a nad kafelkiem
 		Vector3 pos = pieceGO.transform.position;
 		pos.z = -1;
 		pieceGO.transform.position = pos;

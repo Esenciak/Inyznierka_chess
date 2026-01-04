@@ -23,17 +23,24 @@ public class ConnectionMenu : MonoBehaviour
 	void StartHost()
 	{
 		Debug.Log("Startujê jako HOST...");
-		// 1. Ustawiamy flagê w GameManagerze (zaraz j¹ dodamy)
-		GameManager.Instance.isMultiplayer = true; 
 
-		// 2. Odpalamy Hosta w NetworkManagerze
+		// 1. To musi byæ aktywne, ¿eby gra wiedzia³a, ¿e to multiplayer
+		if (GameManager.Instance != null)
+		{
+			GameManager.Instance.isMultiplayer = true;
+		}
+		else
+		{
+			Debug.LogError("GameManager jest null! Upewnij siê, ¿e obiekt Manager jest w³¹czony w scenie.");
+			return;
+		}
+
+		// 2. Start Hosta
 		NetworkManager.Singleton.StartHost();
 
-		// 3. Host ³aduje scenê Sklepu. 
-		// W NGO, Host decyduje o zmianie sceny dla wszystkich!
+		// 3. £adowanie sceny
 		NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
 	}
-
 	void StartClient()
 	{
 		Debug.Log("Do³¹czam jako KLIENT...");
