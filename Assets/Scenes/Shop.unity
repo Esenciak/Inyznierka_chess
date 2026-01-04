@@ -172,6 +172,7 @@ MonoBehaviour:
   shopCols: 3
   shopOffset: {x: -6, y: 0}
   tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
+  priceTextPrefab: {fileID: 2660489683285034080, guid: f5e25e9ca87e79c4198c80a0d1595fda, type: 3}
   piecePrefabs:
   - {fileID: 3002512713483526407, guid: 308823bf762d7674ab8537160504a26f, type: 3}
   - {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
@@ -240,7 +241,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameProgress
   coins: 100
-  gamesPlayed: 5
+  gamesPlayed: 0
   playerBoardSize: 3
   myArmy: []
 --- !u!114 &107597323
