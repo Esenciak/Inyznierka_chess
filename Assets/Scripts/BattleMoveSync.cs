@@ -75,7 +75,7 @@ public class BattleMoveSync : NetworkBehaviour
                 }
 
                 ulong senderId = rpcParams.Receive.SenderClientId;
-                bool senderIsHost = NetworkManager.Singleton != null && senderId == NetworkManager.Singleton.ServerClientId;
+                bool senderIsHost = NetworkManager.Singleton != null && senderId == NetworkManager.ServerClientId;
                 PieceOwner expectedOwner = senderIsHost ? PieceOwner.Player : PieceOwner.Enemy;
 
                 if (CurrentTurn.Value != expectedOwner)

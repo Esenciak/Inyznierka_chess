@@ -723,6 +723,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 375164036611864473, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: gamesPlayed
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
       propertyPath: blackPiecePrefabs.Array.size
       value: 6
