@@ -227,6 +227,20 @@ MonoBehaviour:
   - {fileID: 6673001445477641656, guid: 5b58a5cfb60fb6c46872ee99e367b35a, type: 3}
   - {fileID: 8683770127193551573, guid: 3f8eeadc38b10534d866a87d04521e29, type: 3}
   - {fileID: 8693811134986804410, guid: d2c460f7fe38d184b8e4bd19e3d5617c, type: 3}
+  whitePrefabs:
+  - {fileID: 3002512713483526407, guid: 308823bf762d7674ab8537160504a26f, type: 3}
+  - {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
+  - {fileID: 3869002206912999649, guid: 0e491f804da3d274fa39ea7d63f83431, type: 3}
+  - {fileID: 6673001445477641656, guid: 5b58a5cfb60fb6c46872ee99e367b35a, type: 3}
+  - {fileID: 8683770127193551573, guid: 3f8eeadc38b10534d866a87d04521e29, type: 3}
+  - {fileID: 8693811134986804410, guid: d2c460f7fe38d184b8e4bd19e3d5617c, type: 3}
+  blackPrefabs:
+  - {fileID: 5078288275362618545, guid: f883beabdedf17f459e545ff677136f1, type: 3}
+  - {fileID: 1361584432996271375, guid: 87b757d746625214dbf7cd7c49046d43, type: 3}
+  - {fileID: 4738133512566458958, guid: b3b3e1cb355a92848b70e43f26004d28, type: 3}
+  - {fileID: 4329595498035144687, guid: f22fead03343f704ca3f5b5584de0176, type: 3}
+  - {fileID: 3684540255628131400, guid: e0a1c2e78d46a9e4caf751cdb99df381, type: 3}
+  - {fileID: 9174431837029219003, guid: 1a3f0600ec8ddfe47952f8e26e942756, type: 3}
 --- !u!1 &1050997031
 GameObject:
   m_ObjectHideFlags: 0
@@ -460,6 +474,53 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a95a0f76794a9ad46984e27b1a330598, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EnemyAI
+--- !u!1 &665544332211009988
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 665544332211009989}
+  - component: {fileID: 665544332211009990}
+  m_Layer: 0
+  m_Name: TurnIndicator
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &665544332211009989
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 665544332211009988}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &665544332211009990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 665544332211009988}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 312fc80199cf44919fe3208f516f55cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  turnText: {fileID: 0}
+  yourTurnText: Twoja tura
+  enemyTurnText: Tura przeciwnika
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -467,5 +528,6 @@ SceneRoots:
   - {fileID: 1050997034}
   - {fileID: 1991147888}
   - {fileID: 1808244290}
+  - {fileID: 665544332211009989}
   - {fileID: 805239975}
   - {fileID: 74163460}

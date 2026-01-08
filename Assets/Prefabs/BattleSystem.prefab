@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1287050770280441717}
   - component: {fileID: 2536720975300279139}
   - component: {fileID: 471077531776064495}
+  - component: {fileID: 8361234567890123456}
   m_Layer: 0
   m_Name: BattleSystem
   m_TagString: Untagged
@@ -74,4 +75,18 @@ MonoBehaviour:
   IsHostReady:
     m_InternalValue: 0
   IsClientReady:
+    m_InternalValue: 0
+--- !u!114 &8361234567890123456
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2479347059878220583}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 82a2bf39818d45c79ef1796283b1ed17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  CurrentTurn:
     m_InternalValue: 0

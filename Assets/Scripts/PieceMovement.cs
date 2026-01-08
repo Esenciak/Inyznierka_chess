@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using Unity.Netcode;
 using System.Collections.Generic;
 
 public class PieceMovement : MonoBehaviour
@@ -24,7 +25,15 @@ public class PieceMovement : MonoBehaviour
 
                 if (isBattle)
                 {
-                        if (GameManager.Instance.currentTurn != PieceOwner.Player)
+                        if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                        {
+                                if (BattleMoveSync.Instance != null && !BattleMoveSync.Instance.IsLocalPlayersTurn())
+                                {
+                                        Debug.Log("To nie twoja tura!");
+                                        return;
+                                }
+                        }
+                        else if (GameManager.Instance != null && GameManager.Instance.currentTurn != PieceOwner.Player)
                         {
                                 Debug.Log("To nie twoja tura!");
                                 return;
@@ -106,6 +115,16 @@ public class PieceMovement : MonoBehaviour
 
                                 if (legalMoves.Contains(targetTile))
                                 {
+                                        if (GameManager.Instance != null && GameManager.Instance.isMultiplayer && BattleMoveSync.Instance != null)
+                                        {
+                                                BattleMoveSync.Instance.SubmitMove(pieceComponent, targetTile);
+                                                if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
+                                                {
+                                                        transform.position = startPosition;
+                                                }
+                                                return;
+                                        }
+
                                         Piece capturedPiece = null;
                                         // Bicie
                                         if (targetTile.isOccupied && targetTile.currentPiece != null)
@@ -151,6 +170,7 @@ public class PieceMovement : MonoBehaviour
                 newTile.currentPiece = pieceComponent;
                 pieceComponent.currentTile = newTile;
 
+                transform.SetParent(newTile.transform);
                 transform.position = new Vector3(newTile.transform.position.x, newTile.transform.position.y, -1);
                 startPosition = transform.position;
         }

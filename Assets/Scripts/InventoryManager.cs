@@ -33,7 +33,7 @@ public class InventoryManager : MonoBehaviour
                         // Zmieniamy na Coroutine, żeby poczekać na BoardManagera
                         StartCoroutine(InitializeInventoryRoutine());
                 }
-                else if (scene.name == "MainMenu")
+                else
                 {
                         ClearInventory();
                 }
