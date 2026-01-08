@@ -99,10 +99,10 @@ public class BattleLoader : MonoBehaviour
                 var enemyArmy = isHostView ? session.ClientArmy : session.HostArmy;
                 PieceOwner localOwner = isHostView ? PieceOwner.Player : PieceOwner.Enemy;
                 PieceOwner enemyOwner = isHostView ? PieceOwner.Enemy : PieceOwner.Player;
-                BoardType localBoard = isHostView ? BoardType.Player : BoardType.Enemy;
-                BoardType enemyBoard = isHostView ? BoardType.Enemy : BoardType.Player;
-                bool localMirror = !isHostView;
-                bool enemyMirror = isHostView;
+                BoardType localBoard = BoardType.Player;
+                BoardType enemyBoard = BoardType.Enemy;
+                bool localMirror = false;
+                bool enemyMirror = true;
 
                 if (myArmy.Count == 0 && enemyArmy.Count == 0)
                 {
@@ -191,6 +191,12 @@ public class BattleLoader : MonoBehaviour
         {
                 bool localWhite = GameProgress.Instance == null || GameProgress.Instance.IsLocalPlayerWhite();
                 bool isLocalPiece = owner == PieceOwner.Player;
+
+                if (GameManager.Instance != null && GameManager.Instance.isMultiplayer && NetworkManager.Singleton != null)
+                {
+                        PieceOwner localOwner = NetworkManager.Singleton.IsHost ? PieceOwner.Player : PieceOwner.Enemy;
+                        isLocalPiece = owner == localOwner;
+                }
 
                 if (localWhite)
                 {
