@@ -20,6 +20,9 @@ public class GameProgress : MonoBehaviour
         public int coins = 100;
         public int gamesPlayed = 0;
 
+        [Header("Ekonomia")]
+        public EconomyConfig economyConfig;
+
         [Header("Tryb gracza")]
         public bool isHostPlayer = true;
 
@@ -49,6 +52,11 @@ public class GameProgress : MonoBehaviour
                 }
                 Instance = this;
                 DontDestroyOnLoad(gameObject); // To sprawia, że GameProgress przetrwa zmianę sceny
+
+                if (economyConfig != null)
+                {
+                        coins = economyConfig.startingCoins;
+                }
         }
 
         public bool SpendCoins(int amount)

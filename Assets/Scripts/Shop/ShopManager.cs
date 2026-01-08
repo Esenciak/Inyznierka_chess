@@ -26,6 +26,9 @@ public class ShopManager : MonoBehaviour
         public TextMeshProUGUI roundText;
         public Button startButton;
 
+        [Header("Ekonomia")]
+        public EconomyConfig economyConfig;
+
         private List<GameObject> shopTiles = new List<GameObject>();
 
         private Dictionary<PieceType, int> prices = new Dictionary<PieceType, int>()
@@ -207,7 +210,7 @@ public class ShopManager : MonoBehaviour
 
                 Vector3 textOffset = (tile.row == 0) ? new Vector3(0, -1.2f, 0) : new Vector3(0, 1.2f, 0);
 
-                shopItem.Setup(type, prices[type], this, tile, priceTextPrefab, textOffset);
+                shopItem.Setup(type, GetPrice(type), this, tile, priceTextPrefab, textOffset);
 
                 tile.isOccupied = true;
         }
@@ -246,11 +249,9 @@ public class ShopManager : MonoBehaviour
                 SaveBoardLayout();
 
                 // 2. Sprawdź tryb gry
-                if (GameManager.Instance.isMultiplayer && BattleSession.Instance != null)
+                if (GameManager.Instance.isMultiplayer)
                 {
-                        Debug.Log("Multiplayer: Zgłaszam gotowość do serwera...");
-                        // Wyślij armię do Hosta i czekaj na zmianę sceny
-                        BattleSession.Instance.PlayerReady(GameProgress.Instance.myArmy);
+                        StartCoroutine(WaitForBattleSessionAndReady());
                 }
                 else
                 {
@@ -258,6 +259,13 @@ public class ShopManager : MonoBehaviour
                         Debug.Log("Singleplayer: Start bitwy!");
                         GameProgress.Instance.LoadScene("Battle");
                 }
+        }
+
+        private System.Collections.IEnumerator WaitForBattleSessionAndReady()
+        {
+                Debug.Log("Multiplayer: Zgłaszam gotowość do serwera...");
+                yield return new WaitUntil(() => BattleSession.Instance != null);
+                BattleSession.Instance.PlayerReady(GameProgress.Instance.myArmy);
         }
 
         void SaveBoardLayout()
@@ -323,5 +331,15 @@ public class ShopManager : MonoBehaviour
                 {
                         piecePrefabs = blackPiecePrefabs;
                 }
+        }
+
+        int GetPrice(PieceType type)
+        {
+                if (economyConfig != null)
+                {
+                        return economyConfig.GetPrice(type);
+                }
+
+                return prices[type];
         }
 }

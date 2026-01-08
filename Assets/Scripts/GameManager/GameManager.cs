@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
         [Header("Nagrody")]
         public int winReward = 20;
         public int loseReward = 10;
+        public EconomyConfig economyConfig;
 
         private bool gameEnded = false;
 
@@ -121,8 +122,26 @@ public class GameManager : MonoBehaviour
 
                 if (GameProgress.Instance != null)
                 {
-                        GameProgress.Instance.CompleteRound(playerWon, winReward, loseReward);
-                        GameProgress.Instance.LoadScene("Shop");
+                        int winValue = economyConfig != null ? economyConfig.winReward : winReward;
+                        int loseValue = economyConfig != null ? economyConfig.loseReward : loseReward;
+                        GameProgress.Instance.CompleteRound(playerWon, winValue, loseValue);
+                        if (isMultiplayer && Unity.Netcode.NetworkManager.Singleton != null)
+                        {
+                                if (Unity.Netcode.NetworkManager.Singleton.IsServer)
+                                {
+                                        if (BattleSession.Instance != null)
+                                        {
+                                                BattleSession.Instance.SharedGamesPlayed.Value = GameProgress.Instance.gamesPlayed;
+                                                BattleSession.Instance.SharedPlayerBoardSize.Value = GameProgress.Instance.playerBoardSize;
+                                                BattleSession.Instance.ResetSessionState();
+                                        }
+                                        Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("Shop", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                                }
+                        }
+                        else
+                        {
+                                GameProgress.Instance.LoadScene("Shop");
+                        }
                 }
                 else
                 {

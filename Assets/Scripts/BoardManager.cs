@@ -6,7 +6,7 @@ public class BoardManager : MonoBehaviour
 	public static BoardManager Instance { get; private set; }
 	public bool IsReady { get; private set; } = false;
 
-	[Header("Ustawienia Rozmiarów")]
+	[Header("Ustawienia RozmiarÃ³w")]
 	public int PlayerRows = 3;
 	public int PlayerCols = 3;
 	public int CenterRows = 5;
@@ -39,7 +39,7 @@ public class BoardManager : MonoBehaviour
 			return;
 		}
 		Instance = this;
-		// Jeœli jest na obiekcie Manager z GameProgress, to DontDestroyOnLoad ju¿ dzia³a.
+		// JeÂœli jest na obiekcie Manager z GameProgress, to DontDestroyOnLoad juÂ¿ dziaÂ³a.
 	}
 
 	private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
@@ -62,14 +62,20 @@ public class BoardManager : MonoBehaviour
 		string sceneName = SceneManager.GetActiveScene().name;
 		if (sceneName == "MainMenu")
 		{
-			// W menu g³ównym czyœcimy planszê (jeœli jakaœ zosta³a) i koñczymy
+			// W menu gÂ³Ã³wnym czyÂœcimy planszÃª (jeÂœli jakaÂœ zostaÂ³a) i koÃ±czymy
 			ClearAllBoards();
 			return;
 		}
 
-		// Pobranie rozmiarów z zapisu gry
+		// Pobranie rozmiarÃ³w z zapisu gry
 		if (GameProgress.Instance != null)
 		{
+			if (GameManager.Instance != null && GameManager.Instance.isMultiplayer && BattleSession.Instance != null)
+			{
+				GameProgress.Instance.gamesPlayed = BattleSession.Instance.SharedGamesPlayed.Value;
+				GameProgress.Instance.playerBoardSize = BattleSession.Instance.SharedPlayerBoardSize.Value;
+			}
+
 			PlayerRows = GameProgress.Instance.playerBoardSize;
 			PlayerCols = GameProgress.Instance.playerBoardSize;
 			CenterRows = GameProgress.Instance.centerBoardSize;
@@ -77,7 +83,7 @@ public class BoardManager : MonoBehaviour
 		}
 
 		RecalculateGlobalLayout();
-		offsetCalculation(); // <-- Tutaj dzieje siê magia z pozycj¹
+		offsetCalculation(); // <-- Tutaj dzieje siÃª magia z pozycjÂ¹
 
 		if (sceneName == "Shop") GenerateShopLayout();
 		else GenerateBattleLayout();
@@ -85,7 +91,7 @@ public class BoardManager : MonoBehaviour
 		IsReady = true;
 	}
 
-	// --- Generowanie (Skrócone dla czytelnoœci, logika bez zmian) ---
+	// --- Generowanie (SkrÃ³cone dla czytelnoÂœci, logika bez zmian) ---
 
 	void GenerateShopLayout()
 	{
@@ -212,16 +218,16 @@ public class BoardManager : MonoBehaviour
 		float centerX = 0f;
 		float centerY = 0f;
 
-		// Domyœlne (Bitwa)
+		// DomyÂœlne (Bitwa)
 		float playerOffsetX = centerX + (CenterCols - PlayerCols) / 2f;
 		float playerOffsetY = centerY - PlayerRows;
 		float enemyOffsetY = centerY + CenterRows;
 
-		// Jeœli SKLEP -> Sztywna pozycja
+		// JeÂœli SKLEP -> Sztywna pozycja
 		if (SceneManager.GetActiveScene().name == "Shop")
 		{
-			playerOffsetX = 3.5f; // Sta³a pozycja X
-			playerOffsetY = 0f;   // Sta³a pozycja Y
+			playerOffsetX = 3.5f; // StaÂ³a pozycja X
+			playerOffsetY = 0f;   // StaÂ³a pozycja Y
 			enemyOffsetY = 100f;  // Wyrzucamy wroga poza ekran
 		}
 
@@ -230,7 +236,7 @@ public class BoardManager : MonoBehaviour
 		centerOffset = new Vector2(0f, 0f);
 	}
 
-	// --- PUBLIC API (Przywrócone metody) ---
+	// --- PUBLIC API (PrzywrÃ³cone metody) ---
 
 	public Tile GetTileGlobal(int globalRow, int globalCol)
 	{

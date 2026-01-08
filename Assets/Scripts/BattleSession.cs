@@ -11,9 +11,11 @@ public class BattleSession : NetworkBehaviour
 	public NetworkList<NetworkArmyPiece> HostArmy;
 	public NetworkList<NetworkArmyPiece> ClientArmy;
 
-	// Flagi gotowoúci
+	// Flagi gotowo¬úci
 	public NetworkVariable<bool> IsHostReady = new NetworkVariable<bool>(false);
 	public NetworkVariable<bool> IsClientReady = new NetworkVariable<bool>(false);
+	public NetworkVariable<int> SharedGamesPlayed = new NetworkVariable<int>(0);
+	public NetworkVariable<int> SharedPlayerBoardSize = new NetworkVariable<int>(3);
 
 	private void Awake()
 	{
@@ -29,7 +31,16 @@ public class BattleSession : NetworkBehaviour
 		ClientArmy = new NetworkList<NetworkArmyPiece>();
 	}
 
-	// TÍ metodÍ wo≥a TwÛj ShopManager
+	public override void OnNetworkSpawn()
+	{
+		if (IsServer && GameProgress.Instance != null)
+		{
+			SharedGamesPlayed.Value = GameProgress.Instance.gamesPlayed;
+			SharedPlayerBoardSize.Value = GameProgress.Instance.playerBoardSize;
+		}
+	}
+
+	// T√™ metod√™ wo¬≥a Tw√≥j ShopManager
 	public void PlayerReady(List<SavedPieceData> localArmy)
 	{
 		// Konwersja na format sieciowy
@@ -74,8 +85,21 @@ public class BattleSession : NetworkBehaviour
 	{
 		if (IsHostReady.Value && IsClientReady.Value)
 		{
-			Debug.Log("Obaj gracze gotowi! £adowanie Bitwy...");
+			Debug.Log("Obaj gracze gotowi! ≈Åadowanie Bitwy...");
 			NetworkManager.Singleton.SceneManager.LoadScene("Battle", LoadSceneMode.Single);
 		}
+	}
+
+	public void ResetSessionState()
+	{
+		if (!IsServer)
+		{
+			return;
+		}
+
+		IsHostReady.Value = false;
+		IsClientReady.Value = false;
+		HostArmy.Clear();
+		ClientArmy.Clear();
 	}
 }

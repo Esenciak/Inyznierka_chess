@@ -19,14 +19,16 @@ public class PieceMovement : MonoBehaviour
 
         void OnMouseDown()
         {
-                if (pieceComponent.owner != PieceOwner.Player) return;
-
                 bool isBattle = SceneManager.GetActiveScene().name == "Battle";
 
                 if (isBattle)
                 {
                         if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
                         {
+                                if (!IsLocalPlayersPiece())
+                                {
+                                        return;
+                                }
                                 if (BattleMoveSync.Instance != null && !BattleMoveSync.Instance.IsLocalPlayersTurn())
                                 {
                                         Debug.Log("To nie twoja tura!");
@@ -38,9 +40,17 @@ public class PieceMovement : MonoBehaviour
                                 Debug.Log("To nie twoja tura!");
                                 return;
                         }
+                        else if (pieceComponent.owner != PieceOwner.Player)
+                        {
+                                return;
+                        }
 
                         // --- WŁĄCZ PODŚWIETLENIE (TYLKO W BITWIE) ---
                         pieceComponent.ToggleHighlight(true);
+                }
+                else if (pieceComponent.owner != PieceOwner.Player)
+                {
+                        return;
                 }
 
                 isDragging = true;
@@ -173,5 +183,21 @@ public class PieceMovement : MonoBehaviour
                 transform.SetParent(newTile.transform);
                 transform.position = new Vector3(newTile.transform.position.x, newTile.transform.position.y, -1);
                 startPosition = transform.position;
+        }
+
+        bool IsLocalPlayersPiece()
+        {
+                if (GameManager.Instance == null || !GameManager.Instance.isMultiplayer)
+                {
+                        return pieceComponent.owner == PieceOwner.Player;
+                }
+
+                if (NetworkManager.Singleton == null)
+                {
+                        return false;
+                }
+
+                PieceOwner localOwner = NetworkManager.Singleton.IsHost ? PieceOwner.Player : PieceOwner.Enemy;
+                return pieceComponent.owner == localOwner;
         }
 }

@@ -97,6 +97,12 @@ public class BattleLoader : MonoBehaviour
 
                 var myArmy = isHostView ? session.HostArmy : session.ClientArmy;
                 var enemyArmy = isHostView ? session.ClientArmy : session.HostArmy;
+                PieceOwner localOwner = isHostView ? PieceOwner.Player : PieceOwner.Enemy;
+                PieceOwner enemyOwner = isHostView ? PieceOwner.Enemy : PieceOwner.Player;
+                BoardType localBoard = isHostView ? BoardType.Player : BoardType.Enemy;
+                BoardType enemyBoard = isHostView ? BoardType.Enemy : BoardType.Player;
+                bool localMirror = !isHostView;
+                bool enemyMirror = isHostView;
 
                 if (myArmy.Count == 0 && enemyArmy.Count == 0)
                 {
@@ -107,12 +113,12 @@ public class BattleLoader : MonoBehaviour
 
                 foreach (NetworkArmyPiece data in myArmy)
                 {
-                        SpawnPiece(data.type, data.x, data.y, BoardType.Player, PieceOwner.Player, false);
+                        SpawnPiece(data.type, data.x, data.y, localBoard, localOwner, localMirror);
                 }
 
                 foreach (NetworkArmyPiece data in enemyArmy)
                 {
-                        SpawnPiece(data.type, data.x, data.y, BoardType.Enemy, PieceOwner.Enemy, true);
+                        SpawnPiece(data.type, data.x, data.y, enemyBoard, enemyOwner, enemyMirror);
                 }
         }
 
@@ -137,6 +143,10 @@ public class BattleLoader : MonoBehaviour
                         if (prefab != null)
                         {
                                 GameObject go = Instantiate(prefab, tile.transform.position, Quaternion.identity);
+                                if (go.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
+                                {
+                                        DestroyImmediate(netObj);
+                                }
                                 go.transform.position = new Vector3(tile.transform.position.x, tile.transform.position.y, -1);
 
                                 Piece piece = go.GetComponent<Piece>();
