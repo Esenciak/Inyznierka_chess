@@ -151,6 +151,7 @@ public class PieceMovement : MonoBehaviour
                 newTile.currentPiece = pieceComponent;
                 pieceComponent.currentTile = newTile;
 
+                transform.SetParent(newTile.transform);
                 transform.position = new Vector3(newTile.transform.position.x, newTile.transform.position.y, -1);
                 startPosition = transform.position;
         }
