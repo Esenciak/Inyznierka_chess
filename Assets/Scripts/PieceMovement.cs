@@ -19,24 +19,35 @@ public class PieceMovement : MonoBehaviour
 
         void OnMouseDown()
         {
-                if (pieceComponent.owner != PieceOwner.Player) return;
-
                 bool isBattle = SceneManager.GetActiveScene().name == "Battle";
 
-                if (isBattle)
+                if (!isBattle)
+                {
+                        if (pieceComponent.owner != PieceOwner.Player) return;
+                }
+                else
                 {
                         if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
                         {
+                                if (pieceComponent.owner != PieceOwner.Player) return;
                                 if (BattleMoveSync.Instance != null && !BattleMoveSync.Instance.IsLocalPlayersTurn())
                                 {
                                         Debug.Log("To nie twoja tura!");
                                         return;
                                 }
                         }
-                        else if (GameManager.Instance != null && GameManager.Instance.currentTurn != PieceOwner.Player)
+                        else if (GameManager.Instance != null)
                         {
-                                Debug.Log("To nie twoja tura!");
-                                return;
+                                if (!GameManager.Instance.allowHotseatControl && pieceComponent.owner != PieceOwner.Player)
+                                {
+                                        return;
+                                }
+
+                                if (GameManager.Instance.currentTurn != pieceComponent.owner)
+                                {
+                                        Debug.Log("To nie twoja tura!");
+                                        return;
+                                }
                         }
 
                         // --- WŁĄCZ PODŚWIETLENIE (TYLKO W BITWIE) ---

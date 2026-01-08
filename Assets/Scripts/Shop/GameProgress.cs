@@ -20,6 +20,23 @@ public class GameProgress : MonoBehaviour
         public int coins = 100;
         public int gamesPlayed = 0;
 
+        [Header("Ustawienia Startu")]
+        public int startingCoins = 100;
+
+        [Header("Serie Zwycięstw/Porażek")]
+        public int winStreak = 0;
+        public int loseStreak = 0;
+
+        [System.Serializable]
+        public class StreakReward
+        {
+                public int streak = 1;
+                public float multiplier = 1f;
+        }
+
+        public List<StreakReward> winStreakRewards = new List<StreakReward>();
+        public List<StreakReward> loseStreakRewards = new List<StreakReward>();
+
         [Header("Tryb gracza")]
         public bool isHostPlayer = true;
 
@@ -39,6 +56,9 @@ public class GameProgress : MonoBehaviour
         // --- PAMIĘĆ ARMII ---
         // Tu trzymamy zapisany układ (to jest bezpieczniejsze niż GameObjecty)
         public List<SavedPieceData> myArmy = new List<SavedPieceData>();
+
+        [Header("Pamięć Inventory")]
+        public List<PieceType> inventoryPieces = new List<PieceType>();
 
         private void Awake()
         {
@@ -76,7 +96,44 @@ public class GameProgress : MonoBehaviour
         public void CompleteRound(bool playerWon, int winReward, int loseReward)
         {
                 gamesPlayed++;
-                AddCoins(playerWon ? winReward : loseReward);
+
+                if (playerWon)
+                {
+                        winStreak++;
+                        loseStreak = 0;
+                        int reward = Mathf.RoundToInt(winReward * GetStreakMultiplier(winStreakRewards, winStreak));
+                        AddCoins(reward);
+                }
+                else
+                {
+                        loseStreak++;
+                        winStreak = 0;
+                        int reward = Mathf.RoundToInt(loseReward * GetStreakMultiplier(loseStreakRewards, loseStreak));
+                        AddCoins(reward);
+                }
+        }
+
+        public void ResetProgress()
+        {
+                coins = startingCoins;
+                gamesPlayed = 0;
+                winStreak = 0;
+                loseStreak = 0;
+                myArmy.Clear();
+                inventoryPieces.Clear();
+        }
+
+        float GetStreakMultiplier(List<StreakReward> rewards, int streak)
+        {
+                float multiplier = 1f;
+                foreach (var reward in rewards)
+                {
+                        if (reward != null && reward.streak <= streak)
+                        {
+                                multiplier = reward.multiplier;
+                        }
+                }
+                return multiplier;
         }
 
         public void LoadScene(string sceneName)

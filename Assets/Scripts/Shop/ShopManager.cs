@@ -11,6 +11,33 @@ public class ShopManager : MonoBehaviour
         public int shopCols = 3;
         public Vector2 shopOffset = new Vector2(-5, 0);
 
+        [System.Serializable]
+        public class PieceChance
+        {
+                public PieceType type;
+                public float weight = 1f;
+        }
+
+        [System.Serializable]
+        public class ShopRoundLayout
+        {
+                public int minRound = 1;
+                public int rows = 2;
+                public int cols = 3;
+        }
+
+        public List<PieceChance> pieceChances = new List<PieceChance>()
+        {
+                new PieceChance { type = PieceType.Pawn, weight = 40f },
+                new PieceChance { type = PieceType.Knight, weight = 20f },
+                new PieceChance { type = PieceType.Bishop, weight = 20f },
+                new PieceChance { type = PieceType.Rook, weight = 15f },
+                new PieceChance { type = PieceType.queen, weight = 5f },
+                new PieceChance { type = PieceType.King, weight = 0f }
+        };
+
+        public List<ShopRoundLayout> shopRoundLayouts = new List<ShopRoundLayout>();
+
         [Header("Prefabrykaty")]
         public GameObject tilePrefab;
         public GameObject priceTextPrefab; // Pusty obiekt z TextMeshPro (nie UI!)
@@ -107,6 +134,7 @@ public class ShopManager : MonoBehaviour
         void InitializeShop()
         {
                 ApplyPiecePrefabsForLocalPlayer();
+                UpdateShopLayoutForRound();
                 CleanupShop();
                 GenerateShopGrid();
                 RefillShop();
@@ -279,6 +307,11 @@ public class ShopManager : MonoBehaviour
                                 }
                         }
                 }
+
+                if (InventoryManager.Instance != null)
+                {
+                        GameProgress.Instance.inventoryPieces = InventoryManager.Instance.GetInventoryContents();
+                }
         }
 
         void UpdateUI()
@@ -290,6 +323,30 @@ public class ShopManager : MonoBehaviour
 
         PieceType GetRandomPieceType()
         {
+                if (pieceChances != null && pieceChances.Count > 0)
+                {
+                        float total = 0f;
+                        foreach (var chance in pieceChances)
+                        {
+                                if (chance != null && chance.weight > 0f)
+                                {
+                                        total += chance.weight;
+                                }
+                        }
+
+                        if (total > 0f)
+                        {
+                                float roll = Random.Range(0f, total);
+                                float cumulative = 0f;
+                                foreach (var chance in pieceChances)
+                                {
+                                        if (chance == null || chance.weight <= 0f) continue;
+                                        cumulative += chance.weight;
+                                        if (roll <= cumulative) return chance.type;
+                                }
+                        }
+                }
+
                 int rand = Random.Range(0, 100);
                 if (rand < 40) return PieceType.Pawn;
                 if (rand < 60) return PieceType.Knight;
@@ -298,7 +355,7 @@ public class ShopManager : MonoBehaviour
                 return PieceType.queen;
         }
 
-        GameObject GetPrefabByType(PieceType type)
+        public GameObject GetPrefabByType(PieceType type)
         {
                 switch (type)
                 {
@@ -323,5 +380,26 @@ public class ShopManager : MonoBehaviour
                 {
                         piecePrefabs = blackPiecePrefabs;
                 }
+        }
+
+        void UpdateShopLayoutForRound()
+        {
+                if (shopRoundLayouts == null || shopRoundLayouts.Count == 0) return;
+
+                int round = GameProgress.Instance != null ? GameProgress.Instance.gamesPlayed + 1 : 1;
+                int rows = shopRows;
+                int cols = shopCols;
+
+                foreach (var layout in shopRoundLayouts)
+                {
+                        if (layout != null && round >= layout.minRound)
+                        {
+                                rows = layout.rows;
+                                cols = layout.cols;
+                        }
+                }
+
+                shopRows = Mathf.Max(1, rows);
+                shopCols = Mathf.Max(1, cols);
         }
 }

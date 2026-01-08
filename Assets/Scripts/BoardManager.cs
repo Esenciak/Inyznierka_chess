@@ -6,7 +6,7 @@ public class BoardManager : MonoBehaviour
 	public static BoardManager Instance { get; private set; }
 	public bool IsReady { get; private set; } = false;
 
-	[Header("Ustawienia Rozmiarów")]
+	[Header("Ustawienia RozmiarÃ³w")]
 	public int PlayerRows = 3;
 	public int PlayerCols = 3;
 	public int CenterRows = 5;
@@ -21,6 +21,12 @@ public class BoardManager : MonoBehaviour
 	public Vector2 playerOffset = new Vector2(0, -5);
 	public Vector2 enemyOffset = new Vector2(0, 5);
 	public Vector2 centerOffset = new Vector2(0, 0);
+
+	[Header("Kamera Bitwy")]
+	public float cameraTopPadding = 2.5f;
+	public float cameraBottomPadding = 1.0f;
+	public float cameraSidePadding = 1.0f;
+	public float minCameraSize = 5.0f;
 
 	// Tablice
 	private GameObject[,] playerBoard;
@@ -39,7 +45,7 @@ public class BoardManager : MonoBehaviour
 			return;
 		}
 		Instance = this;
-		// Jeœli jest na obiekcie Manager z GameProgress, to DontDestroyOnLoad ju¿ dzia³a.
+		// If Manager has GameProgress, DontDestroyOnLoad already works.
 	}
 
 	private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
@@ -62,12 +68,12 @@ public class BoardManager : MonoBehaviour
 		string sceneName = SceneManager.GetActiveScene().name;
 		if (sceneName == "MainMenu")
 		{
-			// W menu g³ównym czyœcimy planszê (jeœli jakaœ zosta³a) i koñczymy
+			// In the main menu we clear the board (if any exists) and stop.
 			ClearAllBoards();
 			return;
 		}
 
-		// Pobranie rozmiarów z zapisu gry
+		// Pobranie rozmiarÃ³w z zapisu gry
 		if (GameProgress.Instance != null)
 		{
 			PlayerRows = GameProgress.Instance.playerBoardSize;
@@ -77,15 +83,20 @@ public class BoardManager : MonoBehaviour
 		}
 
 		RecalculateGlobalLayout();
-		offsetCalculation(); // <-- Tutaj dzieje siê magia z pozycj¹
+		offsetCalculation(); // <-- Position calculation
 
 		if (sceneName == "Shop") GenerateShopLayout();
 		else GenerateBattleLayout();
 
 		IsReady = true;
+
+		if (sceneName == "Battle")
+		{
+			AdjustBattleCamera();
+		}
 	}
 
-	// --- Generowanie (Skrócone dla czytelnoœci, logika bez zmian) ---
+		// --- Generation (shortened for readability, logic unchanged) ---
 
 	void GenerateShopLayout()
 	{
@@ -212,16 +223,16 @@ public class BoardManager : MonoBehaviour
 		float centerX = 0f;
 		float centerY = 0f;
 
-		// Domyœlne (Bitwa)
+		// Default (Battle)
 		float playerOffsetX = centerX + (CenterCols - PlayerCols) / 2f;
 		float playerOffsetY = centerY - PlayerRows;
 		float enemyOffsetY = centerY + CenterRows;
 
-		// Jeœli SKLEP -> Sztywna pozycja
+		// If SHOP -> fixed position
 		if (SceneManager.GetActiveScene().name == "Shop")
 		{
-			playerOffsetX = 3.5f; // Sta³a pozycja X
-			playerOffsetY = 0f;   // Sta³a pozycja Y
+			playerOffsetX = 3.5f; // Fixed X position
+			playerOffsetY = 0f;   // Fixed Y position
 			enemyOffsetY = 100f;  // Wyrzucamy wroga poza ekran
 		}
 
@@ -230,7 +241,31 @@ public class BoardManager : MonoBehaviour
 		centerOffset = new Vector2(0f, 0f);
 	}
 
-	// --- PUBLIC API (Przywrócone metody) ---
+	void AdjustBattleCamera()
+	{
+		Camera cam = Camera.main;
+		if (cam == null || !cam.orthographic) return;
+
+		float halfTile = 0.5f;
+		float minX = Mathf.Min(playerOffset.x, centerOffset.x, enemyOffset.x) - halfTile - cameraSidePadding;
+		float maxX = Mathf.Max(playerOffset.x + PlayerCols - 1, centerOffset.x + CenterCols - 1, enemyOffset.x + PlayerCols - 1) + halfTile + cameraSidePadding;
+
+		float minY = Mathf.Min(playerOffset.y, centerOffset.y, enemyOffset.y) - halfTile - cameraBottomPadding;
+		float maxY = Mathf.Max(playerOffset.y + PlayerRows - 1, centerOffset.y + CenterRows - 1, enemyOffset.y + PlayerRows - 1) + halfTile + cameraTopPadding;
+
+		float centerX = centerOffset.x + (CenterCols - 1) / 2f;
+		float centerY = centerOffset.y + (CenterRows - 1) / 2f;
+
+		float halfWidthNeeded = Mathf.Max(Mathf.Abs(centerX - minX), Mathf.Abs(maxX - centerX));
+		float halfHeightNeeded = Mathf.Max(Mathf.Abs(centerY - minY), Mathf.Abs(maxY - centerY));
+
+		float aspect = cam.aspect;
+		float sizeByWidth = halfWidthNeeded / Mathf.Max(0.01f, aspect);
+		cam.orthographicSize = Mathf.Max(halfHeightNeeded, sizeByWidth, minCameraSize);
+		cam.transform.position = new Vector3(centerX, centerY, cam.transform.position.z);
+	}
+
+	// --- PUBLIC API (PrzywrÃ³cone metody) ---
 
 	public Tile GetTileGlobal(int globalRow, int globalCol)
 	{

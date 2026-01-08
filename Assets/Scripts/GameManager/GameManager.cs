@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
 
         [Header("Tryb Gry")]
         public bool isMultiplayer = false;
+        public bool allowHotseatControl = true;
 
         [Header("Stan Gry")]
         public GamePhase currentPhase = GamePhase.Placement;
@@ -85,6 +86,11 @@ public class GameManager : MonoBehaviour
         {
                 Debug.Log("Koniec tury gracza. Tura Enemy...");
                 currentTurn = PieceOwner.Enemy;
+
+                if (allowHotseatControl)
+                {
+                        return;
+                }
 
                 // Uruchamiamy AI z opóźnieniem
                 StartCoroutine(EnemyMoveRoutine());

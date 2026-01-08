@@ -66,6 +66,8 @@ public class InventoryManager : MonoBehaviour
                 ClearInventory();
                 GenerateInventory();
 
+                RestoreInventoryFromProgress();
+
                 // Króla też spawnujemy z małym opóźnieniem
                 SpawnKingOnBoard();
         }
@@ -142,6 +144,7 @@ public class InventoryManager : MonoBehaviour
 
                         if (!tile.isOccupied)
                         {
+                                if (prefab == null) return false;
                                 SpawnPiece(prefab, tile, type);
                                 return true;
                         }
@@ -189,6 +192,34 @@ public class InventoryManager : MonoBehaviour
                 else if (!useWhite && blackKingPrefab != null)
                 {
                         kingPrefab = blackKingPrefab;
+                }
+        }
+
+        public List<PieceType> GetInventoryContents()
+        {
+                List<PieceType> contents = new List<PieceType>();
+                foreach (var tileGO in inventoryTiles)
+                {
+                        if (tileGO == null) continue;
+                        Tile tile = tileGO.GetComponent<Tile>();
+                        if (tile != null && tile.isOccupied && tile.currentPiece != null)
+                        {
+                                contents.Add(tile.currentPiece.pieceType);
+                        }
+                }
+                return contents;
+        }
+
+        void RestoreInventoryFromProgress()
+        {
+                if (GameProgress.Instance == null || GameProgress.Instance.inventoryPieces.Count == 0) return;
+
+                ShopManager shopManager = FindObjectOfType<ShopManager>();
+                foreach (var pieceType in GameProgress.Instance.inventoryPieces)
+                {
+                        GameObject prefab = shopManager != null ? shopManager.GetPrefabByType(pieceType) : null;
+                        if (prefab == null) continue;
+                        AddPieceToInventory(pieceType, prefab);
                 }
         }
 }

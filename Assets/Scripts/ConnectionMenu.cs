@@ -31,6 +31,7 @@ public class ConnectionMenu : MonoBehaviour
                         if (GameProgress.Instance != null)
                         {
                                 GameProgress.Instance.isHostPlayer = true;
+                                GameProgress.Instance.ResetProgress();
                         }
                 }
                 else
@@ -65,6 +66,7 @@ public class ConnectionMenu : MonoBehaviour
                 if (GameProgress.Instance != null)
                 {
                         GameProgress.Instance.isHostPlayer = true;
+                        GameProgress.Instance.ResetProgress();
                 }
                 SceneManager.LoadScene("Shop");
         }
