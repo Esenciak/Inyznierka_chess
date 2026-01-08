@@ -723,6 +723,62 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: blackPiecePrefabs.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: whitePiecePrefabs.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'blackPiecePrefabs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 5078288275362618545, guid: f883beabdedf17f459e545ff677136f1, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'blackPiecePrefabs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1361584432996271375, guid: 87b757d746625214dbf7cd7c49046d43, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'blackPiecePrefabs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 4738133512566458958, guid: b3b3e1cb355a92848b70e43f26004d28, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'blackPiecePrefabs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 4329595498035144687, guid: f22fead03343f704ca3f5b5584de0176, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'blackPiecePrefabs.Array.data[4]'
+      value: 
+      objectReference: {fileID: 3684540255628131400, guid: e0a1c2e78d46a9e4caf751cdb99df381, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'blackPiecePrefabs.Array.data[5]'
+      value: 
+      objectReference: {fileID: 9174431837029219003, guid: 1a3f0600ec8ddfe47952f8e26e942756, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'whitePiecePrefabs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 3002512713483526407, guid: 308823bf762d7674ab8537160504a26f, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'whitePiecePrefabs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'whitePiecePrefabs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 3869002206912999649, guid: 0e491f804da3d274fa39ea7d63f83431, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'whitePiecePrefabs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 6673001445477641656, guid: 5b58a5cfb60fb6c46872ee99e367b35a, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'whitePiecePrefabs.Array.data[4]'
+      value: 
+      objectReference: {fileID: 8683770127193551573, guid: 3f8eeadc38b10534d866a87d04521e29, type: 3}
+    - target: {fileID: 6854902549389007182, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: 'whitePiecePrefabs.Array.data[5]'
+      value: 
+      objectReference: {fileID: 8693811134986804410, guid: d2c460f7fe38d184b8e4bd19e3d5617c, type: 3}
     - target: {fileID: 9190330379715019098, guid: 93d1033599e6a084c844e18969831caf, type: 3}
       propertyPath: m_Name
       value: Manager
@@ -731,6 +787,14 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 9204701212112606780, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: blackKingPrefab
+      value: 
+      objectReference: {fileID: 1361584432996271375, guid: 87b757d746625214dbf7cd7c49046d43, type: 3}
+    - target: {fileID: 9204701212112606780, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: whiteKingPrefab
+      value: 
+      objectReference: {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
     - target: {fileID: 9204701212112606780, guid: 93d1033599e6a084c844e18969831caf, type: 3}
       propertyPath: inventoryOffset.x
       value: -7
