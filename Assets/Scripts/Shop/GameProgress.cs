@@ -12,6 +12,14 @@ public class SavedPieceData
         public int y;          // Wiersz (Row)
 }
 
+[System.Serializable]
+public class SavedInventoryData
+{
+        public PieceType type; // Jaka to figura?
+        public int row;        // Wiersz w inventory
+        public int col;        // Kolumna w inventory
+}
+
 public class GameProgress : MonoBehaviour
 {
         public static GameProgress Instance { get; private set; }
@@ -42,6 +50,9 @@ public class GameProgress : MonoBehaviour
         // --- PAMIĘĆ ARMII ---
         // Tu trzymamy zapisany układ (to jest bezpieczniejsze niż GameObjecty)
         public List<SavedPieceData> myArmy = new List<SavedPieceData>();
+
+        // --- PAMIĘĆ INVENTORY ---
+        public List<SavedInventoryData> inventoryPieces = new List<SavedInventoryData>();
 
         private void Awake()
         {

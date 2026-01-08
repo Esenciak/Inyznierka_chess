@@ -192,12 +192,6 @@ public class PieceMovement : MonoBehaviour
                         return pieceComponent.owner == PieceOwner.Player;
                 }
 
-                if (NetworkManager.Singleton == null)
-                {
-                        return false;
-                }
-
-                PieceOwner localOwner = NetworkManager.Singleton.IsHost ? PieceOwner.Player : PieceOwner.Enemy;
-                return pieceComponent.owner == localOwner;
+                return pieceComponent.owner == PieceOwner.Player;
         }
 }

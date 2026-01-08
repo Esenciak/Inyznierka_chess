@@ -115,6 +115,7 @@ public class ShopManager : MonoBehaviour
                 RefillShop();
                 ToggleUI(true);
                 UpdateUI();
+                StartCoroutine(RestoreLayoutRoutine());
         }
 
         void CleanupShop()
@@ -247,6 +248,7 @@ public class ShopManager : MonoBehaviour
         {
                 // 1. Zapisz obecny stan planszy do GameProgress
                 SaveBoardLayout();
+                SaveInventoryLayout();
 
                 // 2. Sprawdź tryb gry
                 if (GameManager.Instance.isMultiplayer)
@@ -287,6 +289,129 @@ public class ShopManager : MonoBehaviour
                                 }
                         }
                 }
+        }
+
+        void SaveInventoryLayout()
+        {
+                if (GameProgress.Instance == null)
+                {
+                        return;
+                }
+
+                if (InventoryManager.Instance != null)
+                {
+                        InventoryManager.Instance.SaveInventoryLayout(GameProgress.Instance.inventoryPieces);
+                }
+                else
+                {
+                        GameProgress.Instance.inventoryPieces.Clear();
+                }
+        }
+
+        System.Collections.IEnumerator RestoreLayoutRoutine()
+        {
+                while (BoardManager.Instance == null || !BoardManager.Instance.IsReady)
+                {
+                        yield return null;
+                }
+
+                while (InventoryManager.Instance == null || !InventoryManager.Instance.IsReady)
+                {
+                        yield return null;
+                }
+
+                RestoreBoardLayout();
+                RestoreInventoryLayout();
+        }
+
+        void RestoreBoardLayout()
+        {
+                if (GameProgress.Instance == null || GameProgress.Instance.myArmy.Count == 0)
+                {
+                        return;
+                }
+
+                ClearPlayerBoardPieces();
+
+                foreach (SavedPieceData data in GameProgress.Instance.myArmy)
+                {
+                        Tile tile = BoardManager.Instance.GetTile(BoardType.Player, data.y, data.x);
+                        if (tile == null || tile.isOccupied) continue;
+
+                        SpawnPieceOnTile(GetPrefabByType(data.type), tile, data.type);
+                }
+        }
+
+        void RestoreInventoryLayout()
+        {
+                if (GameProgress.Instance == null || GameProgress.Instance.inventoryPieces.Count == 0)
+                {
+                        return;
+                }
+
+                if (InventoryManager.Instance == null)
+                {
+                        return;
+                }
+
+                foreach (SavedInventoryData data in GameProgress.Instance.inventoryPieces)
+                {
+                        GameObject prefab = GetPrefabByType(data.type);
+                        if (prefab == null) continue;
+                        InventoryManager.Instance.TryPlaceInventoryPiece(data.type, prefab, data.row, data.col);
+                }
+        }
+
+        void ClearPlayerBoardPieces()
+        {
+                if (BoardManager.Instance == null) return;
+
+                int rows = BoardManager.Instance.PlayerRows;
+                int cols = BoardManager.Instance.PlayerCols;
+                for (int r = 0; r < rows; r++)
+                {
+                        for (int c = 0; c < cols; c++)
+                        {
+                                Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
+                                if (tile == null) continue;
+                                if (tile.currentPiece != null)
+                                {
+                                        Destroy(tile.currentPiece.gameObject);
+                                }
+                                tile.isOccupied = false;
+                                tile.currentPiece = null;
+                        }
+                }
+        }
+
+        void SpawnPieceOnTile(GameObject prefab, Tile tile, PieceType type)
+        {
+                if (prefab == null || tile == null) return;
+
+                GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
+                if (pieceGO.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
+                {
+                        DestroyImmediate(netObj);
+                }
+
+                pieceGO.transform.parent = tile.transform;
+
+                if (pieceGO.GetComponent<PieceMovement>() == null)
+                {
+                        pieceGO.AddComponent<PieceMovement>();
+                }
+
+                Piece piece = pieceGO.GetComponent<Piece>();
+                piece.owner = PieceOwner.Player;
+                piece.pieceType = type;
+                piece.currentTile = tile;
+
+                tile.isOccupied = true;
+                tile.currentPiece = piece;
+
+                Vector3 pos = pieceGO.transform.position;
+                pos.z = -1;
+                pieceGO.transform.position = pos;
         }
 
         void UpdateUI()

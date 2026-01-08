@@ -6,6 +6,7 @@ using System.Collections.Generic;
 public class InventoryManager : MonoBehaviour
 {
         public static InventoryManager Instance { get; private set; }
+        public bool IsReady { get; private set; } = false;
 
         [Header("Ustawienia Ekwipunku")]
         public int rows = 5;
@@ -30,6 +31,7 @@ public class InventoryManager : MonoBehaviour
         {
                 if (scene.name == "Shop")
                 {
+                        IsReady = false;
                         // Zmieniamy na Coroutine, żeby poczekać na BoardManagera
                         StartCoroutine(InitializeInventoryRoutine());
                 }
@@ -67,7 +69,12 @@ public class InventoryManager : MonoBehaviour
                 GenerateInventory();
 
                 // Króla też spawnujemy z małym opóźnieniem
-                SpawnKingOnBoard();
+                if (GameProgress.Instance == null || GameProgress.Instance.myArmy.Count == 0)
+                {
+                        SpawnKingOnBoard();
+                }
+
+                IsReady = true;
         }
         // ------------------------------------------
 
@@ -78,6 +85,7 @@ public class InventoryManager : MonoBehaviour
                         if (go != null) Destroy(go);
                 }
                 inventoryTiles.Clear();
+                IsReady = false;
         }
 
         void GenerateInventory()
@@ -103,6 +111,8 @@ public class InventoryManager : MonoBehaviour
                                 Tile tile = go.GetComponent<Tile>();
                                 tile.isInventory = true;
                                 tile.boardType = BoardType.Player;
+                                tile.row = r;
+                                tile.col = c;
 
                                 SpriteRenderer sr = go.GetComponent<SpriteRenderer>();
                                 if (sr != null) sr.color = (r + c) % 2 == 0 ? inventoryColor1 : inventoryColor2;
@@ -151,6 +161,36 @@ public class InventoryManager : MonoBehaviour
                 return false;
         }
 
+        public void SaveInventoryLayout(List<SavedInventoryData> target)
+        {
+                if (target == null) return;
+                target.Clear();
+
+                foreach (var tileGO in inventoryTiles)
+                {
+                        if (tileGO == null) continue;
+                        Tile tile = tileGO.GetComponent<Tile>();
+                        if (tile == null || !tile.isOccupied || tile.currentPiece == null) continue;
+
+                        SavedInventoryData data = new SavedInventoryData
+                        {
+                                type = tile.currentPiece.pieceType,
+                                row = tile.row,
+                                col = tile.col
+                        };
+                        target.Add(data);
+                }
+        }
+
+        public bool TryPlaceInventoryPiece(PieceType type, GameObject prefab, int row, int col)
+        {
+                Tile tile = GetInventoryTile(row, col);
+                if (tile == null || tile.isOccupied) return false;
+
+                SpawnPiece(prefab, tile, type);
+                return true;
+        }
+
         void SpawnPiece(GameObject prefab, Tile tile, PieceType type)
         {
                 GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
@@ -177,6 +217,20 @@ public class InventoryManager : MonoBehaviour
                 Vector3 pos = pieceGO.transform.position;
                 pos.z = -1;
                 pieceGO.transform.position = pos;
+        }
+
+        Tile GetInventoryTile(int row, int col)
+        {
+                foreach (var tileGO in inventoryTiles)
+                {
+                        if (tileGO == null) continue;
+                        Tile tile = tileGO.GetComponent<Tile>();
+                        if (tile != null && tile.row == row && tile.col == col)
+                        {
+                                return tile;
+                        }
+                }
+                return null;
         }
 
         void SelectKingPrefab()
