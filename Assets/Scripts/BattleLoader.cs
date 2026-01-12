@@ -97,8 +97,8 @@ public class BattleLoader : MonoBehaviour
 
                 var myArmy = isHostView ? session.HostArmy : session.ClientArmy;
                 var enemyArmy = isHostView ? session.ClientArmy : session.HostArmy;
-                PieceOwner localOwner = PieceOwner.Player;
-                PieceOwner enemyOwner = PieceOwner.Enemy;
+                PieceOwner localOwner = isHostView ? PieceOwner.Player : PieceOwner.Enemy;
+                PieceOwner enemyOwner = isHostView ? PieceOwner.Enemy : PieceOwner.Player;
                 BoardType localBoard = BoardType.Player;
                 BoardType enemyBoard = BoardType.Enemy;
                 bool localMirror = false;
