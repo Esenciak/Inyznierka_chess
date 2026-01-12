@@ -1,6 +1,7 @@
 using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 
 
@@ -33,6 +34,33 @@ public class GameManager : MonoBehaviour
                         return;
                 }
                 Instance = this;
+        }
+
+        private void OnEnable()
+        {
+                SceneManager.sceneLoaded += HandleSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+                SceneManager.sceneLoaded -= HandleSceneLoaded;
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+                if (scene.name == "Battle")
+                {
+                        currentPhase = GamePhase.Battle;
+                        currentTurn = PieceOwner.Player;
+                        gameEnded = false;
+                        return;
+                }
+
+                if (scene.name == "Shop")
+                {
+                        currentPhase = GamePhase.Placement;
+                        currentTurn = PieceOwner.Player;
+                }
         }
 
 	public bool IsMyTurn()

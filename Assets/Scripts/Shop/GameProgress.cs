@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using Unity.Netcode;
 
 // To jest ta Twoja struktura danych (zamiast Stringa/Inta mamy obiekt)
 // [System.Serializable] jest KLUCZOWE - pozwala Unity widzieć i zapisywać tę klasę
@@ -84,6 +85,11 @@ public class GameProgress : MonoBehaviour
 
         public bool IsLocalPlayerWhite()
         {
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                        return NetworkManager.Singleton.IsHost;
+                }
+
                 if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
                 {
                         return isHostPlayer;
