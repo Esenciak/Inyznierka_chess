@@ -37,23 +37,29 @@ public class GameManager : MonoBehaviour
 
 	public bool IsMyTurn()
 	{
-		if (BattleSession.Instance == null) return false;
+		if (!isMultiplayer)
+		{
+			return currentTurn == PieceOwner.Player;
+		}
+
+		if (BattleMoveSync.Instance != null)
+		{
+			return BattleMoveSync.Instance.IsLocalPlayersTurn();
+		}
+
+		if (BattleSession.Instance == null || NetworkManager.Singleton == null)
+		{
+			return false;
+		}
 
 		int activeTeam = BattleSession.Instance.ActiveTeam.Value;
 
-		// Sprawdzamy kim jesteśmy
 		if (NetworkManager.Singleton.IsHost)
 		{
-			// Host gra Białymi (Team 0)
 			return activeTeam == 0;
 		}
-		else
-		{
-			// Klient gra Czarnymi (Team 1)
-			return activeTeam == 1;
-		}
 
-
+		return activeTeam == 1;
 	}
 
 	public void EndTurn()
