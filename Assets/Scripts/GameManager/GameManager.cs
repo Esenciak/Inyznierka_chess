@@ -1,5 +1,6 @@
-using UnityEngine;
 using System.Collections;
+using Unity.Netcode;
+using UnityEngine;
 
 
 
@@ -34,7 +35,47 @@ public class GameManager : MonoBehaviour
                 Instance = this;
         }
 
-        public bool CanPieceMove(Piece piece)
+	public bool IsMyTurn()
+	{
+		if (BattleSession.Instance == null) return false;
+
+		int activeTeam = BattleSession.Instance.ActiveTeam.Value;
+
+		// Sprawdzamy kim jesteśmy
+		if (NetworkManager.Singleton.IsHost)
+		{
+			// Host gra Białymi (Team 0)
+			return activeTeam == 0;
+		}
+		else
+		{
+			// Klient gra Czarnymi (Team 1)
+			return activeTeam == 1;
+		}
+
+
+	}
+
+	public void EndTurn()
+	{
+		// Zlecenie zmiany tury musi iść do serwera, bo NetworkVariable jest zapisywalne tylko przez serwer
+		if (NetworkManager.Singleton.IsServer)
+		{
+			BattleSession.Instance.SwapTurn();
+		}
+		else
+		{
+			// Jeśli jesteśmy klientem, musimy poprosić serwer o zmianę tury (zrobimy to przez RPC w BattleMoveSync)
+			// Tutaj lokalnie nic nie zmieniamy "na siłę", czekamy na synchronizację.
+		}
+	}
+
+	public int GetCurrentTurnTeam()
+	{
+		return BattleSession.Instance != null ? BattleSession.Instance.ActiveTeam.Value : 0;
+	}
+
+	public bool CanPieceMove(Piece piece)
         {
                 // 1. Faza Placement (Sklep):
                 // Pozwalamy ruszać tylko naszymi figurami (np. przestawiać je na planszy)

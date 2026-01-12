@@ -29,13 +29,13 @@ public class PieceMovement : MonoBehaviour
                                 {
                                         return;
                                 }
-                                if (BattleMoveSync.Instance != null && !BattleMoveSync.Instance.IsLocalPlayersTurn())
+                                if (BattleMoveSync.Instance != null && !GameManager.Instance.IsMyTurn())
                                 {
                                         Debug.Log("To nie twoja tura!");
                                         return;
                                 }
                         }
-                        else if (GameManager.Instance != null && GameManager.Instance.currentTurn != PieceOwner.Player)
+                        else if (GameManager.Instance != null && !GameManager.Instance.IsMyTurn())
                         {
                                 Debug.Log("To nie twoja tura!");
                                 return;

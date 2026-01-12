@@ -17,6 +17,7 @@ public class BattleSession : NetworkBehaviour
 	public NetworkVariable<int> SharedGamesPlayed = new NetworkVariable<int>(0);
 	public NetworkVariable<int> SharedPlayerBoardSize = new NetworkVariable<int>(3);
 
+	public NetworkVariable<int> ActiveTeam = new NetworkVariable<int>(0);
 	private void Awake()
 	{
 		if (Instance != null && Instance != this)
@@ -25,6 +26,7 @@ public class BattleSession : NetworkBehaviour
 			return;
 		}
 		Instance = this;
+		DontDestroyOnLoad(gameObject);
 
 		// Inicjalizacja list sieciowych
 		HostArmy = new NetworkList<NetworkArmyPiece>();
@@ -101,5 +103,14 @@ public class BattleSession : NetworkBehaviour
 		IsClientReady.Value = false;
 		HostArmy.Clear();
 		ClientArmy.Clear();
+	}
+
+	public void SwapTurn()
+	{
+		if (!IsServer) return; // Tylko serwer może zmieniać NetworkVariable
+
+		ActiveTeam.Value = (ActiveTeam.Value == 0) ? 1 : 0;
+
+		Debug.Log($"[BattleSession] Tura zmieniona. Teraz ruch gracza: {ActiveTeam.Value}");
 	}
 }
