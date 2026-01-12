@@ -35,6 +35,9 @@ public class GameProgress : MonoBehaviour
         [Header("Tryb gracza")]
         public bool isHostPlayer = true;
 
+        [Header("Podsumowanie rundy")]
+        public string lastWinnerMessage = string.Empty;
+
         [Header("Ustawienia Planszy")]
         public int playerBoardSize = 3;
 

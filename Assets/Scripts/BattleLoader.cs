@@ -192,6 +192,12 @@ public class BattleLoader : MonoBehaviour
                 bool localWhite = GameProgress.Instance == null || GameProgress.Instance.IsLocalPlayerWhite();
                 bool isLocalPiece = owner == PieceOwner.Player;
 
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                        bool localIsHost = NetworkManager.Singleton.IsHost;
+                        isLocalPiece = localIsHost ? owner == PieceOwner.Player : owner == PieceOwner.Enemy;
+                }
+
                 if (localWhite)
                 {
                         return isLocalPiece ? whitePrefabs : blackPrefabs;

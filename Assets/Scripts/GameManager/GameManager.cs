@@ -2,6 +2,8 @@ using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TMPro;
+using UnityEngine.UI;
 
 
 
@@ -60,7 +62,53 @@ public class GameManager : MonoBehaviour
                 {
                         currentPhase = GamePhase.Placement;
                         currentTurn = PieceOwner.Player;
+                        return;
                 }
+
+                if (scene.name == "MainMenu")
+                {
+                        ShowWinnerBanner();
+                }
+        }
+
+        private void ShowWinnerBanner()
+        {
+                if (GameProgress.Instance == null)
+                {
+                        return;
+                }
+
+                string message = GameProgress.Instance.lastWinnerMessage;
+                if (string.IsNullOrEmpty(message))
+                {
+                        return;
+                }
+
+                GameObject canvasObject = new GameObject("WinnerBannerCanvas");
+                var canvas = canvasObject.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvasObject.AddComponent<CanvasScaler>();
+                canvasObject.AddComponent<GraphicRaycaster>();
+
+                GameObject textObject = new GameObject("WinnerBannerText");
+                textObject.transform.SetParent(canvasObject.transform, false);
+                var text = textObject.AddComponent<TextMeshProUGUI>();
+                text.text = message;
+                text.fontSize = 48;
+                text.alignment = TextAlignmentOptions.Center;
+                text.color = Color.white;
+                if (TMP_Settings.defaultFontAsset != null)
+                {
+                        text.font = TMP_Settings.defaultFontAsset;
+                }
+
+                RectTransform rectTransform = text.rectTransform;
+                rectTransform.anchorMin = new Vector2(0f, 0f);
+                rectTransform.anchorMax = new Vector2(1f, 1f);
+                rectTransform.offsetMin = Vector2.zero;
+                rectTransform.offsetMax = Vector2.zero;
+
+                GameProgress.Instance.lastWinnerMessage = string.Empty;
         }
 
 	public bool IsMyTurn()
@@ -200,6 +248,22 @@ public class GameManager : MonoBehaviour
                         int winValue = economyConfig != null ? economyConfig.winReward : winReward;
                         int loseValue = economyConfig != null ? economyConfig.loseReward : loseReward;
                         GameProgress.Instance.CompleteRound(playerWon, winValue, loseValue);
+                        if (GameProgress.Instance.gamesPlayed >= 9)
+                        {
+                                GameProgress.Instance.lastWinnerMessage = playerWon ? "Winner: You" : "Winner: Enemy";
+                                if (isMultiplayer && Unity.Netcode.NetworkManager.Singleton != null)
+                                {
+                                        if (Unity.Netcode.NetworkManager.Singleton.IsServer)
+                                        {
+                                                Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("MainMenu", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                                        }
+                                }
+                                else
+                                {
+                                        SceneManager.LoadScene("MainMenu");
+                                }
+                                return;
+                        }
                         if (isMultiplayer && Unity.Netcode.NetworkManager.Singleton != null)
                         {
                                 if (Unity.Netcode.NetworkManager.Singleton.IsServer)
