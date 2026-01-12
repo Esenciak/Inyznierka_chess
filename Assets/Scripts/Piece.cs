@@ -5,249 +5,100 @@ public class Piece : MonoBehaviour
 {
 	public PieceOwner owner;
 	public PieceType pieceType;
-
 	public Tile currentTile;
 
-	private Vector3 dragStartPosition;
-	private List<Tile> legalMoves = new List<Tile>();
-
-	private Vector3 originalPosition;
-
-	void Start()
+	private void Start()
 	{
-		originalPosition = transform.position;
+		Vector3 pos = transform.position;
+		pos.z = -1f;
+		transform.position = pos;
 	}
 
-	void OnMouseDown()
+	// --- NOWA METODA DLA PIECEMOVEMENT ---
+	public void ToggleHighlight(bool show)
 	{
-		if (!GameManager.Instance.CanPieceMove(this))
-			return;
+		// 1. Obliczamy gdzie mo¿emy iœæ
+		List<Tile> moves = GetLegalMoves();
 
-		dragStartPosition = transform.position;
-		GetLegalMoves();
-	}
-
-	void OnMouseDrag()
-	{
-		Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-		mouseWorld.z = -1;
-		transform.position = mouseWorld;
-	}
-
-        void OnMouseUp()
-        {
-                Tile nearestLegal = FindNearestLegalTile();
-
-                if (nearestLegal != null)
-                {
-                        MoveToTile(nearestLegal);
-                }
-                else
-                {
-                        transform.position = dragStartPosition;
-                }
-        }
-
-        Tile FindNearestTile()
-        {
-                Tile[] allTiles = Object.FindObjectsByType<Tile>(FindObjectsSortMode.None);
-                Tile nearest = null;
-                float minDist = Mathf.Infinity;
-
-		foreach (Tile t in allTiles)
+		// 2. Ka¿demu kafelkowi z listy mówimy "zmieñ kolor"
+		foreach (Tile t in moves)
 		{
-			float dist = Vector2.Distance(transform.position, t.transform.position);
-			if (dist < minDist)
-			{
-				minDist = dist;
-				nearest = t;
-			}
+			if (t != null) t.SetHighlight(show);
 		}
-
-                return (minDist < 1.5f) ? nearest : null;
-        }
-
-        private Tile FindNearestLegalTile()
-        {
-                if (legalMoves.Count == 0)
-                        return null;
-
-                Tile nearest = null;
-                float minDist = Mathf.Infinity;
-
-                foreach (Tile t in legalMoves)
-                {
-                        if (t == null)
-                                continue;
-
-                        float dist = Vector2.Distance(transform.position, t.transform.position);
-                        if (dist < minDist)
-                        {
-                                minDist = dist;
-                                nearest = t;
-                        }
-                }
-
-                return (nearest != null && minDist < 1.5f) ? nearest : null;
-        }
-
-	private void MoveToTile(Tile target)
-	{
-		MoveInternal(target);
-
-		if (owner == PieceOwner.Player)
-			GameManager.Instance.EndPlayerMove();
-		else
-			GameManager.Instance.EndEnemyMove();
 	}
 
-	// liczy legalne ruchy
+	// --- RUCHY SZACHOWE (Bez zmian) ---
 	public List<Tile> GetLegalMoves()
 	{
-		legalMoves.Clear();
+		List<Tile> moves = new List<Tile>();
+		if (currentTile == null) return moves;
 
-		if (currentTile == null) return legalMoves;
+		int row = currentTile.globalRow;
+		int col = currentTile.globalCol;
 
 		switch (pieceType)
 		{
+			case PieceType.Pawn: CalculatePawnMoves(row, col, moves); break;
+			case PieceType.Rook: MoveLine(row, col, 1, 0, moves); MoveLine(row, col, -1, 0, moves); MoveLine(row, col, 0, 1, moves); MoveLine(row, col, 0, -1, moves); break;
+			case PieceType.Bishop: MoveLine(row, col, 1, 1, moves); MoveLine(row, col, 1, -1, moves); MoveLine(row, col, -1, 1, moves); MoveLine(row, col, -1, -1, moves); break;
+			case PieceType.queen:
+				MoveLine(row, col, 1, 0, moves); MoveLine(row, col, -1, 0, moves); MoveLine(row, col, 0, 1, moves); MoveLine(row, col, 0, -1, moves);
+				MoveLine(row, col, 1, 1, moves); MoveLine(row, col, 1, -1, moves); MoveLine(row, col, -1, 1, moves); MoveLine(row, col, -1, -1, moves); break;
+			case PieceType.Knight:
+				MovePoint(row + 2, col + 1, moves); MovePoint(row + 2, col - 1, moves); MovePoint(row - 2, col + 1, moves); MovePoint(row - 2, col - 1, moves);
+				MovePoint(row + 1, col + 2, moves); MovePoint(row + 1, col - 2, moves); MovePoint(row - 1, col + 2, moves); MovePoint(row - 1, col - 2, moves); break;
 			case PieceType.King:
-				AddStepMoves(kingDirs);
-				break;
-
-			case PieceType.Pawn:
-				AddPawnMoves();
-				break;
-
-			default:
-				break;
+				MovePoint(row + 1, col, moves); MovePoint(row - 1, col, moves); MovePoint(row, col + 1, moves); MovePoint(row, col - 1, moves);
+				MovePoint(row + 1, col + 1, moves); MovePoint(row + 1, col - 1, moves); MovePoint(row - 1, col + 1, moves); MovePoint(row - 1, col - 1, moves); break;
 		}
-
-		return legalMoves;
+		return moves;
 	}
 
-	// ruchy jednopolowe (krÃ³l, skoczek itd.) Â– uÂ¿ywamy globalRow + GetTileGlobal
-	private void AddStepMoves(Vector2Int[] dirs)
+	private void CalculatePawnMoves(int row, int col, List<Tile> moves)
 	{
-		foreach (var d in dirs)
+		int dir = (owner == PieceOwner.Player) ? 1 : -1;
+		Tile f1 = BoardManager.Instance.GetTileGlobal(row + dir, col);
+		if (f1 != null && !f1.isOccupied)
 		{
-                        int gRow = currentTile.globalRow + d.x;
-                        int col = currentTile.globalCol + d.y;
-
-			Tile target = BoardManager.Instance.GetTileGlobal(gRow, col);
-
-			if (target == null) continue;
-			if (target.isOccupied) continue;
-
-			legalMoves.Add(target);
-		}
-	}
-
-	// ruchy piona Â– do przodu o 1, z uÂ¿yciem globalRow
-	private void AddPawnMoves()
-	{
-		int forward = (owner == PieceOwner.Player) ? 1 : -1;
-
-                int gRow = currentTile.globalRow + forward;
-                int col = currentTile.globalCol;
-
-		Tile target = BoardManager.Instance.GetTileGlobal(gRow, col);
-
-		if (target == null) return;
-		if (target.isOccupied) return;
-
-		legalMoves.Add(target);
-	}
-
-	// ===== zestawy ruchÃ³w (na razie uÂ¿ywamy King/Pawn) =====
-
-	private static readonly Vector2Int[] knightMoves = new Vector2Int[]
-	{
-		new Vector2Int(1, 2),
-		new Vector2Int(2, 1),
-		new Vector2Int(-1, 2),
-		new Vector2Int(-2, 1),
-		new Vector2Int(1, -2),
-		new Vector2Int(2, -1),
-		new Vector2Int(-1, -2),
-		new Vector2Int(-2, -1)
-	};
-
-	private static readonly Vector2Int[] kingDirs = new Vector2Int[]
-	{
-		new Vector2Int(1, 0),
-		new Vector2Int(0, 1),
-		new Vector2Int(-1, 0),
-		new Vector2Int(0, -1),
-		new Vector2Int(1, 1),
-		new Vector2Int(1, -1),
-		new Vector2Int(-1, 1),
-		new Vector2Int(-1, -1)
-	};
-
-	private static readonly Vector2Int[] bishopDirections = new Vector2Int[]
-	{
-		new Vector2Int(1, 1),
-		new Vector2Int(1, -1),
-		new Vector2Int(-1, 1),
-		new Vector2Int(-1, -1)
-	};
-
-	private static readonly Vector2Int[] rookDirections = new Vector2Int[]
-	{
-		new Vector2Int(1, 0),
-		new Vector2Int(0, 1),
-		new Vector2Int(-1, 0),
-		new Vector2Int(0, -1)
-	};
-
-	private static readonly Vector2Int[] queenDirections = new Vector2Int[]
-	{
-		new Vector2Int(1, 0),
-		new Vector2Int(0, 1),
-		new Vector2Int(-1, 0),
-		new Vector2Int(0, -1),
-		new Vector2Int(1, 1),
-		new Vector2Int(1, -1),
-		new Vector2Int(-1, 1),
-		new Vector2Int(-1, -1)
-	};
-
-	// ai enemy
-
-	public void MoveToTileFromAI(Tile target)
-	{
-		MoveInternal(target);
-		GameManager.Instance.EndEnemyMove();
-	}
-
-	private void MoveInternal(Tile target)
-	{
-		if (target.isOccupied && target.currentPiece != null)
-		{
-			Piece other = target.currentPiece;
-
-			if (other.owner != this.owner)
+			moves.Add(f1);
+			bool isStart = (owner == PieceOwner.Player && row <= 1) || (owner == PieceOwner.Enemy && row >= BoardManager.Instance.totalRows - 2);
+			if (isStart)
 			{
-				if (other.pieceType == PieceType.King)
-				{
-					bool playerWon = this.owner == PieceOwner.Player;
-					GameManager.Instance.GameOver(playerWon);
-				}
-
-				Object.Destroy(other.gameObject);
+				Tile f2 = BoardManager.Instance.GetTileGlobal(row + dir * 2, col);
+				if (f2 != null && !f2.isOccupied) moves.Add(f2);
 			}
 		}
+		CheckPawnAttack(row + dir, col + 1, moves);
+		CheckPawnAttack(row + dir, col - 1, moves);
+	}
 
-		if (currentTile != null)
+	private void CheckPawnAttack(int r, int c, List<Tile> moves)
+	{
+		Tile t = BoardManager.Instance.GetTileGlobal(r, c);
+		if (t != null && t.isOccupied && t.currentPiece != null && t.currentPiece.owner != owner) moves.Add(t);
+	}
+
+	private void MoveLine(int row, int col, int xDir, int yDir, List<Tile> moves)
+	{
+		int currRow = row + yDir;
+		int currCol = col + xDir;
+		while (true)
 		{
-			currentTile.isOccupied = false;
-			currentTile.currentPiece = null;
+			Tile t = BoardManager.Instance.GetTileGlobal(currRow, currCol);
+			if (t == null) break;
+			if (!t.isOccupied) moves.Add(t);
+			else
+			{
+				if (t.currentPiece.owner != owner) moves.Add(t);
+				break;
+			}
+			currRow += yDir; currCol += xDir;
 		}
+	}
 
-		currentTile = target;
-		currentTile.isOccupied = true;
-		currentTile.currentPiece = this;
-
-		transform.position = currentTile.transform.position;
+	private void MovePoint(int r, int c, List<Tile> moves)
+	{
+		Tile t = BoardManager.Instance.GetTileGlobal(r, c);
+		if (t != null && (!t.isOccupied || (t.currentPiece != null && t.currentPiece.owner != owner))) moves.Add(t);
 	}
 }

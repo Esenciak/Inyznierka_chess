@@ -1,0 +1,157 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &9190330379715019098
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 322691757847573607}
+  - component: {fileID: 375164036611864473}
+  - component: {fileID: 5268819961739681502}
+  - component: {fileID: 6854902549389007182}
+  - component: {fileID: 9204701212112606780}
+  - component: {fileID: 606439090516140873}
+  m_Layer: 0
+  m_Name: Manager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &322691757847573607
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9190330379715019098}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5.20518, y: -0.73152, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &375164036611864473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9190330379715019098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db0ff21d8d3bf3c44a9e6d9d90838249, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameProgress
+  coins: 100
+  gamesPlayed: 0
+  playerBoardSize: 3
+  myArmy: []
+--- !u!114 &5268819961739681502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9190330379715019098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50d8090056db9e944b9f336520beb17c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BoardManager
+  PlayerRows: 3
+  PlayerCols: 3
+  CenterRows: 5
+  CenterCols: 5
+  tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
+  playerColors:
+  - {r: 0.7176471, g: 0.85098046, b: 0.454902, a: 0}
+  - {r: 0.22352943, g: 0.45882356, b: 0.36078432, a: 0}
+  enemyColors:
+  - {r: 0.8862746, g: 0.70980394, b: 0.43921572, a: 0}
+  - {r: 0.9333334, g: 0.91372555, b: 0.5411765, a: 0}
+  playerOffset: {x: 0, y: -5}
+  enemyOffset: {x: 0, y: 5}
+  centerOffset: {x: 0, y: 0}
+--- !u!114 &6854902549389007182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9190330379715019098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9af0bad5887b274397e19fe3464627c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShopManager
+  shopRows: 2
+  shopCols: 3
+  shopOffset: {x: -6, y: 0}
+  tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
+  priceTextPrefab: {fileID: 2660489683285034080, guid: f5e25e9ca87e79c4198c80a0d1595fda, type: 3}
+  piecePrefabs:
+  - {fileID: 3002512713483526407, guid: 308823bf762d7674ab8537160504a26f, type: 3}
+  - {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
+  - {fileID: 3869002206912999649, guid: 0e491f804da3d274fa39ea7d63f83431, type: 3}
+  - {fileID: 6673001445477641656, guid: 5b58a5cfb60fb6c46872ee99e367b35a, type: 3}
+  - {fileID: 8683770127193551573, guid: 3f8eeadc38b10534d866a87d04521e29, type: 3}
+  - {fileID: 8693811134986804410, guid: d2c460f7fe38d184b8e4bd19e3d5617c, type: 3}
+  whitePiecePrefabs:
+  - {fileID: 3002512713483526407, guid: 308823bf762d7674ab8537160504a26f, type: 3}
+  - {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
+  - {fileID: 3869002206912999649, guid: 0e491f804da3d274fa39ea7d63f83431, type: 3}
+  - {fileID: 6673001445477641656, guid: 5b58a5cfb60fb6c46872ee99e367b35a, type: 3}
+  - {fileID: 8683770127193551573, guid: 3f8eeadc38b10534d866a87d04521e29, type: 3}
+  - {fileID: 8693811134986804410, guid: d2c460f7fe38d184b8e4bd19e3d5617c, type: 3}
+  blackPiecePrefabs:
+  - {fileID: 5078288275362618545, guid: f883beabdedf17f459e545ff677136f1, type: 3}
+  - {fileID: 1361584432996271375, guid: 87b757d746625214dbf7cd7c49046d43, type: 3}
+  - {fileID: 4738133512566458958, guid: b3b3e1cb355a92848b70e43f26004d28, type: 3}
+  - {fileID: 4329595498035144687, guid: f22fead03343f704ca3f5b5584de0176, type: 3}
+  - {fileID: 3684540255628131400, guid: e0a1c2e78d46a9e4caf751cdb99df381, type: 3}
+  - {fileID: 9174431837029219003, guid: 1a3f0600ec8ddfe47952f8e26e942756, type: 3}
+  coinsText: {fileID: 0}
+  centerBoardSizeText: {fileID: 0}
+  roundText: {fileID: 0}
+--- !u!114 &9204701212112606780
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9190330379715019098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f7f6d1bf3b9565d44955f4d545d50e84, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryManager
+  rows: 4
+  cols: 2
+  tilePrefab: {fileID: 2279762059706173930, guid: b1738bb5546219d44b26f4e93637b002, type: 3}
+  kingPrefab: {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
+  whiteKingPrefab: {fileID: 456959880167322426, guid: 27ba7b482107ed0458ffa5e29d8a208f, type: 3}
+  blackKingPrefab: {fileID: 1361584432996271375, guid: 87b757d746625214dbf7cd7c49046d43, type: 3}
+  inventoryOffset: {x: -7, y: -2}
+  inventoryColor1: {r: 0.3, g: 0.3, b: 0.3, a: 1}
+  inventoryColor2: {r: 0.4, g: 0.4, b: 0.4, a: 1}
+--- !u!114 &606439090516140873
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9190330379715019098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fef69473cbbb7e445877bce6e7d49926, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameManager
+  isMultiplayer: 0
+  currentPhase: 1
+  currentTurn: 0

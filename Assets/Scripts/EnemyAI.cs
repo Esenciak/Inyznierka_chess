@@ -17,7 +17,7 @@ public class EnemyAI : MonoBehaviour
 
 	public void MakeMove()
 	{
-		// znajdŸ wszystkie figury przeciwnika
+		// znajduje wszystkie figury przeciwnika
 		Piece[] allPieces = FindObjectsOfType<Piece>();
 		List<(Piece, List<Tile>)> candidates = new List<(Piece, List<Tile>)>();
 
@@ -33,19 +33,19 @@ public class EnemyAI : MonoBehaviour
 
 		if (candidates.Count == 0)
 		{
-			// brak ruchów – mo¿na póŸniej daæ remis / win gracza
+			// brak ruchów ==  remis / win gracza
 			GameManager.Instance.EndEnemyMove();
 			return;
 		}
 
-		// wylosuj figurê i ruch
+		// wylosuje figurê i ruch
 		var pair = candidates[Random.Range(0, candidates.Count)];
 		Piece piece = pair.Item1;
 		List<Tile> movesList = pair.Item2;
 
 		Tile target = movesList[Random.Range(0, movesList.Count)];
 
-		// wykonaj ruch "jak gracz"
-		piece.MoveToTileFromAI(target);
+		// wykonaje ruch "jak gracz"
+		//piece.MoveToTileFromAI(target);
 	}
 }

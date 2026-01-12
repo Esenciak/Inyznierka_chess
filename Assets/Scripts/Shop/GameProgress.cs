@@ -1,82 +1,105 @@
 using UnityEngine;
+using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+
+// To jest ta Twoja struktura danych (zamiast Stringa/Inta mamy obiekt)
+// [System.Serializable] jest KLUCZOWE - pozwala Unity widzieÄ‡ i zapisywaÄ‡ tÄ™ klasÄ™
+[System.Serializable]
+public class SavedPieceData
+{
+        public PieceType type; // Jaka to figura?
+        public int x;          // Kolumna (Col)
+        public int y;          // Wiersz (Row)
+}
+
+[System.Serializable]
+public class SavedInventoryData
+{
+        public PieceType type; // Jaka to figura?
+        public int row;        // Wiersz w inventory
+        public int col;        // Kolumna w inventory
+}
 
 public class GameProgress : MonoBehaviour
 {
-	public static GameProgress Instance { get; private set; }
+        public static GameProgress Instance { get; private set; }
 
-	[Header("Waluta / ekonomia")]
-	public int coins = 0;
-	public int coinsPerWin = 10;
-	public int coinsPerLoss = 5;
+        [Header("Statystyki")]
+        public int coins = 100;
+        public int gamesPlayed = 0;
 
-	[Header("Rozmiar planszy gracza (dla obu: player + enemy)")]
-	public int playerBoardSize = 3;     // 3 oznacza 3x3
-	public int maxPlayerBoardSize = 5;  // max 5x5
+        [Header("Ekonomia")]
+        public EconomyConfig economyConfig;
 
-	[Header("Rozmiar planszy centralnej")]
-	public int centerBoardSize = 3;          // 3 oznacza 3x3
-	public int maxCenterBoardSize = 5;
-	public int gamesPerCenterUpgrade = 3;    // co ile gier powiêkszaæ œrodek
+        [Header("Tryb gracza")]
+        public bool isHostPlayer = true;
 
-	[Header("Statystyki meta")]
-	public int gamesPlayed = 0;
+        [Header("Ustawienia Planszy")]
+        public int playerBoardSize = 3;
 
-	private void Awake()
-	{
-		if (Instance != null && Instance != this)
-		{
-			Destroy(gameObject);
-			return;
-		}
+        // Dynamiczny rozmiar Å›rodka
+        public int centerBoardSize
+        {
+                get
+                {
+                        int upgrades = gamesPlayed / 3;
+                        return Mathf.Min(3 + (upgrades * 2), 9);
+                }
+        }
 
-		Instance = this;
-		DontDestroyOnLoad(gameObject);
-	}
+        // --- PAMIÄ˜Ä† ARMII ---
+        // Tu trzymamy zapisany ukÅ‚ad (to jest bezpieczniejsze niÅ¼ GameObjecty)
+        public List<SavedPieceData> myArmy = new List<SavedPieceData>();
 
-	public void AddCoins(int amount)
-	{
-		coins += amount;
-		if (coins < 0) coins = 0;
-	}
+        // --- PAMIÄ˜Ä† INVENTORY ---
+        public List<SavedInventoryData> inventoryPieces = new List<SavedInventoryData>();
 
-	public bool SpendCoins(int amount)
-	{
-		if (coins < amount) return false;
-		coins -= amount;
-		return true;
-	}
+        private void Awake()
+        {
+                if (Instance != null && Instance != this)
+                {
+                        Destroy(gameObject);
+                        return;
+                }
+                Instance = this;
+                DontDestroyOnLoad(gameObject); // To sprawia, Å¼e GameProgress przetrwa zmianÄ™ sceny
 
-	/// <summary>
-	/// Wywo³uj na koñcu ka¿dej gry (po wygranej/przegranej).
-	/// </summary>
-	public void RegisterMatchResult(bool playerWon)
-	{
-		// 1. Monety
-		if (playerWon)
-			AddCoins(coinsPerWin);
-		else
-			AddCoins(coinsPerLoss);
+                if (economyConfig != null)
+                {
+                        coins = economyConfig.startingCoins;
+                }
+        }
 
-		// 2. Licznik gier
-		gamesPlayed++;
+        public bool SpendCoins(int amount)
+        {
+                if (coins < amount) return false;
+                coins -= amount;
+                return true;
+        }
 
-		// 3. Auto-upgrade œrodka co X gier
-		if (gamesPlayed % gamesPerCenterUpgrade == 0)
-		{
-			if (centerBoardSize < maxCenterBoardSize)
-			{
-				centerBoardSize++;
-				Debug.Log("Center board upgraded to: " + centerBoardSize + "x" + centerBoardSize);
-			}
-		}
-	}
+        public void AddCoins(int amount)
+        {
+                coins += amount;
+        }
 
-	/// <summary>
-	/// Metoda pomocnicza do ³adowania scen.
-	/// </summary>
-	public void LoadScene(string sceneName)
-	{
-		SceneManager.LoadScene(sceneName);
-	}
+        public bool IsLocalPlayerWhite()
+        {
+                if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                {
+                        return isHostPlayer;
+                }
+
+                return true;
+        }
+
+        public void CompleteRound(bool playerWon, int winReward, int loseReward)
+        {
+                gamesPlayed++;
+                AddCoins(playerWon ? winReward : loseReward);
+        }
+
+        public void LoadScene(string sceneName)
+        {
+                SceneManager.LoadScene(sceneName);
+        }
 }
