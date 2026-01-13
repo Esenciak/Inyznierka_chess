@@ -24,9 +24,65 @@ MonoBehaviour:
   knightPrice: 25
   spawnWeightsByRound:
   - roundNumber: 1
+    pawnWeight: 50
+    kingWeight: 0
+    queenWeight: 5
+    rookWeight: 5
+    bishopWeight: 20
+    knightWeight: 20
+  - roundNumber: 2
     pawnWeight: 40
     kingWeight: 0
     queenWeight: 5
-    rookWeight: 15
+    rookWeight: 10
     bishopWeight: 20
+    knightWeight: 25
+  - roundNumber: 3
+    pawnWeight: 30
+    kingWeight: 0
+    queenWeight: 10
+    rookWeight: 10
+    bishopWeight: 25
+    knightWeight: 25
+  - roundNumber: 4
+    pawnWeight: 20
+    kingWeight: 0
+    queenWeight: 10
+    rookWeight: 20
+    bishopWeight: 25
+    knightWeight: 25
+  - roundNumber: 5
+    pawnWeight: 10
+    kingWeight: 0
+    queenWeight: 10
+    rookWeight: 20
+    bishopWeight: 35
+    knightWeight: 25
+  - roundNumber: 5
+    pawnWeight: 10
+    kingWeight: 0
+    queenWeight: 10
+    rookWeight: 20
+    bishopWeight: 35
+    knightWeight: 25
+  - roundNumber: 6
+    pawnWeight: 10
+    kingWeight: 0
+    queenWeight: 15
+    rookWeight: 25
+    bishopWeight: 30
+    knightWeight: 20
+  - roundNumber: 7
+    pawnWeight: 5
+    kingWeight: 0
+    queenWeight: 15
+    rookWeight: 25
+    bishopWeight: 30
+    knightWeight: 25
+  - roundNumber: 8
+    pawnWeight: 0
+    kingWeight: 0
+    queenWeight: 20
+    rookWeight: 25
+    bishopWeight: 35
     knightWeight: 20

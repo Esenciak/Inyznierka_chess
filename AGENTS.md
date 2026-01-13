@@ -8,7 +8,7 @@
   - Layers:
     - Default, TransparentFX, Ignore Raycast, Water, UI, LogicTile, Background, Tile, Piece
 - Active game object:
-  - Name: TurnIndicator
+  - Name: EnemyAI
   - Tag: Untagged
   - Layer: Default
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->
