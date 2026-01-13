@@ -236,6 +236,19 @@ public class ShopManager : MonoBehaviour
 
         public void TryBuyPiece(ShopItem item)
         {
+                if (InventoryManager.Instance == null)
+                {
+                        Debug.Log("Nie kupiono: brak InventoryManager.");
+                        return;
+                }
+
+                if (!InventoryManager.Instance.IsReady)
+                {
+                        InventoryManager.Instance.EnsureInitialized();
+                        Debug.Log("Nie kupiono: ekwipunek jeszcze się ładuje.");
+                        return;
+                }
+
                 // 1. Czy stać nas?
                 if (GameProgress.Instance.coins >= item.price)
                 {
@@ -246,6 +259,11 @@ public class ShopManager : MonoBehaviour
                         {
                                 // Dopiero teraz zabieramy kasę i niszczymy przedmiot
                                 GameProgress.Instance.SpendCoins(item.price);
+                                if (item.CurrentTile != null)
+                                {
+                                        item.CurrentTile.isOccupied = false;
+                                        item.CurrentTile.currentPiece = null;
+                                }
                                 Destroy(item.gameObject);
                                 UpdateUI();
                         }
@@ -436,7 +454,14 @@ public class ShopManager : MonoBehaviour
         {
                 if (coinsText != null) coinsText.text = "Coins: " + GameProgress.Instance.coins;
                 if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
-                if (roundText != null) roundText.text = "Round: " + (GameProgress.Instance.gamesPlayed + 1);
+                if (roundText != null)
+                {
+                        string localName = LobbyState.LocalPlayerName;
+                        string opponentName = LobbyState.OpponentPlayerName;
+                        int wins = GameProgress.Instance.wins;
+                        int losses = GameProgress.Instance.losses;
+                        roundText.text = $"Round: {GameProgress.Instance.gamesPlayed + 1} | {localName} {wins}-{losses} vs {opponentName}";
+                }
                 if (rerollButton != null)
                 {
                         int cost = economyConfig != null ? economyConfig.rerollCost : 0;

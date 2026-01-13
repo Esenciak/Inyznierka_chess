@@ -7,6 +7,7 @@ public class InventoryManager : MonoBehaviour
 {
         public static InventoryManager Instance { get; private set; }
         public bool IsReady { get; private set; } = false;
+        private bool isInitializing = false;
 
         [Header("Ustawienia Ekwipunku")]
         public int rows = 5;
@@ -53,6 +54,13 @@ public class InventoryManager : MonoBehaviour
         // --- POPRAWKA: Czekamy na BoardManagera ---
         IEnumerator InitializeInventoryRoutine()
         {
+                if (isInitializing)
+                {
+                        yield break;
+                }
+
+                isInitializing = true;
+
                 // Czekamy, aż BoardManager powstanie (jeśli jest null)
                 while (BoardManager.Instance == null)
                 {
@@ -75,8 +83,22 @@ public class InventoryManager : MonoBehaviour
                 }
 
                 IsReady = true;
+                isInitializing = false;
         }
         // ------------------------------------------
+
+        public void EnsureInitialized()
+        {
+                if (SceneManager.GetActiveScene().name != "Shop")
+                {
+                        return;
+                }
+
+                if (!IsReady && !isInitializing)
+                {
+                        StartCoroutine(InitializeInventoryRoutine());
+                }
+        }
 
         void ClearInventory()
         {
