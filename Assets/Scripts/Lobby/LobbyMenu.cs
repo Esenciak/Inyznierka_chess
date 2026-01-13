@@ -12,6 +12,7 @@ public class LobbyMenu : MonoBehaviour
 {
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
+        [SerializeField] private InputField passwordInput;
         [SerializeField] private InputField lobbyNameInput;
         [SerializeField] private Dropdown lobbyDropdown;
         [SerializeField] private Text statusText;
@@ -26,6 +27,7 @@ public class LobbyMenu : MonoBehaviour
         private readonly List<Lobby> availableLobbies = new List<Lobby>();
         private Lobby currentLobby;
         private string customIdValue = string.Empty;
+        private string passwordValue = string.Empty;
         private string lobbyNameValue = string.Empty;
         private string selectedLobbyId = string.Empty;
         private string statusMessage = string.Empty;
@@ -63,9 +65,17 @@ public class LobbyMenu : MonoBehaviour
 
                         if (!AuthenticationService.Instance.IsSignedIn)
                         {
-                                string customId = GetOrCreateCustomId();
-                                await SignInAsync(customId);
-                                SetStatus($"Zalogowano jako: {customId}");
+                                if (TryGetUsernamePassword(out string username, out string password))
+                                {
+                                        await SignInWithUsernamePasswordAsync(username, password);
+                                        SetStatus($"Zalogowano jako: {username}");
+                                }
+                                else
+                                {
+                                        string customId = GetOrCreateCustomId();
+                                        await SignInAsync(customId);
+                                        SetStatus($"Zalogowano jako: {customId}");
+                                }
                         }
 
                         await RefreshLobbiesAsync();
@@ -95,6 +105,49 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 await service.SignInAnonymouslyAsync();
+        }
+
+        private async Task SignInWithUsernamePasswordAsync(string username, string password)
+        {
+                if (AuthenticationService.Instance.IsSignedIn)
+                {
+                        return;
+                }
+
+                try
+                {
+                        await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
+                }
+                catch (Exception)
+                {
+                        await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
+                }
+        }
+
+        private bool TryGetUsernamePassword(out string username, out string password)
+        {
+                username = string.Empty;
+                password = string.Empty;
+
+                if (customIdInput != null && !string.IsNullOrWhiteSpace(customIdInput.text))
+                {
+                        username = customIdInput.text.Trim();
+                }
+                else if (customIdInput == null && !string.IsNullOrWhiteSpace(customIdValue))
+                {
+                        username = customIdValue.Trim();
+                }
+
+                if (passwordInput != null && !string.IsNullOrWhiteSpace(passwordInput.text))
+                {
+                        password = passwordInput.text.Trim();
+                }
+                else if (passwordInput == null && !string.IsNullOrWhiteSpace(passwordValue))
+                {
+                        password = passwordValue.Trim();
+                }
+
+                return !string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password);
         }
 
         private string GetOrCreateCustomId()
@@ -292,8 +345,11 @@ public class LobbyMenu : MonoBehaviour
                 GUILayout.Label("Lobby (UGS)", titleStyle);
                 GUILayout.Space(10);
 
-                GUILayout.Label("Custom ID:", labelStyle);
+                GUILayout.Label("Username:", labelStyle);
                 customIdValue = GUILayout.TextField(customIdValue, 32, textFieldStyle, GUILayout.Height(40));
+
+                GUILayout.Label("Password:", labelStyle);
+                passwordValue = GUILayout.PasswordField(passwordValue, '*', 32, textFieldStyle, GUILayout.Height(40));
 
                 GUILayout.Label("Nazwa lobby:", labelStyle);
                 lobbyNameValue = GUILayout.TextField(lobbyNameValue, 32, textFieldStyle, GUILayout.Height(40));
