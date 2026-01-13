@@ -58,7 +58,7 @@ public class BattleLoader : MonoBehaviour
                         && GameManager.Instance.isMultiplayer
                         && BattleSession.Instance != null
                         && NetworkManager.Singleton != null
-                        && NetworkManager.Singleton.IsListening;
+                        && (NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsClient);
 
                 if (isMultiplayerActive)
                 {
