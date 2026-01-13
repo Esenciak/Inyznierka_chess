@@ -23,7 +23,7 @@ public class PieceMovement : MonoBehaviour
                 bool isNetworked = isBattle
                         && ((GameManager.Instance != null && GameManager.Instance.isMultiplayer)
                                 || (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-                                || BattleMoveSync.Instance != null);
+                                || (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned));
 
                 if (isBattle)
                 {
@@ -192,7 +192,8 @@ public class PieceMovement : MonoBehaviour
         bool IsLocalPlayersPiece()
         {
                 bool networkActive = (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-                        || (GameManager.Instance != null && GameManager.Instance.isMultiplayer);
+                        || (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                        || (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned);
 
                 if (!networkActive)
                 {

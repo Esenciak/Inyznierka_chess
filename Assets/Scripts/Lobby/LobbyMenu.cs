@@ -179,6 +179,7 @@ public class LobbyMenu : MonoBehaviour
 
                         currentLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, 2, options);
                         SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode})");
+                        LobbyState.RegisterLobby(currentLobby.Id, true);
 
                         if (connectionMenu != null)
                         {
@@ -216,6 +217,7 @@ public class LobbyMenu : MonoBehaviour
                         }
 
                         SetStatus($"Dołączono do lobby: {currentLobby.Name}");
+                        LobbyState.RegisterLobby(currentLobby.Id, false);
 
                         if (connectionMenu != null)
                         {

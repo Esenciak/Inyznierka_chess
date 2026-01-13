@@ -129,7 +129,8 @@ public class GameManager : MonoBehaviour
 	public bool IsMyTurn()
 	{
 		bool networkActive = isMultiplayer
-			|| (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening);
+			|| (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+			|| (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned);
 
 		if (networkActive && BattleMoveSync.Instance != null)
 		{
