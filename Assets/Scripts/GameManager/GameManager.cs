@@ -37,6 +37,7 @@ public class GameManager : MonoBehaviour
                 }
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+                SceneFader.EnsureInstance();
                 SyncMultiplayerState();
         }
 
@@ -128,14 +129,18 @@ public class GameManager : MonoBehaviour
 
 	public bool IsMyTurn()
 	{
-		if (!isMultiplayer)
-		{
-			return currentTurn == PieceOwner.Player;
-		}
+		bool networkActive = isMultiplayer
+			|| (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
+			|| (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned);
 
-		if (BattleMoveSync.Instance != null)
+		if (networkActive && BattleMoveSync.Instance != null)
 		{
 			return BattleMoveSync.Instance.IsLocalPlayersTurn();
+		}
+
+		if (!networkActive)
+		{
+			return currentTurn == PieceOwner.Player;
 		}
 
 		if (BattleSession.Instance == null || NetworkManager.Singleton == null)
@@ -270,12 +275,15 @@ public class GameManager : MonoBehaviour
                                 {
                                         if (Unity.Netcode.NetworkManager.Singleton.IsServer)
                                         {
-                                                Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("MainMenu", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                                                SceneFader.FadeOutThen(() =>
+                                                {
+                                                        Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("MainMenu", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                                                });
                                         }
                                 }
                                 else
                                 {
-                                        SceneManager.LoadScene("MainMenu");
+                                        SceneFader.LoadSceneWithFade("MainMenu");
                                 }
                                 return;
                         }
@@ -289,7 +297,10 @@ public class GameManager : MonoBehaviour
                                                 BattleSession.Instance.SharedPlayerBoardSize.Value = GameProgress.Instance.playerBoardSize;
                                                 BattleSession.Instance.ResetSessionState();
                                         }
-                                        Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("Shop", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                                        SceneFader.FadeOutThen(() =>
+                                        {
+                                                Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("Shop", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                                        });
                                 }
                         }
                         else

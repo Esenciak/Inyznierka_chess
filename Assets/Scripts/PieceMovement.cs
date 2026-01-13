@@ -20,10 +20,14 @@ public class PieceMovement : MonoBehaviour
         void OnMouseDown()
         {
                 bool isBattle = SceneManager.GetActiveScene().name == "Battle";
+                bool isNetworked = isBattle
+                        && ((GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                                || (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
+                                || (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned));
 
                 if (isBattle)
                 {
-                        if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                        if (isNetworked)
                         {
                                 if (!IsLocalPlayersPiece())
                                 {
@@ -187,13 +191,25 @@ public class PieceMovement : MonoBehaviour
 
         bool IsLocalPlayersPiece()
         {
-                if (GameManager.Instance == null || !GameManager.Instance.isMultiplayer)
+                bool networkActive = (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                        || (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
+                        || (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                        || (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned);
+
+                if (!networkActive)
                 {
                         return pieceComponent.owner == PieceOwner.Player;
                 }
 
                 if (NetworkManager.Singleton == null)
                 {
+                        if (GameProgress.Instance != null)
+                        {
+                                return GameProgress.Instance.isHostPlayer
+                                        ? pieceComponent.owner == PieceOwner.Player
+                                        : pieceComponent.owner == PieceOwner.Enemy;
+                        }
+
                         return pieceComponent.owner == PieceOwner.Player;
                 }
 

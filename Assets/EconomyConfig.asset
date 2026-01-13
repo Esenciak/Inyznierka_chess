@@ -15,9 +15,18 @@ MonoBehaviour:
   startingCoins: 100
   winReward: 20
   loseReward: 10
+  rerollCost: 5
   pawnPrice: 10
   kingPrice: 0
   queenPrice: 100
   rookPrice: 50
   bishopPrice: 40
   knightPrice: 25
+  spawnWeightsByRound:
+  - roundNumber: 1
+    pawnWeight: 40
+    kingWeight: 0
+    queenWeight: 5
+    rookWeight: 15
+    bishopWeight: 20
+    knightWeight: 20

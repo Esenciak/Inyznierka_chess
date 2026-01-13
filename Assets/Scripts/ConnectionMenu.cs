@@ -50,7 +50,10 @@ public class ConnectionMenu : MonoBehaviour
                 NetworkManager.Singleton.StartHost();
 
                 // 3. Ładowanie sceny
-                NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
+                SceneFader.FadeOutThen(() =>
+                {
+                        NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
+                });
         }
         public void StartClient()
         {
@@ -73,6 +76,6 @@ public class ConnectionMenu : MonoBehaviour
                 {
                         GameProgress.Instance.isHostPlayer = true;
                 }
-                SceneManager.LoadScene("Shop");
+                SceneFader.LoadSceneWithFade("Shop");
         }
 }

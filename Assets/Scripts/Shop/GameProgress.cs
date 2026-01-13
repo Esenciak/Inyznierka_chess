@@ -109,6 +109,6 @@ public class GameProgress : MonoBehaviour
 
         public void LoadScene(string sceneName)
         {
-                SceneManager.LoadScene(sceneName);
+                SceneFader.LoadSceneWithFade(sceneName);
         }
 }
