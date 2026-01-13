@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 public class Piece : MonoBehaviour
@@ -17,10 +18,10 @@ public class Piece : MonoBehaviour
 	// --- NOWA METODA DLA PIECEMOVEMENT ---
 	public void ToggleHighlight(bool show)
 	{
-		// 1. Obliczamy gdzie mo¿emy iœæ
+		// 1. Obliczamy gdzie moÂ¿emy iÅ“Ã¦
 		List<Tile> moves = GetLegalMoves();
 
-		// 2. Ka¿demu kafelkowi z listy mówimy "zmieñ kolor"
+		// 2. KaÂ¿demu kafelkowi z listy mÃ³wimy "zmieÃ± kolor"
 		foreach (Tile t in moves)
 		{
 			if (t != null) t.SetHighlight(show);
@@ -56,12 +57,17 @@ public class Piece : MonoBehaviour
 
 	private void CalculatePawnMoves(int row, int col, List<Tile> moves)
 	{
-		int dir = (owner == PieceOwner.Player) ? 1 : -1;
+		bool isClientView = GameManager.Instance != null
+			&& GameManager.Instance.isMultiplayer
+			&& NetworkManager.Singleton != null
+			&& !NetworkManager.Singleton.IsHost;
+		bool treatAsPlayer = owner == PieceOwner.Player || (isClientView && owner == PieceOwner.Enemy);
+		int dir = treatAsPlayer ? 1 : -1;
 		Tile f1 = BoardManager.Instance.GetTileGlobal(row + dir, col);
 		if (f1 != null && !f1.isOccupied)
 		{
 			moves.Add(f1);
-			bool isStart = (owner == PieceOwner.Player && row <= 1) || (owner == PieceOwner.Enemy && row >= BoardManager.Instance.totalRows - 2);
+			bool isStart = (treatAsPlayer && row <= 1) || (!treatAsPlayer && row >= BoardManager.Instance.totalRows - 2);
 			if (isStart)
 			{
 				Tile f2 = BoardManager.Instance.GetTileGlobal(row + dir * 2, col);
