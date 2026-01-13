@@ -663,7 +663,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -150}
+  m_AnchoredPosition: {x: -519, y: -150}
   m_SizeDelta: {x: 860.1599, y: 293.16504}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &1165650851
@@ -713,8 +713,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 100
-  m_fontSizeBase: 100
+  m_fontSize: 70.11
+  m_fontSizeBase: 70.11
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -751,7 +751,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_margin: {x: 0, y: 0, z: 0, w: 136.45221}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -1140,11 +1140,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isBattleScene: 0
-  battlePromptText: Czy chcesz się poddać?
-  shopPromptText: Czy chcesz wyjść?
+  battlePromptText: "Czy chcesz si\u0119 podda\u0107?"
+  shopPromptText: "Czy chcesz wyj\u015B\u0107?"
   confirmLabel: Tak
   cancelLabel: Nie
-  resignButtonLabel: Poddaj się
+  resignButtonLabel: "Poddaj si\u0119"
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
