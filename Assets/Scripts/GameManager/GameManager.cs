@@ -50,6 +50,11 @@ public class GameManager : MonoBehaviour
 
         private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                        isMultiplayer = true;
+                }
+
                 if (scene.name == "Battle")
                 {
                         currentPhase = GamePhase.Battle;
