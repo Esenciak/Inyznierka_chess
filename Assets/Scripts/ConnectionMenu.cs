@@ -18,9 +18,16 @@ public class ConnectionMenu : MonoBehaviour
 
                 if (singleplayerBtn != null)
                         singleplayerBtn.onClick.AddListener(StartSingleplayer);
+
+                LobbyMenu lobbyMenu = GetComponent<LobbyMenu>();
+                if (lobbyMenu == null)
+                {
+                        lobbyMenu = gameObject.AddComponent<LobbyMenu>();
+                }
+                lobbyMenu.SetConnectionMenu(this);
         }
 
-        void StartHost()
+        public void StartHost()
         {
                 Debug.Log("Startuj jako HOST...");
 
@@ -45,7 +52,7 @@ public class ConnectionMenu : MonoBehaviour
                 // 3. Ładowanie sceny
                 NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
         }
-        void StartClient()
+        public void StartClient()
         {
                 Debug.Log("Dołączam jako KLIENT...");
                 GameManager.Instance.isMultiplayer = true;
@@ -58,7 +65,7 @@ public class ConnectionMenu : MonoBehaviour
                 NetworkManager.Singleton.StartClient();
         }
 
-        void StartSingleplayer()
+        public void StartSingleplayer()
         {
                 Debug.Log("Tryb Singleplayer");
                 GameManager.Instance.isMultiplayer = false;

@@ -36,6 +36,8 @@ public class GameManager : MonoBehaviour
                         return;
                 }
                 Instance = this;
+                DontDestroyOnLoad(gameObject);
+                SyncMultiplayerState();
         }
 
         private void OnEnable()
@@ -50,6 +52,7 @@ public class GameManager : MonoBehaviour
 
         private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+                SyncMultiplayerState();
                 if (scene.name == "Battle")
                 {
                         currentPhase = GamePhase.Battle;
@@ -68,6 +71,18 @@ public class GameManager : MonoBehaviour
                 if (scene.name == "MainMenu")
                 {
                         ShowWinnerBanner();
+                }
+        }
+
+        private void SyncMultiplayerState()
+        {
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                        isMultiplayer = true;
+                        if (GameProgress.Instance != null)
+                        {
+                                GameProgress.Instance.isHostPlayer = NetworkManager.Singleton.IsHost;
+                        }
                 }
         }
 
