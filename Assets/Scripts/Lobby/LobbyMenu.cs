@@ -13,12 +13,12 @@ public class LobbyMenu : MonoBehaviour
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
         [SerializeField] private InputField lobbyNameInput;
-        [SerializeField] private InputField lobbyCodeInput;
         [SerializeField] private Dropdown lobbyDropdown;
         [SerializeField] private Text statusText;
         [SerializeField] private Button createLobbyButton;
         [SerializeField] private Button joinLobbyButton;
         [SerializeField] private Button refreshButton;
+        [SerializeField] private Button quickPlayButton;
 
         [Header("Networking")]
         [SerializeField] private ConnectionMenu connectionMenu;
@@ -27,7 +27,6 @@ public class LobbyMenu : MonoBehaviour
         private Lobby currentLobby;
         private string customIdValue = string.Empty;
         private string lobbyNameValue = string.Empty;
-        private string lobbyCodeValue = string.Empty;
         private string selectedLobbyId = string.Empty;
         private string statusMessage = string.Empty;
 
@@ -49,6 +48,8 @@ public class LobbyMenu : MonoBehaviour
                         joinLobbyButton.onClick.AddListener(() => RunSafe(JoinLobbyAsync()));
                 if (refreshButton != null)
                         refreshButton.onClick.AddListener(() => RunSafe(RefreshLobbiesAsync()));
+                if (quickPlayButton != null)
+                        quickPlayButton.onClick.AddListener(() => RunSafe(QuickPlayAsync()));
         }
 
         private async Task InitializeServicesAsync()
@@ -200,15 +201,7 @@ public class LobbyMenu : MonoBehaviour
 
                 try
                 {
-                        if (lobbyCodeInput != null && !string.IsNullOrWhiteSpace(lobbyCodeInput.text))
-                        {
-                                currentLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCodeInput.text.Trim());
-                        }
-                        else if (lobbyCodeInput == null && !string.IsNullOrWhiteSpace(lobbyCodeValue))
-                        {
-                                currentLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCodeValue.Trim());
-                        }
-                        else if (lobbyDropdown != null && lobbyDropdown.value >= 0 && lobbyDropdown.value < availableLobbies.Count)
+                        if (lobbyDropdown != null && lobbyDropdown.value >= 0 && lobbyDropdown.value < availableLobbies.Count)
                         {
                                 currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id);
                         }
@@ -218,7 +211,7 @@ public class LobbyMenu : MonoBehaviour
                         }
                         else
                         {
-                                SetStatus("Wybierz lobby lub wpisz kod.");
+                                SetStatus("Wybierz lobby z listy.");
                                 return;
                         }
 
@@ -273,7 +266,7 @@ public class LobbyMenu : MonoBehaviour
 
         private void OnGUI()
         {
-                if (customIdInput != null || lobbyNameInput != null || lobbyCodeInput != null || lobbyDropdown != null)
+                if (customIdInput != null || lobbyNameInput != null || lobbyDropdown != null)
                 {
                         return;
                 }
@@ -303,9 +296,6 @@ public class LobbyMenu : MonoBehaviour
                 GUILayout.Label("Nazwa lobby:", labelStyle);
                 lobbyNameValue = GUILayout.TextField(lobbyNameValue, 32, textFieldStyle, GUILayout.Height(40));
 
-                GUILayout.Label("Kod lobby (opcjonalnie):", labelStyle);
-                lobbyCodeValue = GUILayout.TextField(lobbyCodeValue, 16, textFieldStyle, GUILayout.Height(40));
-
                 GUILayout.Space(10);
 
                 if (GUILayout.Button("Odśwież listę", buttonStyle, GUILayout.Height(50)))
@@ -321,7 +311,6 @@ public class LobbyMenu : MonoBehaviour
                         {
                                 if (GUILayout.Button($"{lobby.Name} ({lobby.Players.Count}/2)", buttonStyle, GUILayout.Height(45)))
                                 {
-                                        lobbyCodeValue = string.Empty;
                                         selectedLobbyId = lobby.Id;
                                         RunSafe(JoinLobbyAsync());
                                         break;
@@ -341,7 +330,12 @@ public class LobbyMenu : MonoBehaviour
                         RunSafe(CreateLobbyAsync());
                 }
 
-                if (GUILayout.Button("Dołącz (kod lub lista)", buttonStyle, GUILayout.Height(55)))
+                if (GUILayout.Button("Quick Play (dołącz lub utwórz)", buttonStyle, GUILayout.Height(55)))
+                {
+                        RunSafe(QuickPlayAsync());
+                }
+
+                if (GUILayout.Button("Dołącz (z listy)", buttonStyle, GUILayout.Height(55)))
                 {
                         RunSafe(JoinLobbyAsync());
                 }
@@ -352,5 +346,34 @@ public class LobbyMenu : MonoBehaviour
                         GUILayout.Label(statusMessage, labelStyle);
                 }
                 GUILayout.EndArea();
+        }
+
+        private async Task QuickPlayAsync()
+        {
+                if (!AuthenticationService.Instance.IsSignedIn)
+                {
+                        SetStatus("Najpierw zaloguj się.");
+                        return;
+                }
+
+                await RefreshLobbiesAsync();
+                Lobby openLobby = null;
+                foreach (Lobby lobby in availableLobbies)
+                {
+                        if (lobby.Players.Count < lobby.MaxPlayers)
+                        {
+                                openLobby = lobby;
+                                break;
+                        }
+                }
+
+                if (openLobby != null)
+                {
+                        selectedLobbyId = openLobby.Id;
+                        await JoinLobbyAsync();
+                        return;
+                }
+
+                await CreateLobbyAsync();
         }
 }
