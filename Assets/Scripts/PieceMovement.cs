@@ -10,6 +10,7 @@ public class PieceMovement : MonoBehaviour
         private Piece pieceComponent;
         private SpriteRenderer sr;
         private int originalOrder;
+        [SerializeField] private bool logInputBlocks = false;
 
         void Start()
         {
@@ -31,21 +32,37 @@ public class PieceMovement : MonoBehaviour
                         {
                                 if (!IsLocalPlayersPiece())
                                 {
+                                        if (logInputBlocks)
+                                        {
+                                                Debug.Log($"[PieceMovement] Blocked: not local piece. Owner={pieceComponent.owner}");
+                                        }
                                         return;
                                 }
                                 if (BattleMoveSync.Instance != null && !GameManager.Instance.IsMyTurn())
                                 {
+                                        if (logInputBlocks)
+                                        {
+                                                Debug.Log($"[PieceMovement] Blocked: not your turn. Owner={pieceComponent.owner}");
+                                        }
                                         Debug.Log("To nie twoja tura!");
                                         return;
                                 }
                         }
                         else if (GameManager.Instance != null && !GameManager.Instance.IsMyTurn())
                         {
+                                if (logInputBlocks)
+                                {
+                                        Debug.Log($"[PieceMovement] Blocked: not your turn (offline). Owner={pieceComponent.owner}");
+                                }
                                 Debug.Log("To nie twoja tura!");
                                 return;
                         }
                         else if (pieceComponent.owner != PieceOwner.Player)
                         {
+                                if (logInputBlocks)
+                                {
+                                        Debug.Log($"[PieceMovement] Blocked: owner is {pieceComponent.owner} in offline mode.");
+                                }
                                 return;
                         }
 

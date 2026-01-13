@@ -9,6 +9,7 @@ public class ShopItem : MonoBehaviour
 	private Tile myTile;
 	private Color originalTileColor;
 	private GameObject priceTextObj;
+	public Tile CurrentTile => myTile;
 
 	public void Setup(PieceType type, int price, ShopManager manager, Tile tile, GameObject textPrefab, Vector3 textOffset)
 	{
@@ -28,7 +29,7 @@ public class ShopItem : MonoBehaviour
 			priceTextObj = Instantiate(textPrefab, transform.position + textOffset, Quaternion.identity);
 			priceTextObj.transform.SetParent(transform);
 
-			// Pobieramy komponent TextMeshPro (Wa¿ne: nie UGUI!)
+			// Pobieramy komponent TextMeshPro (WaÂ¿ne: nie UGUI!)
 			TextMeshPro tmp = priceTextObj.GetComponent<TextMeshPro>();
 
 			if (tmp != null)
@@ -37,22 +38,22 @@ public class ShopItem : MonoBehaviour
 				tmp.text = price.ToString();
 
 				// 2. Formatowanie
-				tmp.fontSize = 5; // Mo¿esz zwiêkszyæ jeœli jest za ma³e
+				tmp.fontSize = 5; // MoÂ¿esz zwiÃªkszyÃ¦ jeÅ“li jest za maÂ³e
 				tmp.alignment = TextAlignmentOptions.Center;
 				tmp.color = Color.yellow;
 
-				// 3. KLUCZOWA POPRAWKA - WARSTWY I KOLEJNOŒÆ
-				// Ustawiamy Sorting Order na bardzo wysoki, ¿eby by³ nad wszystkim
+				// 3. KLUCZOWA POPRAWKA - WARSTWY I KOLEJNOÅ’Ã†
+				// Ustawiamy Sorting Order na bardzo wysoki, Â¿eby byÂ³ nad wszystkim
 				tmp.GetComponent<MeshRenderer>().sortingOrder = 500;
 
-				// Dla pewnoœci przysuwamy go te¿ do kamery (Z = -2)
+				// Dla pewnoÅ“ci przysuwamy go teÂ¿ do kamery (Z = -2)
 				Vector3 fixPos = priceTextObj.transform.position;
 				fixPos.z = -2f;
 				priceTextObj.transform.position = fixPos;
 			}
 			else
 			{
-				Debug.LogError("B£¥D: Twój prefab ceny nie ma komponentu 'TextMeshPro'! Upewnij siê, ¿e u¿y³eœ '3D Object -> Text - TextMeshPro', a nie UI.");
+				Debug.LogError("BÂ£Â¥D: TwÃ³j prefab ceny nie ma komponentu 'TextMeshPro'! Upewnij siÃª, Â¿e uÂ¿yÂ³eÅ“ '3D Object -> Text - TextMeshPro', a nie UI.");
 			}
 		}
 	}

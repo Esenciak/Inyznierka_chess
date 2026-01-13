@@ -57,7 +57,20 @@ public class GameManager : MonoBehaviour
                 if (scene.name == "Battle")
                 {
                         currentPhase = GamePhase.Battle;
-                        currentTurn = PieceOwner.Player;
+                        if (isMultiplayer && BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned)
+                        {
+                                currentTurn = BattleMoveSync.Instance.CurrentTurn.Value;
+                        }
+                        else if (isMultiplayer && BattleSession.Instance != null)
+                        {
+                                currentTurn = BattleSession.Instance.ActiveTeam.Value == 0
+                                        ? PieceOwner.Player
+                                        : PieceOwner.Enemy;
+                        }
+                        else
+                        {
+                                currentTurn = PieceOwner.Player;
+                        }
                         gameEnded = false;
                         return;
                 }
@@ -278,6 +291,11 @@ public class GameManager : MonoBehaviour
                         int winValue = economyConfig != null ? economyConfig.winReward : winReward;
                         int loseValue = economyConfig != null ? economyConfig.loseReward : loseReward;
                         GameProgress.Instance.CompleteRound(playerWon, winValue, loseValue);
+                        if (!playerWon)
+                        {
+                                GameProgress.Instance.myArmy.Clear();
+                                GameProgress.Instance.inventoryPieces.Clear();
+                        }
                         if (GameProgress.Instance.gamesPlayed >= 9)
                         {
                                 GameProgress.Instance.lastWinnerMessage = playerWon ? "Winner: You" : "Winner: Enemy";
