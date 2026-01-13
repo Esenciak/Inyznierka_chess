@@ -28,6 +28,8 @@ public class GameProgress : MonoBehaviour
         [Header("Statystyki")]
         public int coins = 100;
         public int gamesPlayed = 0;
+        public int wins = 0;
+        public int losses = 0;
 
         [Header("Ekonomia")]
         public EconomyConfig economyConfig;
@@ -104,6 +106,14 @@ public class GameProgress : MonoBehaviour
         public void CompleteRound(bool playerWon, int winReward, int loseReward)
         {
                 gamesPlayed++;
+                if (playerWon)
+                {
+                        wins++;
+                }
+                else
+                {
+                        losses++;
+                }
                 AddCoins(playerWon ? winReward : loseReward);
         }
 

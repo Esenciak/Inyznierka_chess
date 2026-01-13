@@ -436,7 +436,14 @@ public class ShopManager : MonoBehaviour
         {
                 if (coinsText != null) coinsText.text = "Coins: " + GameProgress.Instance.coins;
                 if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
-                if (roundText != null) roundText.text = "Round: " + (GameProgress.Instance.gamesPlayed + 1);
+                if (roundText != null)
+                {
+                        string localName = LobbyState.LocalPlayerName;
+                        string opponentName = LobbyState.OpponentPlayerName;
+                        int wins = GameProgress.Instance.wins;
+                        int losses = GameProgress.Instance.losses;
+                        roundText.text = $"Round: {GameProgress.Instance.gamesPlayed + 1} | {localName} {wins}-{losses} vs {opponentName}";
+                }
                 if (rerollButton != null)
                 {
                         int cost = economyConfig != null ? economyConfig.rerollCost : 0;

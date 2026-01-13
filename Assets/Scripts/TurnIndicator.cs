@@ -47,7 +47,10 @@ public class TurnIndicator : MonoBehaviour
 
                 if (GameManager.Instance != null && GameManager.Instance.isMultiplayer && BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned)
                 {
-                        turnText.text = BattleMoveSync.Instance.IsLocalPlayersTurn() ? yourTurnText : enemyTurnText;
+                        bool isLocalTurn = BattleMoveSync.Instance.IsLocalPlayersTurn();
+                        string localName = LobbyState.LocalPlayerName;
+                        string opponentName = LobbyState.OpponentPlayerName;
+                        turnText.text = isLocalTurn ? $"Tura: {localName}" : $"Tura: {opponentName}";
                         return;
                 }
 

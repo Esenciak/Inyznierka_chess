@@ -10,6 +10,8 @@ using UnityEngine.UI;
 
 public class LobbyMenu : MonoBehaviour
 {
+        private const string PlayerNameKey = "name";
+
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
         [SerializeField] private InputField lobbyNameInput;
@@ -96,6 +98,7 @@ public class LobbyMenu : MonoBehaviour
 
                 await SignInAsync(username);
                 PlayerPrefs.SetString("CustomId", username);
+                LobbyState.SetLocalPlayerName(username);
                 SetStatus($"Zalogowano jako: {username}");
                 await RefreshLobbiesAsync();
         }
@@ -175,6 +178,78 @@ public class LobbyMenu : MonoBehaviour
                 return string.Empty;
         }
 
+        private string ResolveLocalPlayerName()
+        {
+                string username = GetUsernameInput();
+                if (string.IsNullOrWhiteSpace(username))
+                {
+                        username = PlayerPrefs.GetString("CustomId", string.Empty);
+                }
+
+                if (string.IsNullOrWhiteSpace(username))
+                {
+                        username = "Player";
+                }
+
+                return username.Trim();
+        }
+
+        private Player BuildLocalPlayer(string playerName)
+        {
+                if (string.IsNullOrWhiteSpace(playerName))
+                {
+                        playerName = "Player";
+                }
+
+                return new Player
+                {
+                        Data = new Dictionary<string, PlayerDataObject>
+                        {
+                                { PlayerNameKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) }
+                        }
+                };
+        }
+
+        private string EnsureUniqueName(string desiredName, Lobby lobby)
+        {
+                if (lobby == null || lobby.Players == null || lobby.Players.Count == 0)
+                {
+                        return desiredName;
+                }
+
+                string baseName = string.IsNullOrWhiteSpace(desiredName) ? "Player" : desiredName.Trim();
+                string candidate = baseName;
+                int suffix = 1;
+
+                while (IsNameTaken(candidate, lobby))
+                {
+                        candidate = $"{baseName}{suffix}";
+                        suffix++;
+                }
+
+                return candidate;
+        }
+
+        private bool IsNameTaken(string name, Lobby lobby)
+        {
+                if (lobby == null || lobby.Players == null)
+                {
+                        return false;
+                }
+
+                foreach (var player in lobby.Players)
+                {
+                        if (player.Data != null
+                                && player.Data.TryGetValue(PlayerNameKey, out var data)
+                                && string.Equals(data.Value, name, StringComparison.OrdinalIgnoreCase))
+                        {
+                                return true;
+                        }
+                }
+
+                return false;
+        }
+
         private async Task RefreshLobbiesAsync()
         {
                 if (!AuthenticationService.Instance.IsSignedIn)
@@ -217,14 +292,17 @@ public class LobbyMenu : MonoBehaviour
                                         ? lobbyNameValue.Trim()
                                 : $"Lobby-{UnityEngine.Random.Range(1000, 9999)}";
 
+                        string localName = ResolveLocalPlayerName();
                         CreateLobbyOptions options = new CreateLobbyOptions
                         {
-                                IsPrivate = false
+                                IsPrivate = false,
+                                Player = BuildLocalPlayer(localName)
                         };
 
                         currentLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, 2, options);
                         SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode})");
                         LobbyState.RegisterLobby(currentLobby.Id, true);
+                        LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
 
                         if (connectionMenu != null)
                         {
@@ -247,13 +325,23 @@ public class LobbyMenu : MonoBehaviour
 
                 try
                 {
+                        string localName = ResolveLocalPlayerName();
                         if (lobbyDropdown != null && lobbyDropdown.value >= 0 && lobbyDropdown.value < availableLobbies.Count)
                         {
-                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id);
+                                localName = EnsureUniqueName(localName, availableLobbies[lobbyDropdown.value]);
+                                JoinLobbyByIdOptions options = new JoinLobbyByIdOptions
+                                {
+                                        Player = BuildLocalPlayer(localName)
+                                };
+                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id, options);
                         }
                         else if (!string.IsNullOrWhiteSpace(selectedLobbyId))
                         {
-                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(selectedLobbyId);
+                                JoinLobbyByIdOptions options = new JoinLobbyByIdOptions
+                                {
+                                        Player = BuildLocalPlayer(localName)
+                                };
+                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(selectedLobbyId, options);
                         }
                         else
                         {
@@ -263,6 +351,7 @@ public class LobbyMenu : MonoBehaviour
 
                         SetStatus($"Dołączono do lobby: {currentLobby.Name}");
                         LobbyState.RegisterLobby(currentLobby.Id, false);
+                        LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
 
                         if (connectionMenu != null)
                         {
