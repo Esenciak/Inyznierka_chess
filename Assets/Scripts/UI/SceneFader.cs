@@ -168,7 +168,13 @@ public class SceneFader : MonoBehaviour
                         return;
                 }
 
-                Unity.Netcode.NetworkManager.Singleton.SceneManager.OnSceneEvent += HandleNetworkSceneEvent;
+                var sceneManager = Unity.Netcode.NetworkManager.Singleton.SceneManager;
+                if (sceneManager == null)
+                {
+                        return;
+                }
+
+                sceneManager.OnSceneEvent += HandleNetworkSceneEvent;
                 isNetworkSubscribed = true;
         }
 
@@ -179,7 +185,13 @@ public class SceneFader : MonoBehaviour
                         return;
                 }
 
-                Unity.Netcode.NetworkManager.Singleton.SceneManager.OnSceneEvent -= HandleNetworkSceneEvent;
+                var sceneManager = Unity.Netcode.NetworkManager.Singleton.SceneManager;
+                if (sceneManager == null)
+                {
+                        return;
+                }
+
+                sceneManager.OnSceneEvent -= HandleNetworkSceneEvent;
                 isNetworkSubscribed = false;
         }
 
