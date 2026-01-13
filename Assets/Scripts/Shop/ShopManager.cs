@@ -456,11 +456,10 @@ public class ShopManager : MonoBehaviour
                 if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
                 if (roundText != null)
                 {
-                        string localName = LobbyState.LocalPlayerName;
                         string opponentName = LobbyState.OpponentPlayerName;
                         int wins = GameProgress.Instance.wins;
                         int losses = GameProgress.Instance.losses;
-                        roundText.text = $"Round: {GameProgress.Instance.gamesPlayed + 1} | {localName} {wins}-{losses} vs {opponentName}";
+                        roundText.text = $"Round {GameProgress.Instance.gamesPlayed + 1}\nYou {wins} || {opponentName} {losses}";
                 }
                 if (rerollButton != null)
                 {

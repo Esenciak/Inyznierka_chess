@@ -72,6 +72,7 @@ public class GameManager : MonoBehaviour
                                 currentTurn = PieceOwner.Player;
                         }
                         gameEnded = false;
+                        UpdateBattleHeaderTexts();
                         return;
                 }
 
@@ -85,6 +86,39 @@ public class GameManager : MonoBehaviour
                 if (scene.name == "MainMenu")
                 {
                         ShowWinnerBanner();
+                }
+        }
+
+        private void UpdateBattleHeaderTexts()
+        {
+                if (GameProgress.Instance == null)
+                {
+                        return;
+                }
+
+                string localName = LobbyState.LocalPlayerName;
+                string opponentName = LobbyState.OpponentPlayerName;
+                int wins = GameProgress.Instance.wins;
+                int losses = GameProgress.Instance.losses;
+
+                GameObject playerObj = GameObject.Find("Player_name");
+                if (playerObj != null)
+                {
+                        TextMeshProUGUI playerText = playerObj.GetComponent<TextMeshProUGUI>();
+                        if (playerText != null)
+                        {
+                                playerText.text = $"{localName}: {wins}";
+                        }
+                }
+
+                GameObject enemyObj = GameObject.Find("Enemy_name");
+                if (enemyObj != null)
+                {
+                        TextMeshProUGUI enemyText = enemyObj.GetComponent<TextMeshProUGUI>();
+                        if (enemyText != null)
+                        {
+                                enemyText.text = $"{opponentName}: {losses}";
+                        }
                 }
         }
 

@@ -303,6 +303,7 @@ public class LobbyMenu : MonoBehaviour
                         SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode})");
                         LobbyState.RegisterLobby(currentLobby.Id, true);
                         LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
+                        ResetProgressForNewLobby();
 
                         if (connectionMenu != null)
                         {
@@ -352,6 +353,7 @@ public class LobbyMenu : MonoBehaviour
                         SetStatus($"Dołączono do lobby: {currentLobby.Name}");
                         LobbyState.RegisterLobby(currentLobby.Id, false);
                         LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
+                        ResetProgressForNewLobby();
 
                         if (connectionMenu != null)
                         {
@@ -516,5 +518,13 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 await CreateLobbyAsync();
+        }
+
+        private void ResetProgressForNewLobby()
+        {
+                if (GameProgress.Instance != null)
+                {
+                        GameProgress.Instance.ResetProgressForNewLobby();
+                }
         }
 }

@@ -76,6 +76,22 @@ public class GameProgress : MonoBehaviour
                 }
         }
 
+        public void ResetProgressForNewLobby()
+        {
+                gamesPlayed = 0;
+                wins = 0;
+                losses = 0;
+                lastWinnerMessage = string.Empty;
+                playerBoardSize = 3;
+                myArmy.Clear();
+                inventoryPieces.Clear();
+
+                if (economyConfig != null)
+                {
+                        coins = economyConfig.startingCoins;
+                }
+        }
+
         public bool SpendCoins(int amount)
         {
                 if (coins < amount) return false;
