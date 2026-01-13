@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: EconomyConfig
   m_EditorClassIdentifier: Assembly-CSharp::EconomyConfig
   startingCoins: 100
-  winReward: 20
-  loseReward: 10
+  winReward: 10
+  loseReward: 20
   rerollCost: 5
   pawnPrice: 10
   kingPrice: 0
