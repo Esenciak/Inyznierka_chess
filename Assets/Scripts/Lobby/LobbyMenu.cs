@@ -12,10 +12,10 @@ public class LobbyMenu : MonoBehaviour
 {
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
-        [SerializeField] private InputField passwordInput;
         [SerializeField] private InputField lobbyNameInput;
         [SerializeField] private Dropdown lobbyDropdown;
         [SerializeField] private Text statusText;
+        [SerializeField] private Button loginButton;
         [SerializeField] private Button createLobbyButton;
         [SerializeField] private Button joinLobbyButton;
         [SerializeField] private Button refreshButton;
@@ -27,7 +27,6 @@ public class LobbyMenu : MonoBehaviour
         private readonly List<Lobby> availableLobbies = new List<Lobby>();
         private Lobby currentLobby;
         private string customIdValue = string.Empty;
-        private string passwordValue = string.Empty;
         private string lobbyNameValue = string.Empty;
         private string selectedLobbyId = string.Empty;
         private string statusMessage = string.Empty;
@@ -46,6 +45,8 @@ public class LobbyMenu : MonoBehaviour
         {
                 if (createLobbyButton != null)
                         createLobbyButton.onClick.AddListener(() => RunSafe(CreateLobbyAsync()));
+                if (loginButton != null)
+                        loginButton.onClick.AddListener(() => RunSafe(LoginAsync()));
                 if (joinLobbyButton != null)
                         joinLobbyButton.onClick.AddListener(() => RunSafe(JoinLobbyAsync()));
                 if (refreshButton != null)
@@ -65,17 +66,8 @@ public class LobbyMenu : MonoBehaviour
 
                         if (!AuthenticationService.Instance.IsSignedIn)
                         {
-                                if (TryGetUsernamePassword(out string username, out string password))
-                                {
-                                        await SignInWithUsernamePasswordAsync(username, password);
-                                        SetStatus($"Zalogowano jako: {username}");
-                                }
-                                else
-                                {
-                                        string customId = GetOrCreateCustomId();
-                                        await SignInAsync(customId);
-                                        SetStatus($"Zalogowano jako: {customId}");
-                                }
+                                SetStatus("Wpisz username i kliknij Zaloguj.");
+                                return;
                         }
 
                         await RefreshLobbiesAsync();
@@ -84,6 +76,28 @@ public class LobbyMenu : MonoBehaviour
                 {
                         SetStatus($"Błąd inicjalizacji usług: {ex.Message}");
                 }
+        }
+
+        private async Task LoginAsync()
+        {
+                if (AuthenticationService.Instance.IsSignedIn)
+                {
+                        SetStatus("Już zalogowano.");
+                        await RefreshLobbiesAsync();
+                        return;
+                }
+
+                string username = GetUsernameInput();
+                if (string.IsNullOrWhiteSpace(username))
+                {
+                        SetStatus("Podaj username przed logowaniem.");
+                        return;
+                }
+
+                await SignInAsync(username);
+                PlayerPrefs.SetString("CustomId", username);
+                SetStatus($"Zalogowano jako: {username}");
+                await RefreshLobbiesAsync();
         }
 
         private async Task SignInAsync(string customId)
@@ -105,49 +119,6 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 await service.SignInAnonymouslyAsync();
-        }
-
-        private async Task SignInWithUsernamePasswordAsync(string username, string password)
-        {
-                if (AuthenticationService.Instance.IsSignedIn)
-                {
-                        return;
-                }
-
-                try
-                {
-                        await AuthenticationService.Instance.SignInWithUsernamePasswordAsync(username, password);
-                }
-                catch (Exception)
-                {
-                        await AuthenticationService.Instance.SignUpWithUsernamePasswordAsync(username, password);
-                }
-        }
-
-        private bool TryGetUsernamePassword(out string username, out string password)
-        {
-                username = string.Empty;
-                password = string.Empty;
-
-                if (customIdInput != null && !string.IsNullOrWhiteSpace(customIdInput.text))
-                {
-                        username = customIdInput.text.Trim();
-                }
-                else if (customIdInput == null && !string.IsNullOrWhiteSpace(customIdValue))
-                {
-                        username = customIdValue.Trim();
-                }
-
-                if (passwordInput != null && !string.IsNullOrWhiteSpace(passwordInput.text))
-                {
-                        password = passwordInput.text.Trim();
-                }
-                else if (passwordInput == null && !string.IsNullOrWhiteSpace(passwordValue))
-                {
-                        password = passwordValue.Trim();
-                }
-
-                return !string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password);
         }
 
         private string GetOrCreateCustomId()
@@ -181,6 +152,27 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 return saved;
+        }
+
+        private string GetUsernameInput()
+        {
+                if (customIdInput != null && !string.IsNullOrWhiteSpace(customIdInput.text))
+                {
+                        return customIdInput.text.Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(customIdValue))
+                {
+                        return customIdValue.Trim();
+                }
+
+                string saved = PlayerPrefs.GetString("CustomId", string.Empty);
+                if (!string.IsNullOrWhiteSpace(saved))
+                {
+                        return saved;
+                }
+
+                return string.Empty;
         }
 
         private async Task RefreshLobbiesAsync()
@@ -348,13 +340,15 @@ public class LobbyMenu : MonoBehaviour
                 GUILayout.Label("Username:", labelStyle);
                 customIdValue = GUILayout.TextField(customIdValue, 32, textFieldStyle, GUILayout.Height(40));
 
-                GUILayout.Label("Password:", labelStyle);
-                passwordValue = GUILayout.PasswordField(passwordValue, '*', 32, textFieldStyle, GUILayout.Height(40));
-
                 GUILayout.Label("Nazwa lobby:", labelStyle);
                 lobbyNameValue = GUILayout.TextField(lobbyNameValue, 32, textFieldStyle, GUILayout.Height(40));
 
                 GUILayout.Space(10);
+
+                if (GUILayout.Button("Zaloguj", buttonStyle, GUILayout.Height(50)))
+                {
+                        RunSafe(LoginAsync());
+                }
 
                 if (GUILayout.Button("Odśwież listę", buttonStyle, GUILayout.Height(50)))
                 {
