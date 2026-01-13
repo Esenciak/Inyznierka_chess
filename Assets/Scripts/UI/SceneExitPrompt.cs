@@ -199,7 +199,7 @@ public class SceneExitPrompt : MonoBehaviour
 
         private void EnsureSingleEventSystem()
         {
-                EventSystem[] systems = FindObjectsOfType<EventSystem>();
+                EventSystem[] systems = FindObjectsByType<EventSystem>(FindObjectsSortMode.None);
                 if (systems.Length == 0)
                 {
                         GameObject eventSystemObject = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));

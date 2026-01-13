@@ -12,6 +12,13 @@ public class SceneFader : MonoBehaviour
 
         private CanvasGroup canvasGroup;
         private Coroutine activeFade;
+        private bool isNetworkSubscribed;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void CreateOnLoad()
+        {
+                EnsureInstance();
+        }
 
         public static void EnsureInstance()
         {
@@ -62,16 +69,19 @@ public class SceneFader : MonoBehaviour
         private void OnEnable()
         {
                 SceneManager.sceneLoaded += HandleSceneLoaded;
+                TrySubscribeToNetworkEvents();
         }
 
         private void OnDisable()
         {
                 SceneManager.sceneLoaded -= HandleSceneLoaded;
+                UnsubscribeFromNetworkEvents();
         }
 
         private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
         {
                 FadeIn();
+                TrySubscribeToNetworkEvents();
         }
 
         private void BuildCanvas()
@@ -149,5 +159,35 @@ public class SceneFader : MonoBehaviour
 
                 canvasGroup.alpha = targetAlpha;
                 onComplete?.Invoke();
+        }
+
+        private void TrySubscribeToNetworkEvents()
+        {
+                if (isNetworkSubscribed || Unity.Netcode.NetworkManager.Singleton == null)
+                {
+                        return;
+                }
+
+                Unity.Netcode.NetworkManager.Singleton.SceneManager.OnSceneEvent += HandleNetworkSceneEvent;
+                isNetworkSubscribed = true;
+        }
+
+        private void UnsubscribeFromNetworkEvents()
+        {
+                if (!isNetworkSubscribed || Unity.Netcode.NetworkManager.Singleton == null)
+                {
+                        return;
+                }
+
+                Unity.Netcode.NetworkManager.Singleton.SceneManager.OnSceneEvent -= HandleNetworkSceneEvent;
+                isNetworkSubscribed = false;
+        }
+
+        private void HandleNetworkSceneEvent(Unity.Netcode.SceneEvent sceneEvent)
+        {
+                if (sceneEvent.SceneEventType == Unity.Netcode.SceneEventType.Load)
+                {
+                        StartFade(1f, null);
+                }
         }
 }

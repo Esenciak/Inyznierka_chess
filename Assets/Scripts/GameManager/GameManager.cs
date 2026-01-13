@@ -133,7 +133,7 @@ public class GameManager : MonoBehaviour
 			|| (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
 			|| (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned);
 
-		if (networkActive && BattleMoveSync.Instance != null)
+		if (networkActive && BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned)
 		{
 			return BattleMoveSync.Instance.IsLocalPlayersTurn();
 		}
@@ -145,7 +145,17 @@ public class GameManager : MonoBehaviour
 
 		if (BattleSession.Instance == null || NetworkManager.Singleton == null)
 		{
-			return false;
+			PieceOwner localSide = PieceOwner.Player;
+			if (NetworkManager.Singleton != null)
+			{
+				localSide = NetworkManager.Singleton.IsHost ? PieceOwner.Player : PieceOwner.Enemy;
+			}
+			else if (GameProgress.Instance != null)
+			{
+				localSide = GameProgress.Instance.isHostPlayer ? PieceOwner.Player : PieceOwner.Enemy;
+			}
+
+			return currentTurn == localSide;
 		}
 
 		int activeTeam = BattleSession.Instance.ActiveTeam.Value;
