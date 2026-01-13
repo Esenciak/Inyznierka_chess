@@ -35,6 +35,7 @@ public class BattleMoveSync : NetworkBehaviour
                 if (IsServer)
                 {
                         CurrentTurn.Value = PieceOwner.Player;
+                        SyncActiveTeam(CurrentTurn.Value);
                 }
                 HandleTurnChanged(CurrentTurn.Value, CurrentTurn.Value);
         }
@@ -151,6 +152,7 @@ public class BattleMoveSync : NetworkBehaviour
 
                 PieceOwner nextTurn = expectedOwner == PieceOwner.Player ? PieceOwner.Enemy : PieceOwner.Player;
                 CurrentTurn.Value = nextTurn;
+                SyncActiveTeam(nextTurn);
 
                 if (capturedKing && GameManager.Instance != null)
                 {
@@ -310,5 +312,15 @@ public class BattleMoveSync : NetworkBehaviour
                 {
                         TurnIndicator.Instance.UpdateTurnText();
                 }
+        }
+
+        private void SyncActiveTeam(PieceOwner turn)
+        {
+                if (!IsServer || BattleSession.Instance == null)
+                {
+                        return;
+                }
+
+                BattleSession.Instance.ActiveTeam.Value = turn == PieceOwner.Player ? 0 : 1;
         }
 }
