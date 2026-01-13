@@ -36,7 +36,12 @@ public class LobbyMenu : MonoBehaviour
                 connectionMenu = menu;
         }
 
-        private async void Start()
+        private async void Awake()
+        {
+                await InitializeServicesAsync();
+        }
+
+        private void Start()
         {
                 if (createLobbyButton != null)
                         createLobbyButton.onClick.AddListener(() => RunSafe(CreateLobbyAsync()));
@@ -44,8 +49,6 @@ public class LobbyMenu : MonoBehaviour
                         joinLobbyButton.onClick.AddListener(() => RunSafe(JoinLobbyAsync()));
                 if (refreshButton != null)
                         refreshButton.onClick.AddListener(() => RunSafe(RefreshLobbiesAsync()));
-
-                await InitializeServicesAsync();
         }
 
         private async Task InitializeServicesAsync()
@@ -275,29 +278,48 @@ public class LobbyMenu : MonoBehaviour
                         return;
                 }
 
-                GUILayout.BeginArea(new Rect(20, 20, 320, 420), GUI.skin.box);
-                GUILayout.Label("Lobby (UGS)");
+                float panelWidth = Mathf.Min(720f, Screen.width * 0.9f);
+                float panelHeight = Mathf.Min(800f, Screen.height * 0.9f);
+                float x = (Screen.width - panelWidth) * 0.5f;
+                float y = (Screen.height - panelHeight) * 0.5f;
 
-                GUILayout.Label("Custom ID:");
-                customIdValue = GUILayout.TextField(customIdValue, 32);
+                GUIStyle titleStyle = new GUIStyle(GUI.skin.label)
+                {
+                        fontSize = 32,
+                        alignment = TextAnchor.MiddleCenter,
+                        wordWrap = true
+                };
+                GUIStyle labelStyle = new GUIStyle(GUI.skin.label) { fontSize = 22, wordWrap = true };
+                GUIStyle buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 22 };
+                GUIStyle textFieldStyle = new GUIStyle(GUI.skin.textField) { fontSize = 20 };
 
-                GUILayout.Label("Nazwa lobby:");
-                lobbyNameValue = GUILayout.TextField(lobbyNameValue, 32);
+                GUILayout.BeginArea(new Rect(x, y, panelWidth, panelHeight), GUI.skin.box);
+                GUILayout.Label("Lobby (UGS)", titleStyle);
+                GUILayout.Space(10);
 
-                GUILayout.Label("Kod lobby (opcjonalnie):");
-                lobbyCodeValue = GUILayout.TextField(lobbyCodeValue, 16);
+                GUILayout.Label("Custom ID:", labelStyle);
+                customIdValue = GUILayout.TextField(customIdValue, 32, textFieldStyle, GUILayout.Height(40));
 
-                if (GUILayout.Button("Odśwież listę"))
+                GUILayout.Label("Nazwa lobby:", labelStyle);
+                lobbyNameValue = GUILayout.TextField(lobbyNameValue, 32, textFieldStyle, GUILayout.Height(40));
+
+                GUILayout.Label("Kod lobby (opcjonalnie):", labelStyle);
+                lobbyCodeValue = GUILayout.TextField(lobbyCodeValue, 16, textFieldStyle, GUILayout.Height(40));
+
+                GUILayout.Space(10);
+
+                if (GUILayout.Button("Odśwież listę", buttonStyle, GUILayout.Height(50)))
                 {
                         RunSafe(RefreshLobbiesAsync());
                 }
 
                 if (availableLobbies.Count > 0)
                 {
-                        GUILayout.Label("Dostępne lobby:");
+                        GUILayout.Space(10);
+                        GUILayout.Label("Dostępne lobby:", labelStyle);
                         foreach (Lobby lobby in availableLobbies)
                         {
-                                if (GUILayout.Button($"{lobby.Name} ({lobby.Players.Count}/2)"))
+                                if (GUILayout.Button($"{lobby.Name} ({lobby.Players.Count}/2)", buttonStyle, GUILayout.Height(45)))
                                 {
                                         lobbyCodeValue = string.Empty;
                                         selectedLobbyId = lobby.Id;
@@ -308,22 +330,26 @@ public class LobbyMenu : MonoBehaviour
                 }
                 else
                 {
-                        GUILayout.Label("Brak lobby na liście.");
+                        GUILayout.Space(10);
+                        GUILayout.Label("Brak lobby na liście.", labelStyle);
                 }
 
-                if (GUILayout.Button("Utwórz lobby (host)"))
+                GUILayout.Space(10);
+
+                if (GUILayout.Button("Utwórz lobby (host)", buttonStyle, GUILayout.Height(55)))
                 {
                         RunSafe(CreateLobbyAsync());
                 }
 
-                if (GUILayout.Button("Dołącz (kod lub lista)"))
+                if (GUILayout.Button("Dołącz (kod lub lista)", buttonStyle, GUILayout.Height(55)))
                 {
                         RunSafe(JoinLobbyAsync());
                 }
 
                 if (!string.IsNullOrWhiteSpace(statusMessage))
                 {
-                        GUILayout.Label(statusMessage);
+                        GUILayout.Space(10);
+                        GUILayout.Label(statusMessage, labelStyle);
                 }
                 GUILayout.EndArea();
         }

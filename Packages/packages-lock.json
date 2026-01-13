@@ -341,19 +341,6 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
-    "com.unity.services.lobby": {
-      "version": "1.2.4",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.ugui": "1.0.0",
-        "com.unity.services.authentication": "3.5.1",
-        "com.unity.services.core": "1.15.1",
-        "com.unity.nuget.newtonsoft-json": "3.2.1",
-        "com.unity.modules.unitywebrequest": "1.0.0"
-      },
-      "url": "https://packages.unity.com"
-    },
     "com.unity.services.multiplayer": {
       "version": "1.2.1",
       "depth": 0,
@@ -438,7 +425,7 @@
     },
     "com.unity.transport": {
       "version": "2.6.0",
-      "depth": 1,
+      "depth": 0,
       "source": "registry",
       "dependencies": {
         "com.unity.burst": "1.8.24",

@@ -11,7 +11,6 @@
     "com.unity.netcode.gameobjects": "2.7.0",
     "com.unity.render-pipelines.universal": "17.2.0",
     "com.unity.services.cloudcode": "2.10.2",
-    "com.unity.services.lobby": "1.2.4",
     "com.unity.services.multiplayer": "1.2.1",
     "com.unity.test-framework": "1.6.0",
     "com.unity.timeline": "1.8.9",
@@ -48,6 +47,7 @@
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
-    "com.unity.modules.xr": "1.0.0"
+    "com.unity.modules.xr": "1.0.0",
+    "com.unity.transport": "2.6.0"
   }
 }
