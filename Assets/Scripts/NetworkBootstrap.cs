@@ -6,9 +6,21 @@ public class NetworkBootstrap : MonoBehaviour
 	[Header("Przypisz tu prefab BattleSystem")]
 	public GameObject battleSystemPrefab;
 
+	private void Awake()
+	{
+		NetworkManager networkManager = GetComponent<NetworkManager>();
+		if (NetworkManager.Singleton != null && NetworkManager.Singleton != networkManager)
+		{
+			Destroy(gameObject);
+			return;
+		}
+
+		DontDestroyOnLoad(gameObject);
+	}
+
 	void Start()
 	{
-		// Nas³uchujemy, kiedy serwer wystartuje
+		// NasÂ³uchujemy, kiedy serwer wystartuje
 		if (NetworkManager.Singleton != null)
 		{
 			NetworkManager.Singleton.OnServerStarted += OnServerStarted;
@@ -17,12 +29,12 @@ public class NetworkBootstrap : MonoBehaviour
 
 	private void OnServerStarted()
 	{
-		// Tylko serwer/host mo¿e tworzyæ sieciowe obiekty zarz¹dzaj¹ce
+		// Tylko serwer/host moÂ¿e tworzyÃ¦ sieciowe obiekty zarzÂ¹dzajÂ¹ce
 		if (NetworkManager.Singleton.IsHost || NetworkManager.Singleton.IsServer)
 		{
-			Debug.Log("Serwer wystartowa³ - spawnowanie BattleSystem...");
+			Debug.Log("Serwer wystartowaÂ³ - spawnowanie BattleSystem...");
 			GameObject go = Instantiate(battleSystemPrefab);
-			go.GetComponent<NetworkObject>().Spawn(); // To sprawia, ¿e obiekt pojawia siê u wszystkich
+			go.GetComponent<NetworkObject>().Spawn(); // To sprawia, Â¿e obiekt pojawia siÃª u wszystkich
 		}
 	}
 }
