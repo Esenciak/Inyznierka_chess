@@ -60,7 +60,7 @@ public class LobbyMenu : MonoBehaviour
                         if (!AuthenticationService.Instance.IsSignedIn)
                         {
                                 string customId = GetOrCreateCustomId();
-                                await AuthenticationService.Instance.SignInWithCustomIdAsync(customId);
+                                await SignInAsync(customId);
                                 SetStatus($"Zalogowano jako: {customId}");
                         }
 
@@ -70,6 +70,27 @@ public class LobbyMenu : MonoBehaviour
                 {
                         SetStatus($"Błąd inicjalizacji usług: {ex.Message}");
                 }
+        }
+
+        private async Task SignInAsync(string customId)
+        {
+                if (AuthenticationService.Instance.IsSignedIn)
+                {
+                        return;
+                }
+
+                var service = AuthenticationService.Instance;
+                var method = service.GetType().GetMethod("SignInWithCustomIdAsync", new[] { typeof(string) });
+                if (method != null)
+                {
+                        if (method.Invoke(service, new object[] { customId }) is Task task)
+                        {
+                                await task;
+                                return;
+                        }
+                }
+
+                await service.SignInAnonymouslyAsync();
         }
 
         private string GetOrCreateCustomId()
@@ -119,7 +140,7 @@ public class LobbyMenu : MonoBehaviour
                         {
                                 Count = 10
                         };
-                        QueryResponse response = await Lobbies.Instance.QueryLobbiesAsync(options);
+                        QueryResponse response = await LobbyService.Instance.QueryLobbiesAsync(options);
                         availableLobbies.Clear();
                         availableLobbies.AddRange(response.Results);
                         UpdateLobbyDropdown();
@@ -152,7 +173,7 @@ public class LobbyMenu : MonoBehaviour
                                 IsPrivate = false
                         };
 
-                        currentLobby = await Lobbies.Instance.CreateLobbyAsync(lobbyName, 2, options);
+                        currentLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, 2, options);
                         SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode})");
 
                         if (connectionMenu != null)
@@ -178,19 +199,19 @@ public class LobbyMenu : MonoBehaviour
                 {
                         if (lobbyCodeInput != null && !string.IsNullOrWhiteSpace(lobbyCodeInput.text))
                         {
-                                currentLobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCodeInput.text.Trim());
+                                currentLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCodeInput.text.Trim());
                         }
                         else if (lobbyCodeInput == null && !string.IsNullOrWhiteSpace(lobbyCodeValue))
                         {
-                                currentLobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCodeValue.Trim());
+                                currentLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCodeValue.Trim());
                         }
                         else if (lobbyDropdown != null && lobbyDropdown.value >= 0 && lobbyDropdown.value < availableLobbies.Count)
                         {
-                                currentLobby = await Lobbies.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id);
+                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id);
                         }
                         else if (!string.IsNullOrWhiteSpace(selectedLobbyId))
                         {
-                                currentLobby = await Lobbies.Instance.JoinLobbyByIdAsync(selectedLobbyId);
+                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(selectedLobbyId);
                         }
                         else
                         {
