@@ -20,10 +20,14 @@ public class PieceMovement : MonoBehaviour
         void OnMouseDown()
         {
                 bool isBattle = SceneManager.GetActiveScene().name == "Battle";
+                bool isNetworked = isBattle
+                        && ((GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                                || (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                                || BattleMoveSync.Instance != null);
 
                 if (isBattle)
                 {
-                        if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                        if (isNetworked)
                         {
                                 if (!IsLocalPlayersPiece())
                                 {
@@ -187,7 +191,10 @@ public class PieceMovement : MonoBehaviour
 
         bool IsLocalPlayersPiece()
         {
-                if (GameManager.Instance == null || !GameManager.Instance.isMultiplayer)
+                bool networkActive = (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                        || (GameManager.Instance != null && GameManager.Instance.isMultiplayer);
+
+                if (!networkActive)
                 {
                         return pieceComponent.owner == PieceOwner.Player;
                 }

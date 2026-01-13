@@ -128,14 +128,17 @@ public class GameManager : MonoBehaviour
 
 	public bool IsMyTurn()
 	{
-		if (!isMultiplayer)
-		{
-			return currentTurn == PieceOwner.Player;
-		}
+		bool networkActive = isMultiplayer
+			|| (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening);
 
-		if (BattleMoveSync.Instance != null)
+		if (networkActive && BattleMoveSync.Instance != null)
 		{
 			return BattleMoveSync.Instance.IsLocalPlayersTurn();
+		}
+
+		if (!networkActive)
+		{
+			return currentTurn == PieceOwner.Player;
 		}
 
 		if (BattleSession.Instance == null || NetworkManager.Singleton == null)
