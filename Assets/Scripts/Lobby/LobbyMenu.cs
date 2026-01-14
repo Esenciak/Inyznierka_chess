@@ -10,6 +10,8 @@ using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
+using RelayAllocation = Unity.Services.Relay.Models.Allocation;
+using RelayJoinAllocation = Unity.Services.Relay.Models.JoinAllocation;
 
 public class LobbyMenu : MonoBehaviour
 {
@@ -665,7 +667,7 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
-                        Unity.Services.Relay.Models.Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
+                        RelayAllocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
                         string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
                         ConfigureTransport(allocation);
                         return joinCode;
@@ -681,7 +683,7 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
-                        Unity.Services.Relay.Models.JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+                        RelayJoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
                         ConfigureTransport(allocation);
                         return true;
                 }
@@ -692,7 +694,7 @@ public class LobbyMenu : MonoBehaviour
                 }
         }
 
-        private void ConfigureTransport(Unity.Services.Relay.Models.Allocation allocation)
+        private void ConfigureTransport(RelayAllocation allocation)
         {
                 if (NetworkManager.Singleton == null)
                 {
@@ -708,7 +710,7 @@ public class LobbyMenu : MonoBehaviour
                 transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
         }
 
-        private void ConfigureTransport(Unity.Services.Relay.Models.JoinAllocation allocation)
+        private void ConfigureTransport(RelayJoinAllocation allocation)
         {
                 if (NetworkManager.Singleton == null)
                 {
