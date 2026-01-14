@@ -5,7 +5,11 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
-using Unity.Services.Multiplayer;
+using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport.Relay;
+using Unity.Services.Relay;
+using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,7 +19,7 @@ public class LobbyMenu : MonoBehaviour
         private const string SessionCodeKey = "sessionCode";
         private const string AuthIdPrefsKey = "AuthId";
         private const string PlayerNamePrefsKey = "PlayerName";
-        private const string SessionType = "chess-session";
+        private const string RelayConnectionType = "dtls";
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
         [SerializeField] private InputField lobbyNameInput;
@@ -80,8 +84,6 @@ public class LobbyMenu : MonoBehaviour
                                 await UnityServices.InitializeAsync();
                         }
 
-                        await EnsureMultiplayerServiceInitializedAsync();
-
                         if (!AuthenticationService.Instance.IsSignedIn)
                         {
                                 SetStatus("Wpisz username i kliknij Zaloguj.");
@@ -118,7 +120,6 @@ public class LobbyMenu : MonoBehaviour
 
                 string authId = GetOrCreateAuthId();
                 await SignInAsync(authId);
-                await EnsureMultiplayerServiceInitializedAsync();
                 PlayerPrefs.SetString(PlayerNamePrefsKey, username);
                 LobbyState.SetLocalPlayerName(username);
                 SetStatus($"Zalogowano jako: {username}");
@@ -147,25 +148,6 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 await service.SignInAnonymouslyAsync();
-        }
-
-        private async Task EnsureMultiplayerServiceInitializedAsync()
-        {
-                if (MultiplayerService.Instance == null)
-                {
-                        return;
-                }
-
-                var method = MultiplayerService.Instance.GetType().GetMethod("InitializeAsync", Type.EmptyTypes);
-                if (method == null)
-                {
-                        return;
-                }
-
-                if (method.Invoke(MultiplayerService.Instance, null) is Task task)
-                {
-                        await task;
-                }
         }
 
         private string GetOrCreateAuthId()
@@ -329,7 +311,7 @@ public class LobbyMenu : MonoBehaviour
                                 : $"Lobby-{UnityEngine.Random.Range(1000, 9999)}";
 
                         string localName = ResolveLocalPlayerName();
-                        (IHostSession session, string sessionCode) = await SetupSessionHostAsync(lobbyName);
+                        string sessionCode = await SetupSessionHostAsync(lobbyName);
                         CreateLobbyOptions options = new CreateLobbyOptions
                         {
                                 IsPrivate = false,
@@ -354,11 +336,7 @@ public class LobbyMenu : MonoBehaviour
                         }
                         else
                         {
-                                SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode}). Oczekiwanie na kod sesji.");
-                                if (session != null)
-                                {
-                                        RunSafe(EnsureLobbySessionCodeAsync(currentLobby.Id, session));
-                                }
+                                SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode}). Brak kodu relaya.");
                         }
                         LobbyState.RegisterLobby(currentLobby.Id, true);
                         LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
@@ -751,39 +729,19 @@ public class LobbyMenu : MonoBehaviour
                 }
         }
 
-        private async Task<(IHostSession session, string sessionCode)> SetupSessionHostAsync(string lobbyName)
+        private async Task<string> SetupSessionHostAsync(string lobbyName)
         {
                 try
                 {
-                        await EnsureMultiplayerServiceInitializedAsync();
-                        if (MultiplayerService.Instance == null)
-                        {
-                                SetStatus("Multiplayer Service nie jest dostępny.");
-                                return (null, null);
-                        }
-
-                        SessionOptions options = new SessionOptions
-                        {
-                                MaxPlayers = 2,
-                                Name = lobbyName,
-                                Type = SessionType
-                        };
-                        options.WithPlayerName();
-                        options.WithRelayNetwork();
-
-                        IHostSession session = await MultiplayerService.Instance.CreateSessionAsync(options);
-                        string sessionCode = await WaitForSessionCodeAsync(session);
-                        if (string.IsNullOrWhiteSpace(sessionCode))
-                        {
-                                SetStatus("Sesja została utworzona bez kodu.");
-                        }
-
-                        return (session, sessionCode);
+                        Allocation allocation = await RelayService.Instance.CreateAllocationAsync(2);
+                        string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+                        ConfigureRelayTransport(new RelayServerData(allocation, RelayConnectionType));
+                        return joinCode;
                 }
                 catch (Exception ex)
                 {
-                        SetStatus($"Błąd tworzenia sesji: {ex.Message}");
-                        return (null, null);
+                        SetStatus($"Błąd tworzenia relaya: {ex.Message}");
+                        return null;
                 }
         }
 
@@ -791,27 +749,33 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
-                        await EnsureMultiplayerServiceInitializedAsync();
-                        if (MultiplayerService.Instance == null)
-                        {
-                                SetStatus("Multiplayer Service nie jest dostępny.");
-                                return false;
-                        }
-
-                        JoinSessionOptions options = new JoinSessionOptions
-                        {
-                                Type = SessionType
-                        };
-                        options.WithPlayerName();
-
-                        await MultiplayerService.Instance.JoinSessionByCodeAsync(sessionCode, options);
+                        JoinAllocation joinAllocation = await RelayService.Instance.JoinAllocationAsync(sessionCode);
+                        ConfigureRelayTransport(new RelayServerData(joinAllocation, RelayConnectionType));
                         return true;
                 }
                 catch (Exception ex)
                 {
-                        SetStatus($"Błąd dołączania do sesji: {ex.Message}");
+                        SetStatus($"Błąd dołączania do relaya: {ex.Message}");
                         return false;
                 }
+        }
+
+        private void ConfigureRelayTransport(RelayServerData relayServerData)
+        {
+                if (NetworkManager.Singleton == null)
+                {
+                        SetStatus("Brak NetworkManager w scenie.");
+                        return;
+                }
+
+                UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport == null)
+                {
+                        SetStatus("Brak UnityTransport w NetworkManager.");
+                        return;
+                }
+
+                transport.SetRelayServerData(relayServerData);
         }
 
         private bool TryGetSessionCode(Lobby lobby, out string sessionCode)
@@ -829,71 +793,6 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 return false;
-        }
-
-        private static async Task<string> WaitForSessionCodeAsync(ISession session)
-        {
-                if (session == null)
-                {
-                        return null;
-                }
-
-                const int retries = 10;
-                const int delayMs = 200;
-
-                for (int attempt = 0; attempt < retries; attempt++)
-                {
-                        if (!string.IsNullOrWhiteSpace(session.Code))
-                        {
-                                return session.Code;
-                        }
-
-                        var refreshMethod = session.GetType().GetMethod("RefreshAsync", Type.EmptyTypes);
-                        if (refreshMethod != null && refreshMethod.Invoke(session, null) is Task refreshTask)
-                        {
-                                await refreshTask;
-                        }
-
-                        await Task.Delay(delayMs);
-                }
-
-                return session.Code;
-        }
-
-        private async Task EnsureLobbySessionCodeAsync(string lobbyId, ISession session)
-        {
-                if (string.IsNullOrWhiteSpace(lobbyId) || session == null)
-                {
-                        return;
-                }
-
-                string sessionCode = await WaitForSessionCodeAsync(session);
-                if (string.IsNullOrWhiteSpace(sessionCode))
-                {
-                        SetStatus("Nie udało się uzyskać kodu sesji.");
-                        return;
-                }
-
-                try
-                {
-                        UpdateLobbyOptions options = new UpdateLobbyOptions
-                        {
-                                Data = new Dictionary<string, DataObject>
-                                {
-                                        {
-                                                SessionCodeKey,
-                                                new DataObject(DataObject.VisibilityOptions.Member, sessionCode)
-                                        }
-                                }
-                        };
-
-                        currentLobby = await LobbyService.Instance.UpdateLobbyAsync(lobbyId, options);
-                        SetStatus("Kod sesji został zaktualizowany.");
-                }
-                catch (Exception ex)
-                {
-                        SetStatus($"Nie udało się zaktualizować kodu sesji: {ex.Message}");
-                }
         }
 
         private async Task<string> WaitForLobbySessionCodeAsync(string lobbyId)
