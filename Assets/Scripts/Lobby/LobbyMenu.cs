@@ -328,29 +328,34 @@ public class LobbyMenu : MonoBehaviour
                                         ? lobbyNameValue.Trim()
                                 : $"Lobby-{UnityEngine.Random.Range(1000, 9999)}";
 
-                        string sessionCode = await SetupSessionHostAsync(lobbyName);
-                        if (string.IsNullOrWhiteSpace(sessionCode))
-                        {
-                                SetStatus("Nie udało się utworzyć sesji sieciowej.");
-                                return;
-                        }
-
                         string localName = ResolveLocalPlayerName();
+                        string sessionCode = await SetupSessionHostAsync(lobbyName);
                         CreateLobbyOptions options = new CreateLobbyOptions
                         {
                                 IsPrivate = false,
-                                Player = BuildLocalPlayer(localName),
-                                Data = new Dictionary<string, DataObject>
+                                Player = BuildLocalPlayer(localName)
+                        };
+
+                        if (!string.IsNullOrWhiteSpace(sessionCode))
+                        {
+                                options.Data = new Dictionary<string, DataObject>
                                 {
                                         {
                                                 SessionCodeKey,
                                                 new DataObject(DataObject.VisibilityOptions.Member, sessionCode)
                                         }
-                                }
-                        };
+                                };
+                        }
 
                         currentLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, 2, options);
-                        SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode})");
+                        if (!string.IsNullOrWhiteSpace(sessionCode))
+                        {
+                                SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode})");
+                        }
+                        else
+                        {
+                                SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode}). Sesja sieciowa nieaktywna.");
+                        }
                         LobbyState.RegisterLobby(currentLobby.Id, true);
                         LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
                         ResetProgressForNewLobby();
@@ -402,17 +407,14 @@ public class LobbyMenu : MonoBehaviour
                         }
 
                         currentLobby = joinedLobby;
-                        if (!TryGetSessionCode(currentLobby, out string sessionCode))
+                        if (TryGetSessionCode(currentLobby, out string sessionCode))
                         {
-                                SetStatus("Brak kodu sesji w lobby.");
-                                return;
-                        }
-
-                        bool sessionReady = await SetupSessionClientAsync(sessionCode);
-                        if (!sessionReady)
-                        {
-                                SetStatus("Nie udało się dołączyć do sesji sieciowej.");
-                                return;
+                                bool sessionReady = await SetupSessionClientAsync(sessionCode);
+                                if (!sessionReady)
+                                {
+                                        SetStatus("Nie udało się dołączyć do sesji sieciowej.");
+                                        return;
+                                }
                         }
 
                         SetStatus($"Dołączono do lobby: {currentLobby.Name}");
