@@ -269,24 +269,21 @@ public class ShopManager : MonoBehaviour
 
         public void TryBuyPiece(ShopItem item)
         {
-                if (InventoryManager.Instance == null)
+                InventoryManager inventory = InventoryManager.Instance;
+                if (inventory == null)
                 {
-                        InventoryManager manager = FindObjectOfType<InventoryManager>();
-                        if (manager != null)
-                        {
-                                InventoryManager.Instance = manager;
-                        }
-
-                        if (InventoryManager.Instance == null)
-                        {
-                                Debug.Log("Nie kupiono: brak InventoryManager.");
-                                return;
-                        }
+                        inventory = FindObjectOfType<InventoryManager>();
                 }
 
-                if (!InventoryManager.Instance.IsReady)
+                if (inventory == null)
                 {
-                        InventoryManager.Instance.EnsureInitialized();
+                        Debug.Log("Nie kupiono: brak InventoryManager.");
+                        return;
+                }
+
+                if (!inventory.IsReady)
+                {
+                        inventory.EnsureInitialized();
                         Debug.Log("Nie kupiono: ekwipunek jeszcze się ładuje.");
                         return;
                 }
@@ -295,7 +292,7 @@ public class ShopManager : MonoBehaviour
                 if (GameProgress.Instance.coins >= item.price)
                 {
                         // 2. Czy jest miejsce w ekwipunku? (AddPieceToInventory zwraca teraz bool)
-                        bool success = InventoryManager.Instance.AddPieceToInventory(item.type, GetPrefabByType(item.type));
+                        bool success = inventory.AddPieceToInventory(item.type, GetPrefabByType(item.type));
 
                         if (success)
                         {
