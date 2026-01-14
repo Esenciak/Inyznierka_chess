@@ -5,13 +5,13 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
-using Unity.Services.Relay;
+using Unity.Services.Multiplayer;
+using Unity.Services.Multiplayer.Models;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
-using RelayAllocation = Unity.Services.Relay.Models.Allocation;
-using RelayJoinAllocation = Unity.Services.Relay.Models.JoinAllocation;
+using Unity.Networking.Transport.Relay;
 
 public class LobbyMenu : MonoBehaviour
 {
@@ -667,7 +667,7 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
-                        RelayAllocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
+                        Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
                         string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
                         ConfigureTransport(allocation);
                         return joinCode;
@@ -683,7 +683,7 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
-                        RelayJoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+                        JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
                         ConfigureTransport(allocation);
                         return true;
                 }
@@ -694,7 +694,7 @@ public class LobbyMenu : MonoBehaviour
                 }
         }
 
-        private void ConfigureTransport(RelayAllocation allocation)
+        private void ConfigureTransport(Allocation allocation)
         {
                 if (NetworkManager.Singleton == null)
                 {
@@ -710,7 +710,7 @@ public class LobbyMenu : MonoBehaviour
                 transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
         }
 
-        private void ConfigureTransport(RelayJoinAllocation allocation)
+        private void ConfigureTransport(JoinAllocation allocation)
         {
                 if (NetworkManager.Singleton == null)
                 {
