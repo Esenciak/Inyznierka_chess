@@ -5,23 +5,33 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
+using Unity.Services.Multiplayer;
+using Unity.Services.Multiplayer.Models;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
+using Unity.Networking.Transport.Relay;
 
 public class LobbyMenu : MonoBehaviour
 {
         private const string PlayerNameKey = "name";
-
+        private const string RelayJoinCodeKey = "joinCode";
+        private const string AuthIdPrefsKey = "AuthId";
+        private const string PlayerNamePrefsKey = "PlayerName";
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
         [SerializeField] private InputField lobbyNameInput;
         [SerializeField] private Dropdown lobbyDropdown;
         [SerializeField] private Text statusText;
+        [SerializeField] private Text activePlayersText;
         [SerializeField] private Button loginButton;
         [SerializeField] private Button createLobbyButton;
         [SerializeField] private Button joinLobbyButton;
         [SerializeField] private Button refreshButton;
         [SerializeField] private Button quickPlayButton;
+        [SerializeField] private GameObject loginPanel;
+        [SerializeField] private GameObject lobbyPanel;
 
         [Header("Networking")]
         [SerializeField] private ConnectionMenu connectionMenu;
@@ -32,6 +42,8 @@ public class LobbyMenu : MonoBehaviour
         private string lobbyNameValue = string.Empty;
         private string selectedLobbyId = string.Empty;
         private string statusMessage = string.Empty;
+        private Coroutine lobbyPollCoroutine;
+        private Coroutine lobbyListPollCoroutine;
 
         public void SetConnectionMenu(ConnectionMenu menu)
         {
@@ -45,6 +57,9 @@ public class LobbyMenu : MonoBehaviour
 
         private void Start()
         {
+                InitializeNameInput();
+                UpdatePanelVisibility(AuthenticationService.Instance.IsSignedIn);
+                StartLobbyPolling();
                 if (createLobbyButton != null)
                         createLobbyButton.onClick.AddListener(() => RunSafe(CreateLobbyAsync()));
                 if (loginButton != null)
@@ -69,9 +84,13 @@ public class LobbyMenu : MonoBehaviour
                         if (!AuthenticationService.Instance.IsSignedIn)
                         {
                                 SetStatus("Wpisz username i kliknij Zaloguj.");
+                                UpdatePanelVisibility(false);
                                 return;
                         }
 
+                        UpdatePanelVisibility(true);
+                        StartLobbyPolling();
+                        StartLobbyListPolling();
                         await RefreshLobbiesAsync();
                 }
                 catch (Exception ex)
@@ -96,10 +115,14 @@ public class LobbyMenu : MonoBehaviour
                         return;
                 }
 
-                await SignInAsync(username);
-                PlayerPrefs.SetString("CustomId", username);
+                string authId = GetOrCreateAuthId();
+                await SignInAsync(authId);
+                PlayerPrefs.SetString(PlayerNamePrefsKey, username);
                 LobbyState.SetLocalPlayerName(username);
                 SetStatus($"Zalogowano jako: {username}");
+                UpdatePanelVisibility(true);
+                StartLobbyPolling();
+                StartLobbyListPolling();
                 await RefreshLobbiesAsync();
         }
 
@@ -124,34 +147,13 @@ public class LobbyMenu : MonoBehaviour
                 await service.SignInAnonymouslyAsync();
         }
 
-        private string GetOrCreateCustomId()
+        private string GetOrCreateAuthId()
         {
-                if (customIdInput != null && !string.IsNullOrWhiteSpace(customIdInput.text))
-                {
-                        PlayerPrefs.SetString("CustomId", customIdInput.text.Trim());
-                        return customIdInput.text.Trim();
-                }
-
-                if (customIdInput == null && !string.IsNullOrWhiteSpace(customIdValue))
-                {
-                        PlayerPrefs.SetString("CustomId", customIdValue.Trim());
-                        return customIdValue.Trim();
-                }
-
-                string saved = PlayerPrefs.GetString("CustomId", string.Empty);
+                string saved = PlayerPrefs.GetString(AuthIdPrefsKey, string.Empty);
                 if (string.IsNullOrWhiteSpace(saved))
                 {
                         saved = Guid.NewGuid().ToString("N");
-                        PlayerPrefs.SetString("CustomId", saved);
-                }
-
-                if (customIdInput != null)
-                {
-                        customIdInput.text = saved;
-                }
-                else
-                {
-                        customIdValue = saved;
+                        PlayerPrefs.SetString(AuthIdPrefsKey, saved);
                 }
 
                 return saved;
@@ -169,7 +171,11 @@ public class LobbyMenu : MonoBehaviour
                         return customIdValue.Trim();
                 }
 
-                string saved = PlayerPrefs.GetString("CustomId", string.Empty);
+                string saved = PlayerPrefs.GetString(PlayerNamePrefsKey, string.Empty);
+                if (string.IsNullOrWhiteSpace(saved))
+                {
+                        saved = PlayerPrefs.GetString("CustomId", string.Empty);
+                }
                 if (!string.IsNullOrWhiteSpace(saved))
                 {
                         return saved;
@@ -181,10 +187,6 @@ public class LobbyMenu : MonoBehaviour
         private string ResolveLocalPlayerName()
         {
                 string username = GetUsernameInput();
-                if (string.IsNullOrWhiteSpace(username))
-                {
-                        username = PlayerPrefs.GetString("CustomId", string.Empty);
-                }
 
                 if (string.IsNullOrWhiteSpace(username))
                 {
@@ -200,7 +202,6 @@ public class LobbyMenu : MonoBehaviour
                 {
                         playerName = "Player";
                 }
-
                 return new Player
                 {
                         Data = new Dictionary<string, PlayerDataObject>
@@ -268,6 +269,7 @@ public class LobbyMenu : MonoBehaviour
                         availableLobbies.Clear();
                         availableLobbies.AddRange(response.Results);
                         UpdateLobbyDropdown();
+                        UpdateActivePlayersCount();
                         SetStatus($"Znaleziono lobby: {availableLobbies.Count}");
                 }
                 catch (Exception ex)
@@ -286,6 +288,13 @@ public class LobbyMenu : MonoBehaviour
 
                 try
                 {
+                        string relayJoinCode = await SetupRelayHostAsync();
+                        if (string.IsNullOrWhiteSpace(relayJoinCode))
+                        {
+                                SetStatus("Nie udało się utworzyć Relay.");
+                                return;
+                        }
+
                         string lobbyName = lobbyNameInput != null && !string.IsNullOrWhiteSpace(lobbyNameInput.text)
                                 ? lobbyNameInput.text.Trim()
                                 : !string.IsNullOrWhiteSpace(lobbyNameValue)
@@ -296,7 +305,14 @@ public class LobbyMenu : MonoBehaviour
                         CreateLobbyOptions options = new CreateLobbyOptions
                         {
                                 IsPrivate = false,
-                                Player = BuildLocalPlayer(localName)
+                                Player = BuildLocalPlayer(localName),
+                                Data = new Dictionary<string, DataObject>
+                                {
+                                        {
+                                                RelayJoinCodeKey,
+                                                new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode)
+                                        }
+                                }
                         };
 
                         currentLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, 2, options);
@@ -327,6 +343,7 @@ public class LobbyMenu : MonoBehaviour
                 try
                 {
                         string localName = ResolveLocalPlayerName();
+                        Lobby joinedLobby = null;
                         if (lobbyDropdown != null && lobbyDropdown.value >= 0 && lobbyDropdown.value < availableLobbies.Count)
                         {
                                 localName = EnsureUniqueName(localName, availableLobbies[lobbyDropdown.value]);
@@ -334,7 +351,7 @@ public class LobbyMenu : MonoBehaviour
                                 {
                                         Player = BuildLocalPlayer(localName)
                                 };
-                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id, options);
+                                joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id, options);
                         }
                         else if (!string.IsNullOrWhiteSpace(selectedLobbyId))
                         {
@@ -342,11 +359,25 @@ public class LobbyMenu : MonoBehaviour
                                 {
                                         Player = BuildLocalPlayer(localName)
                                 };
-                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(selectedLobbyId, options);
+                                joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(selectedLobbyId, options);
                         }
                         else
                         {
                                 SetStatus("Wybierz lobby z listy.");
+                                return;
+                        }
+
+                        currentLobby = joinedLobby;
+                        if (!TryGetRelayJoinCode(currentLobby, out string relayJoinCode))
+                        {
+                                SetStatus("Brak kodu Relay w lobby.");
+                                return;
+                        }
+
+                        bool relayReady = await SetupRelayClientAsync(relayJoinCode);
+                        if (!relayReady)
+                        {
+                                SetStatus("Nie udało się dołączyć do Relay.");
                                 return;
                         }
 
@@ -380,6 +411,22 @@ public class LobbyMenu : MonoBehaviour
                 lobbyDropdown.AddOptions(options);
         }
 
+        private void UpdateActivePlayersCount()
+        {
+                if (activePlayersText == null)
+                {
+                        return;
+                }
+
+                int totalPlayers = 0;
+                foreach (Lobby lobby in availableLobbies)
+                {
+                        totalPlayers += lobby.Players.Count;
+                }
+
+                activePlayersText.text = $"Aktywni gracze: {totalPlayers}";
+        }
+
         private void SetStatus(string message)
         {
                 statusMessage = message;
@@ -409,8 +456,8 @@ public class LobbyMenu : MonoBehaviour
                         return;
                 }
 
-                float panelWidth = Mathf.Min(720f, Screen.width * 0.9f);
-                float panelHeight = Mathf.Min(800f, Screen.height * 0.9f);
+                float panelWidth = Mathf.Min(900f, Screen.width * 0.95f);
+                float panelHeight = Mathf.Min(900f, Screen.height * 0.95f);
                 float x = (Screen.width - panelWidth) * 0.5f;
                 float y = (Screen.height - panelHeight) * 0.5f;
 
@@ -425,21 +472,27 @@ public class LobbyMenu : MonoBehaviour
                 GUIStyle textFieldStyle = new GUIStyle(GUI.skin.textField) { fontSize = 20 };
 
                 GUILayout.BeginArea(new Rect(x, y, panelWidth, panelHeight), GUI.skin.box);
-                GUILayout.Label("Lobby (UGS)", titleStyle);
+                GUILayout.Label("Lobby", titleStyle);
                 GUILayout.Space(10);
 
-                GUILayout.Label("Username:", labelStyle);
-                customIdValue = GUILayout.TextField(customIdValue, 32, textFieldStyle, GUILayout.Height(40));
+                if (!AuthenticationService.Instance.IsSignedIn)
+                {
+                        GUILayout.Label("Username:", labelStyle);
+                        customIdValue = GUILayout.TextField(customIdValue, 32, textFieldStyle, GUILayout.Height(40));
+                        GUILayout.Space(10);
+
+                        if (GUILayout.Button("Zaloguj", buttonStyle, GUILayout.Height(50)))
+                        {
+                                RunSafe(LoginAsync());
+                        }
+                        GUILayout.EndArea();
+                        return;
+                }
 
                 GUILayout.Label("Nazwa lobby:", labelStyle);
                 lobbyNameValue = GUILayout.TextField(lobbyNameValue, 32, textFieldStyle, GUILayout.Height(40));
 
                 GUILayout.Space(10);
-
-                if (GUILayout.Button("Zaloguj", buttonStyle, GUILayout.Height(50)))
-                {
-                        RunSafe(LoginAsync());
-                }
 
                 if (GUILayout.Button("Odśwież listę", buttonStyle, GUILayout.Height(50)))
                 {
@@ -452,7 +505,8 @@ public class LobbyMenu : MonoBehaviour
                         GUILayout.Label("Dostępne lobby:", labelStyle);
                         foreach (Lobby lobby in availableLobbies)
                         {
-                                if (GUILayout.Button($"{lobby.Name} ({lobby.Players.Count}/2)", buttonStyle, GUILayout.Height(45)))
+                                string label = $"{lobby.Name} ({lobby.Players.Count}/2)";
+                                if (GUILayout.Button(label, buttonStyle, GUILayout.Height(45)))
                                 {
                                         selectedLobbyId = lobby.Id;
                                         RunSafe(JoinLobbyAsync());
@@ -526,5 +580,166 @@ public class LobbyMenu : MonoBehaviour
                 {
                         GameProgress.Instance.ResetProgressForNewLobby();
                 }
+        }
+
+        private void InitializeNameInput()
+        {
+                if (customIdInput != null)
+                {
+                        customIdInput.text = string.Empty;
+                }
+                customIdValue = string.Empty;
+        }
+
+        private void UpdatePanelVisibility(bool signedIn)
+        {
+                if (loginPanel != null)
+                {
+                        loginPanel.SetActive(!signedIn);
+                }
+                if (lobbyPanel != null)
+                {
+                        lobbyPanel.SetActive(signedIn);
+                }
+        }
+
+        private void StartLobbyPolling()
+        {
+                if (lobbyPollCoroutine != null)
+                {
+                        return;
+                }
+                lobbyPollCoroutine = StartCoroutine(PollCurrentLobbyRoutine());
+        }
+
+        private void StartLobbyListPolling()
+        {
+                if (lobbyListPollCoroutine != null)
+                {
+                        return;
+                }
+
+                lobbyListPollCoroutine = StartCoroutine(PollLobbyListRoutine());
+        }
+
+        private System.Collections.IEnumerator PollCurrentLobbyRoutine()
+        {
+                while (true)
+                {
+                        if (AuthenticationService.Instance.IsSignedIn && currentLobby != null)
+                        {
+                                RunSafe(UpdateCurrentLobbyAsync());
+                        }
+
+                        yield return new WaitForSeconds(2f);
+                }
+        }
+
+        private System.Collections.IEnumerator PollLobbyListRoutine()
+        {
+                while (true)
+                {
+                        if (AuthenticationService.Instance.IsSignedIn)
+                        {
+                                RunSafe(RefreshLobbiesAsync());
+                        }
+
+                        yield return new WaitForSeconds(10f);
+                }
+        }
+
+        private async Task UpdateCurrentLobbyAsync()
+        {
+                if (currentLobby == null)
+                {
+                        return;
+                }
+
+                Lobby updated = await LobbyService.Instance.GetLobbyAsync(currentLobby.Id);
+                if (updated != null)
+                {
+                        currentLobby = updated;
+                        LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
+                }
+        }
+
+        private async Task<string> SetupRelayHostAsync()
+        {
+                try
+                {
+                        Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
+                        string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+                        ConfigureTransport(allocation);
+                        return joinCode;
+                }
+                catch (Exception ex)
+                {
+                        SetStatus($"Relay host error: {ex.Message}");
+                        return null;
+                }
+        }
+
+        private async Task<bool> SetupRelayClientAsync(string joinCode)
+        {
+                try
+                {
+                        JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+                        ConfigureTransport(allocation);
+                        return true;
+                }
+                catch (Exception ex)
+                {
+                        SetStatus($"Relay join error: {ex.Message}");
+                        return false;
+                }
+        }
+
+        private void ConfigureTransport(Allocation allocation)
+        {
+                if (NetworkManager.Singleton == null)
+                {
+                        return;
+                }
+
+                UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport == null)
+                {
+                        return;
+                }
+
+                transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
+        }
+
+        private void ConfigureTransport(JoinAllocation allocation)
+        {
+                if (NetworkManager.Singleton == null)
+                {
+                        return;
+                }
+
+                UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport == null)
+                {
+                        return;
+                }
+
+                transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
+        }
+
+        private bool TryGetRelayJoinCode(Lobby lobby, out string joinCode)
+        {
+                joinCode = null;
+                if (lobby?.Data == null)
+                {
+                        return false;
+                }
+
+                if (lobby.Data.TryGetValue(RelayJoinCodeKey, out var data) && !string.IsNullOrWhiteSpace(data.Value))
+                {
+                        joinCode = data.Value;
+                        return true;
+                }
+
+                return false;
         }
 }

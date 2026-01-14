@@ -24,6 +24,8 @@ public class ShopManager : MonoBehaviour
         public TextMeshProUGUI coinsText;
         public TextMeshProUGUI centerBoardSizeText;
         public TextMeshProUGUI roundText;
+        public TextMeshProUGUI playerNameText;
+        public TextMeshProUGUI enemyNameText;
         public Button startButton;
         public Button rerollButton;
 
@@ -92,6 +94,12 @@ public class ShopManager : MonoBehaviour
                 GameObject roundObj = GameObject.Find("UI_Round");
                 if (roundObj) roundText = roundObj.GetComponent<TextMeshProUGUI>();
 
+                GameObject playerNameObj = GameObject.Find("UI_Player_Name");
+                if (playerNameObj) playerNameText = playerNameObj.GetComponent<TextMeshProUGUI>();
+
+                GameObject enemyNameObj = GameObject.Find("UI_enemy_name");
+                if (enemyNameObj) enemyNameText = enemyNameObj.GetComponent<TextMeshProUGUI>();
+
                 GameObject sizeObj = GameObject.Find("UI_BoardSize");
                 if (sizeObj) centerBoardSizeText = sizeObj.GetComponent<TextMeshProUGUI>();
 
@@ -132,6 +140,10 @@ public class ShopManager : MonoBehaviour
                 RefillShop();
                 ToggleUI(true);
                 UpdateUI();
+                if (InventoryManager.Instance != null)
+                {
+                        InventoryManager.Instance.EnsureInitialized();
+                }
                 StartCoroutine(RestoreLayoutRoutine());
         }
 
@@ -150,6 +162,8 @@ public class ShopManager : MonoBehaviour
                 if (coinsText) coinsText.gameObject.SetActive(state);
                 if (centerBoardSizeText) centerBoardSizeText.gameObject.SetActive(state);
                 if (roundText) roundText.gameObject.SetActive(state);
+                if (playerNameText) playerNameText.gameObject.SetActive(state);
+                if (enemyNameText) enemyNameText.gameObject.SetActive(state);
                 if (rerollButton) rerollButton.gameObject.SetActive(state);
         }
         // ----------------------------
@@ -167,6 +181,8 @@ public class ShopManager : MonoBehaviour
                                 tile.GetComponent<SpriteRenderer>().color = new Color(0.6f, 0.5f, 0.2f);
                                 Tile t = tile.GetComponent<Tile>();
                                 t.row = r;
+                                t.boardType = BoardType.Center;
+                                t.isInventory = false;
 
                                 shopTiles.Add(tile);
                         }
@@ -230,21 +246,44 @@ public class ShopManager : MonoBehaviour
                 Vector3 textOffset = (tile.row == 0) ? new Vector3(0, -1.2f, 0) : new Vector3(0, 1.2f, 0);
 
                 shopItem.Setup(type, GetPrice(type), this, tile, priceTextPrefab, textOffset);
+                EnsureShopItemCollider(itemGO);
 
                 tile.isOccupied = true;
         }
 
+        private void EnsureShopItemCollider(GameObject itemGO)
+        {
+                if (itemGO == null || itemGO.GetComponent<Collider2D>() != null)
+                {
+                        return;
+                }
+
+                BoxCollider2D collider = itemGO.AddComponent<BoxCollider2D>();
+                SpriteRenderer renderer = itemGO.GetComponent<SpriteRenderer>();
+                if (renderer != null && renderer.sprite != null)
+                {
+                        collider.size = renderer.sprite.bounds.size;
+                        collider.offset = renderer.sprite.bounds.center;
+                }
+        }
+
         public void TryBuyPiece(ShopItem item)
         {
-                if (InventoryManager.Instance == null)
+                InventoryManager inventory = InventoryManager.Instance;
+                if (inventory == null)
+                {
+                        inventory = FindObjectOfType<InventoryManager>();
+                }
+
+                if (inventory == null)
                 {
                         Debug.Log("Nie kupiono: brak InventoryManager.");
                         return;
                 }
 
-                if (!InventoryManager.Instance.IsReady)
+                if (!inventory.IsReady)
                 {
-                        InventoryManager.Instance.EnsureInitialized();
+                        inventory.EnsureInitialized();
                         Debug.Log("Nie kupiono: ekwipunek jeszcze się ładuje.");
                         return;
                 }
@@ -253,7 +292,7 @@ public class ShopManager : MonoBehaviour
                 if (GameProgress.Instance.coins >= item.price)
                 {
                         // 2. Czy jest miejsce w ekwipunku? (AddPieceToInventory zwraca teraz bool)
-                        bool success = InventoryManager.Instance.AddPieceToInventory(item.type, GetPrefabByType(item.type));
+                        bool success = inventory.AddPieceToInventory(item.type, GetPrefabByType(item.type));
 
                         if (success)
                         {
@@ -456,10 +495,22 @@ public class ShopManager : MonoBehaviour
                 if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
                 if (roundText != null)
                 {
+                        roundText.text = $"Runda {GameProgress.Instance.gamesPlayed + 1}";
+                }
+                if (playerNameText != null || enemyNameText != null)
+                {
                         string opponentName = LobbyState.OpponentPlayerName;
+                        string localName = LobbyState.LocalPlayerName;
                         int wins = GameProgress.Instance.wins;
                         int losses = GameProgress.Instance.losses;
-                        roundText.text = $"Round {GameProgress.Instance.gamesPlayed + 1}\nYou {wins} || {opponentName} {losses}";
+                        if (playerNameText != null)
+                        {
+                                playerNameText.text = $"{localName}: {wins}";
+                        }
+                        if (enemyNameText != null)
+                        {
+                                enemyNameText.text = $"{opponentName}: {losses}";
+                        }
                 }
                 if (rerollButton != null)
                 {

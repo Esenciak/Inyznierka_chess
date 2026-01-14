@@ -106,4 +106,5 @@ public static class LobbyState
 
                 return string.IsNullOrWhiteSpace(player.Id) ? "Gracz" : player.Id;
         }
+
 }
