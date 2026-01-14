@@ -13,23 +13,9 @@ public class LobbyMenu : MonoBehaviour
         private const string PlayerNameKey = "name";
         private const string AuthIdPrefsKey = "AuthId";
         private const string PlayerNamePrefsKey = "PlayerName";
-        private static readonly (string Label, Color Color)[] TileColorOptions =
-        {
-                ("Biały", Color.white),
-                ("Jasny Niebieski", new Color(0.4f, 0.7f, 1f)),
-                ("Niebieski", new Color(0.25f, 0.55f, 0.95f)),
-                ("Zielony", new Color(0.2f, 0.75f, 0.4f)),
-                ("Żółty", new Color(0.95f, 0.85f, 0.25f)),
-                ("Pomarańczowy", new Color(0.95f, 0.55f, 0.2f)),
-                ("Czerwony", new Color(0.9f, 0.3f, 0.3f)),
-                ("Fioletowy", new Color(0.6f, 0.35f, 0.85f))
-        };
-
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
         [SerializeField] private InputField lobbyNameInput;
-        [SerializeField] private Dropdown tileColor0Dropdown;
-        [SerializeField] private Dropdown tileColor1Dropdown;
         [SerializeField] private Dropdown lobbyDropdown;
         [SerializeField] private Text statusText;
         [SerializeField] private Text activePlayersText;
@@ -38,11 +24,6 @@ public class LobbyMenu : MonoBehaviour
         [SerializeField] private Button joinLobbyButton;
         [SerializeField] private Button refreshButton;
         [SerializeField] private Button quickPlayButton;
-        [SerializeField] private Button changeColorButton;
-        [SerializeField] private GameObject colorPanel;
-        [SerializeField] private Transform whiteColorContainer;
-        [SerializeField] private Transform blackColorContainer;
-        [SerializeField] private GameObject colorButtonPrefab;
         [SerializeField] private GameObject loginPanel;
         [SerializeField] private GameObject lobbyPanel;
 
@@ -55,11 +36,8 @@ public class LobbyMenu : MonoBehaviour
         private string lobbyNameValue = string.Empty;
         private string selectedLobbyId = string.Empty;
         private string statusMessage = string.Empty;
-        private int tileColor0Index;
-        private int tileColor1Index = 1;
         private Coroutine lobbyPollCoroutine;
         private Coroutine lobbyListPollCoroutine;
-        private Transform colorPanelDefaultParent;
 
         public void SetConnectionMenu(ConnectionMenu menu)
         {
@@ -74,10 +52,6 @@ public class LobbyMenu : MonoBehaviour
         private void Start()
         {
                 InitializeNameInput();
-                InitializeColorDropdowns();
-                InitializeColorPanel();
-                CacheColorPanelParent();
-                ApplyLocalTileColorSelection();
                 UpdatePanelVisibility(AuthenticationService.Instance.IsSignedIn);
                 StartLobbyPolling();
                 if (createLobbyButton != null)
@@ -90,8 +64,6 @@ public class LobbyMenu : MonoBehaviour
                         refreshButton.onClick.AddListener(() => RunSafe(RefreshLobbiesAsync()));
                 if (quickPlayButton != null)
                         quickPlayButton.onClick.AddListener(() => RunSafe(QuickPlayAsync()));
-                if (changeColorButton != null)
-                        changeColorButton.onClick.AddListener(ToggleColorPanel);
         }
 
         private async Task InitializeServicesAsync()
@@ -137,7 +109,6 @@ public class LobbyMenu : MonoBehaviour
                         return;
                 }
 
-                ApplyLocalTileColorSelection();
                 string authId = GetOrCreateAuthId();
                 await SignInAsync(authId);
                 PlayerPrefs.SetString(PlayerNamePrefsKey, username);
@@ -225,17 +196,11 @@ public class LobbyMenu : MonoBehaviour
                 {
                         playerName = "Player";
                 }
-
-                ApplyLocalTileColorSelection();
-                string color0Hex = $"#{ColorUtility.ToHtmlStringRGBA(GetSelectedTileColor(tileColor0Dropdown, tileColor0Index))}";
-                string color1Hex = $"#{ColorUtility.ToHtmlStringRGBA(GetSelectedTileColor(tileColor1Dropdown, tileColor1Index))}";
                 return new Player
                 {
                         Data = new Dictionary<string, PlayerDataObject>
                         {
-                                { PlayerNameKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) },
-                                { LobbyState.PlayerColor0Key, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, color0Hex) },
-                                { LobbyState.PlayerColor1Key, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, color1Hex) }
+                                { PlayerNameKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) }
                         }
                 };
         }
@@ -481,13 +446,6 @@ public class LobbyMenu : MonoBehaviour
                         customIdValue = GUILayout.TextField(customIdValue, 32, textFieldStyle, GUILayout.Height(40));
                         GUILayout.Space(10);
 
-                        GUILayout.Label("Kolor kafelków (0):", labelStyle);
-                        tileColor0Index = GUILayout.SelectionGrid(tileColor0Index, GetTileColorLabels(), 2, buttonStyle, GUILayout.Height(120));
-
-                        GUILayout.Label("Kolor kafelków (1):", labelStyle);
-                        tileColor1Index = GUILayout.SelectionGrid(tileColor1Index, GetTileColorLabels(), 2, buttonStyle, GUILayout.Height(120));
-                        ApplyLocalTileColorSelection();
-
                         if (GUILayout.Button("Zaloguj", buttonStyle, GUILayout.Height(50)))
                         {
                                 RunSafe(LoginAsync());
@@ -589,13 +547,6 @@ public class LobbyMenu : MonoBehaviour
                 }
         }
 
-        private void ApplyLocalTileColorSelection()
-        {
-                Color color0 = GetSelectedTileColor(tileColor0Dropdown, tileColor0Index);
-                Color color1 = GetSelectedTileColor(tileColor1Dropdown, tileColor1Index);
-                LobbyState.SetLocalTileColors(color0, color1);
-        }
-
         private void InitializeNameInput()
         {
                 if (customIdInput != null)
@@ -603,134 +554,6 @@ public class LobbyMenu : MonoBehaviour
                         customIdInput.text = string.Empty;
                 }
                 customIdValue = string.Empty;
-        }
-
-        private void InitializeColorDropdowns()
-        {
-                List<string> labels = new List<string>(GetTileColorLabels());
-                if (tileColor0Dropdown != null)
-                {
-                        tileColor0Dropdown.ClearOptions();
-                        tileColor0Dropdown.AddOptions(labels);
-                        tileColor0Dropdown.onValueChanged.RemoveAllListeners();
-                        tileColor0Dropdown.onValueChanged.AddListener(index =>
-                        {
-                                tileColor0Index = index;
-                                ApplyLocalTileColorSelection();
-                        });
-                        tileColor0Dropdown.value = Mathf.Clamp(tileColor0Index, 0, TileColorOptions.Length - 1);
-                }
-
-                if (tileColor1Dropdown != null)
-                {
-                        tileColor1Dropdown.ClearOptions();
-                        tileColor1Dropdown.AddOptions(labels);
-                        tileColor1Dropdown.onValueChanged.RemoveAllListeners();
-                        tileColor1Dropdown.onValueChanged.AddListener(index =>
-                        {
-                                tileColor1Index = index;
-                                ApplyLocalTileColorSelection();
-                        });
-                        tileColor1Dropdown.value = Mathf.Clamp(tileColor1Index, 0, TileColorOptions.Length - 1);
-                }
-        }
-
-        private void InitializeColorPanel()
-        {
-                if (colorPanel != null)
-                {
-                        colorPanel.SetActive(false);
-                }
-
-                if (whiteColorContainer != null)
-                {
-                        BuildColorButtons(whiteColorContainer, SetWhiteColorIndex);
-                }
-
-                if (blackColorContainer != null)
-                {
-                        BuildColorButtons(blackColorContainer, SetBlackColorIndex);
-                }
-        }
-
-        private void CacheColorPanelParent()
-        {
-                if (colorPanel == null)
-                {
-                        return;
-                }
-
-                colorPanelDefaultParent = colorPanel.transform.parent;
-        }
-
-        private void BuildColorButtons(Transform container, Action<int> onSelect)
-        {
-                for (int i = container.childCount - 1; i >= 0; i--)
-                {
-                        Destroy(container.GetChild(i).gameObject);
-                }
-
-                for (int i = 0; i < TileColorOptions.Length; i++)
-                {
-                        GameObject buttonObject = colorButtonPrefab != null
-                                ? Instantiate(colorButtonPrefab, container)
-                                : CreateColorButtonObject(container);
-
-                        Image image = buttonObject.GetComponent<Image>();
-                        if (image != null)
-                        {
-                                image.color = TileColorOptions[i].Color;
-                        }
-
-                        Button button = buttonObject.GetComponent<Button>();
-                        if (button != null)
-                        {
-                                int index = i;
-                                button.onClick.RemoveAllListeners();
-                                button.onClick.AddListener(() =>
-                                {
-                                        onSelect(index);
-                                        ApplyLocalTileColorSelection();
-                                });
-                        }
-                }
-        }
-
-        private GameObject CreateColorButtonObject(Transform parent)
-        {
-                GameObject go = new GameObject("ColorButton", typeof(RectTransform), typeof(Image), typeof(Button));
-                go.transform.SetParent(parent, false);
-                RectTransform rect = go.GetComponent<RectTransform>();
-                rect.sizeDelta = new Vector2(48f, 48f);
-                return go;
-        }
-
-        private void SetWhiteColorIndex(int index)
-        {
-                tileColor0Index = index;
-                if (tileColor0Dropdown != null)
-                {
-                        tileColor0Dropdown.value = index;
-                }
-        }
-
-        private void SetBlackColorIndex(int index)
-        {
-                tileColor1Index = index;
-                if (tileColor1Dropdown != null)
-                {
-                        tileColor1Dropdown.value = index;
-                }
-        }
-
-        private void ToggleColorPanel()
-        {
-                if (colorPanel == null)
-                {
-                        return;
-                }
-
-                colorPanel.SetActive(!colorPanel.activeSelf);
         }
 
         private void UpdatePanelVisibility(bool signedIn)
@@ -743,57 +566,6 @@ public class LobbyMenu : MonoBehaviour
                 {
                         lobbyPanel.SetActive(signedIn);
                 }
-                if (changeColorButton != null)
-                {
-                        changeColorButton.gameObject.SetActive(!signedIn);
-                }
-                if (colorPanel != null)
-                {
-                        if (!signedIn && loginPanel != null)
-                        {
-                                colorPanel.transform.SetParent(loginPanel.transform, false);
-                        }
-                        else if (!signedIn && lobbyPanel != null)
-                        {
-                                colorPanel.transform.SetParent(lobbyPanel.transform, false);
-                        }
-                        else if (colorPanelDefaultParent != null)
-                        {
-                                colorPanel.transform.SetParent(colorPanelDefaultParent, false);
-                        }
-
-                        colorPanel.SetActive(!signedIn);
-                }
-                if (tileColor0Dropdown != null)
-                {
-                        tileColor0Dropdown.gameObject.SetActive(!signedIn);
-                }
-                if (tileColor1Dropdown != null)
-                {
-                        tileColor1Dropdown.gameObject.SetActive(!signedIn);
-                }
-        }
-
-        private string[] GetTileColorLabels()
-        {
-                string[] labels = new string[TileColorOptions.Length];
-                for (int i = 0; i < TileColorOptions.Length; i++)
-                {
-                        labels[i] = TileColorOptions[i].Label;
-                }
-                return labels;
-        }
-
-        private Color GetSelectedTileColor(Dropdown dropdown, int fallbackIndex)
-        {
-                int index = fallbackIndex;
-                if (dropdown != null)
-                {
-                        index = dropdown.value;
-                }
-
-                index = Mathf.Clamp(index, 0, TileColorOptions.Length - 1);
-                return TileColorOptions[index].Color;
         }
 
         private void StartLobbyPolling()

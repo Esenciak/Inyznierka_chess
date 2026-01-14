@@ -82,7 +82,6 @@ public class BoardManager : MonoBehaviour
 			CenterCols = GameProgress.Instance.centerBoardSize;
 		}
 
-		ApplySelectedTileColors();
 		ApplyBattleBackground(sceneName);
 		RecalculateGlobalLayout();
 		offsetCalculation(); // <-- Tutaj dzieje siê magia z pozycj¹
@@ -91,33 +90,6 @@ public class BoardManager : MonoBehaviour
 		else GenerateBattleLayout();
 
 		IsReady = true;
-	}
-
-	private void ApplySelectedTileColors()
-	{
-		if (playerColors != null)
-		{
-			if (playerColors.Length > 0 && LobbyState.HasLocalTileColor0)
-			{
-				playerColors[0] = LobbyState.LocalTileColor0;
-			}
-			if (playerColors.Length > 1 && LobbyState.HasLocalTileColor1)
-			{
-				playerColors[1] = LobbyState.LocalTileColor1;
-			}
-		}
-
-		if (enemyColors != null)
-		{
-			if (enemyColors.Length > 0 && LobbyState.HasOpponentTileColor0)
-			{
-				enemyColors[0] = LobbyState.OpponentTileColor0;
-			}
-			if (enemyColors.Length > 1 && LobbyState.HasOpponentTileColor1)
-			{
-				enemyColors[1] = LobbyState.OpponentTileColor1;
-			}
-		}
 	}
 
 	private void ApplyBattleBackground(string sceneName)
@@ -133,12 +105,8 @@ public class BoardManager : MonoBehaviour
 			return;
 		}
 
-		Color colorA = (LobbyState.HasLocalTileColor0 ? LobbyState.LocalTileColor0 : Color.black);
-		Color colorB = (LobbyState.HasOpponentTileColor0 ? LobbyState.OpponentTileColor0 : colorA);
-		if (enemyColors != null && enemyColors.Length > 0 && !LobbyState.HasOpponentTileColor0)
-		{
-			colorB = enemyColors[0];
-		}
+		Color colorA = (playerColors != null && playerColors.Length > 0) ? playerColors[0] : Color.black;
+		Color colorB = (enemyColors != null && enemyColors.Length > 0) ? enemyColors[0] : colorA;
 		cam.backgroundColor = Color.Lerp(colorA, colorB, 0.5f);
 	}
 

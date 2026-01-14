@@ -7,20 +7,10 @@ using UnityEngine;
 
 public static class LobbyState
 {
-        public const string PlayerColor0Key = "tileColor0";
-        public const string PlayerColor1Key = "tileColor1";
         public static string CurrentLobbyId { get; private set; } = string.Empty;
         public static bool IsHostLobby { get; private set; }
         public static string LocalPlayerName { get; private set; } = "Ty";
         public static string OpponentPlayerName { get; private set; } = "Przeciwnik";
-        public static Color LocalTileColor0 { get; private set; } = Color.white;
-        public static Color LocalTileColor1 { get; private set; } = Color.white;
-        public static bool HasLocalTileColor0 { get; private set; }
-        public static bool HasLocalTileColor1 { get; private set; }
-        public static Color OpponentTileColor0 { get; private set; } = Color.white;
-        public static Color OpponentTileColor1 { get; private set; } = Color.white;
-        public static bool HasOpponentTileColor0 { get; private set; }
-        public static bool HasOpponentTileColor1 { get; private set; }
 
         public static void RegisterLobby(string lobbyId, bool isHost)
         {
@@ -36,14 +26,6 @@ public static class LobbyState
                 }
         }
 
-        public static void SetLocalTileColors(Color color0, Color color1)
-        {
-                LocalTileColor0 = color0;
-                LocalTileColor1 = color1;
-                HasLocalTileColor0 = true;
-                HasLocalTileColor1 = true;
-        }
-
         public static void UpdateFromLobby(Lobby lobby, string localPlayerId)
         {
                 if (lobby == null || lobby.Players == null)
@@ -57,30 +39,10 @@ public static class LobbyState
                         if (!string.IsNullOrWhiteSpace(localPlayerId) && player.Id == localPlayerId)
                         {
                                 LocalPlayerName = name;
-                                if (TryExtractTileColor(player, PlayerColor0Key, out var color0))
-                                {
-                                        LocalTileColor0 = color0;
-                                        HasLocalTileColor0 = true;
-                                }
-                                if (TryExtractTileColor(player, PlayerColor1Key, out var color1))
-                                {
-                                        LocalTileColor1 = color1;
-                                        HasLocalTileColor1 = true;
-                                }
                         }
                         else
                         {
                                 OpponentPlayerName = name;
-                                if (TryExtractTileColor(player, PlayerColor0Key, out var color0))
-                                {
-                                        OpponentTileColor0 = color0;
-                                        HasOpponentTileColor0 = true;
-                                }
-                                if (TryExtractTileColor(player, PlayerColor1Key, out var color1))
-                                {
-                                        OpponentTileColor1 = color1;
-                                        HasOpponentTileColor1 = true;
-                                }
                         }
                 }
         }
@@ -91,14 +53,6 @@ public static class LobbyState
                 IsHostLobby = false;
                 LocalPlayerName = "Ty";
                 OpponentPlayerName = "Przeciwnik";
-                LocalTileColor0 = Color.white;
-                LocalTileColor1 = Color.white;
-                OpponentTileColor0 = Color.white;
-                OpponentTileColor1 = Color.white;
-                HasLocalTileColor0 = false;
-                HasLocalTileColor1 = false;
-                HasOpponentTileColor0 = false;
-                HasOpponentTileColor1 = false;
         }
 
         public static async Task LeaveLobbyAsync()
@@ -153,22 +107,4 @@ public static class LobbyState
                 return string.IsNullOrWhiteSpace(player.Id) ? "Gracz" : player.Id;
         }
 
-        private static bool TryExtractTileColor(Player player, string key, out Color color)
-        {
-                color = default;
-                if (player?.Data == null)
-                {
-                        return false;
-                }
-
-                if (player.Data.TryGetValue(key, out var data) && !string.IsNullOrWhiteSpace(data.Value))
-                {
-                        if (ColorUtility.TryParseHtmlString(data.Value, out color))
-                        {
-                                return true;
-                        }
-                }
-
-                return false;
-        }
 }
