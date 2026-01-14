@@ -5,8 +5,8 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
-using Unity.Services.Multiplayer;
-using Unity.Services.Multiplayer.Models;
+using Unity.Services.Relay;
+using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
@@ -19,7 +19,6 @@ public class LobbyMenu : MonoBehaviour
         private const string RelayJoinCodeKey = "joinCode";
         private const string AuthIdPrefsKey = "AuthId";
         private const string PlayerNamePrefsKey = "PlayerName";
-        private const string RelayConnectionType = "dtls";
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
         [SerializeField] private InputField lobbyNameInput;
@@ -708,13 +707,7 @@ public class LobbyMenu : MonoBehaviour
                         return;
                 }
 
-                if (!TryGetRelayServerEndpoint(allocation.ServerEndpoints, RelayConnectionType, out var endpoint))
-                {
-                        SetStatus($"Relay endpoint dla {RelayConnectionType} nie został znaleziony.");
-                        return;
-                }
-
-                transport.SetRelayServerData(CreateRelayServerData(allocation, endpoint, RelayConnectionType));
+                transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
         }
 
         private void ConfigureTransport(JoinAllocation allocation)
@@ -730,43 +723,7 @@ public class LobbyMenu : MonoBehaviour
                         return;
                 }
 
-                if (!TryGetRelayServerEndpoint(allocation.ServerEndpoints, RelayConnectionType, out var endpoint))
-                {
-                        SetStatus($"Relay endpoint dla {RelayConnectionType} nie został znaleziony.");
-                        return;
-                }
-
-                transport.SetRelayServerData(CreateRelayServerData(allocation, endpoint, RelayConnectionType));
-        }
-
-        private static RelayServerData CreateRelayServerData(Allocation allocation, RelayServerEndpoint endpoint, string connectionType)
-        {
-                bool isWebSocket = connectionType == "ws" || connectionType == "wss";
-                return new RelayServerData(endpoint.Host, (ushort)endpoint.Port, allocation.AllocationIdBytes,
-                        allocation.ConnectionData, allocation.ConnectionData, allocation.Key, endpoint.Secure, isWebSocket);
-        }
-
-        private static RelayServerData CreateRelayServerData(JoinAllocation allocation, RelayServerEndpoint endpoint, string connectionType)
-        {
-                bool isWebSocket = connectionType == "ws" || connectionType == "wss";
-                return new RelayServerData(endpoint.Host, (ushort)endpoint.Port, allocation.AllocationIdBytes,
-                        allocation.ConnectionData, allocation.HostConnectionData, allocation.Key, endpoint.Secure, isWebSocket);
-        }
-
-        private static bool TryGetRelayServerEndpoint(IReadOnlyList<RelayServerEndpoint> endpoints, string connectionType,
-                out RelayServerEndpoint relayEndpoint)
-        {
-                foreach (var endpoint in endpoints)
-                {
-                        if (string.Equals(endpoint.ConnectionType, connectionType, StringComparison.OrdinalIgnoreCase))
-                        {
-                                relayEndpoint = endpoint;
-                                return true;
-                        }
-                }
-
-                relayEndpoint = default;
-                return false;
+                transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
         }
 
         private bool TryGetRelayJoinCode(Lobby lobby, out string joinCode)
