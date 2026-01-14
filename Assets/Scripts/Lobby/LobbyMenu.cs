@@ -703,13 +703,14 @@ public class LobbyMenu : MonoBehaviour
                         options.WithRelayNetwork();
 
                         IHostSession session = await MultiplayerService.Instance.CreateSessionAsync(options);
-                        if (session == null || string.IsNullOrWhiteSpace(session.Code))
+                        string sessionCode = await WaitForSessionCodeAsync(session);
+                        if (string.IsNullOrWhiteSpace(sessionCode))
                         {
                                 SetStatus("Sesja została utworzona bez kodu.");
                                 return null;
                         }
 
-                        return session.Code;
+                        return sessionCode;
                 }
                 catch (Exception ex)
                 {
@@ -760,5 +761,34 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 return false;
+        }
+
+        private static async Task<string> WaitForSessionCodeAsync(ISession session)
+        {
+                if (session == null)
+                {
+                        return null;
+                }
+
+                const int retries = 10;
+                const int delayMs = 200;
+
+                for (int attempt = 0; attempt < retries; attempt++)
+                {
+                        if (!string.IsNullOrWhiteSpace(session.Code))
+                        {
+                                return session.Code;
+                        }
+
+                        var refreshMethod = session.GetType().GetMethod("RefreshAsync", Type.EmptyTypes);
+                        if (refreshMethod != null && refreshMethod.Invoke(session, null) is Task refreshTask)
+                        {
+                                await refreshTask;
+                        }
+
+                        await Task.Delay(delayMs);
+                }
+
+                return session.Code;
         }
 }
