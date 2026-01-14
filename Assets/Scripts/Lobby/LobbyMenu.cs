@@ -13,6 +13,8 @@ public class LobbyMenu : MonoBehaviour
         private const string PlayerNameKey = "name";
         private const string LobbyPasswordKey = "password";
         private const string LobbyHasPasswordKey = "hasPassword";
+        private const string AuthIdPrefsKey = "AuthId";
+        private const string PlayerNamePrefsKey = "PlayerName";
         private static readonly (string Label, Color Color)[] TileColorOptions =
         {
                 ("Niebieski", new Color(0.25f, 0.55f, 0.95f)),
@@ -114,8 +116,9 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 ApplyLocalTileColorSelection();
-                await SignInAsync(username);
-                PlayerPrefs.SetString("CustomId", username);
+                string authId = GetOrCreateAuthId();
+                await SignInAsync(authId);
+                PlayerPrefs.SetString(PlayerNamePrefsKey, username);
                 LobbyState.SetLocalPlayerName(username);
                 SetStatus($"Zalogowano jako: {username}");
                 await RefreshLobbiesAsync();
@@ -142,34 +145,13 @@ public class LobbyMenu : MonoBehaviour
                 await service.SignInAnonymouslyAsync();
         }
 
-        private string GetOrCreateCustomId()
+        private string GetOrCreateAuthId()
         {
-                if (customIdInput != null && !string.IsNullOrWhiteSpace(customIdInput.text))
-                {
-                        PlayerPrefs.SetString("CustomId", customIdInput.text.Trim());
-                        return customIdInput.text.Trim();
-                }
-
-                if (customIdInput == null && !string.IsNullOrWhiteSpace(customIdValue))
-                {
-                        PlayerPrefs.SetString("CustomId", customIdValue.Trim());
-                        return customIdValue.Trim();
-                }
-
-                string saved = PlayerPrefs.GetString("CustomId", string.Empty);
+                string saved = PlayerPrefs.GetString(AuthIdPrefsKey, string.Empty);
                 if (string.IsNullOrWhiteSpace(saved))
                 {
                         saved = Guid.NewGuid().ToString("N");
-                        PlayerPrefs.SetString("CustomId", saved);
-                }
-
-                if (customIdInput != null)
-                {
-                        customIdInput.text = saved;
-                }
-                else
-                {
-                        customIdValue = saved;
+                        PlayerPrefs.SetString(AuthIdPrefsKey, saved);
                 }
 
                 return saved;
@@ -187,7 +169,11 @@ public class LobbyMenu : MonoBehaviour
                         return customIdValue.Trim();
                 }
 
-                string saved = PlayerPrefs.GetString("CustomId", string.Empty);
+                string saved = PlayerPrefs.GetString(PlayerNamePrefsKey, string.Empty);
+                if (string.IsNullOrWhiteSpace(saved))
+                {
+                        saved = PlayerPrefs.GetString("CustomId", string.Empty);
+                }
                 if (!string.IsNullOrWhiteSpace(saved))
                 {
                         return saved;
@@ -199,10 +185,6 @@ public class LobbyMenu : MonoBehaviour
         private string ResolveLocalPlayerName()
         {
                 string username = GetUsernameInput();
-                if (string.IsNullOrWhiteSpace(username))
-                {
-                        username = PlayerPrefs.GetString("CustomId", string.Empty);
-                }
 
                 if (string.IsNullOrWhiteSpace(username))
                 {
