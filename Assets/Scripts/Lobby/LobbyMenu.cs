@@ -5,20 +5,17 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
-using Unity.Services.Relay;
-using Unity.Services.Relay.Models;
+using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.UI;
-using Unity.Netcode;
-using Unity.Netcode.Transports.UTP;
-using Unity.Networking.Transport.Relay;
 
 public class LobbyMenu : MonoBehaviour
 {
         private const string PlayerNameKey = "name";
-        private const string RelayJoinCodeKey = "joinCode";
+        private const string SessionCodeKey = "sessionCode";
         private const string AuthIdPrefsKey = "AuthId";
         private const string PlayerNamePrefsKey = "PlayerName";
+        private const string SessionType = "chess-session";
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
         [SerializeField] private InputField lobbyNameInput;
@@ -288,18 +285,18 @@ public class LobbyMenu : MonoBehaviour
 
                 try
                 {
-                        string relayJoinCode = await SetupRelayHostAsync();
-                        if (string.IsNullOrWhiteSpace(relayJoinCode))
-                        {
-                                SetStatus("Nie udało się utworzyć Relay.");
-                                return;
-                        }
-
                         string lobbyName = lobbyNameInput != null && !string.IsNullOrWhiteSpace(lobbyNameInput.text)
                                 ? lobbyNameInput.text.Trim()
                                 : !string.IsNullOrWhiteSpace(lobbyNameValue)
                                         ? lobbyNameValue.Trim()
                                 : $"Lobby-{UnityEngine.Random.Range(1000, 9999)}";
+
+                        string sessionCode = await SetupSessionHostAsync(lobbyName);
+                        if (string.IsNullOrWhiteSpace(sessionCode))
+                        {
+                                SetStatus("Nie udało się utworzyć sesji sieciowej.");
+                                return;
+                        }
 
                         string localName = ResolveLocalPlayerName();
                         CreateLobbyOptions options = new CreateLobbyOptions
@@ -309,8 +306,8 @@ public class LobbyMenu : MonoBehaviour
                                 Data = new Dictionary<string, DataObject>
                                 {
                                         {
-                                                RelayJoinCodeKey,
-                                                new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode)
+                                                SessionCodeKey,
+                                                new DataObject(DataObject.VisibilityOptions.Member, sessionCode)
                                         }
                                 }
                         };
@@ -368,16 +365,16 @@ public class LobbyMenu : MonoBehaviour
                         }
 
                         currentLobby = joinedLobby;
-                        if (!TryGetRelayJoinCode(currentLobby, out string relayJoinCode))
+                        if (!TryGetSessionCode(currentLobby, out string sessionCode))
                         {
-                                SetStatus("Brak kodu Relay w lobby.");
+                                SetStatus("Brak kodu sesji w lobby.");
                                 return;
                         }
 
-                        bool relayReady = await SetupRelayClientAsync(relayJoinCode);
-                        if (!relayReady)
+                        bool sessionReady = await SetupSessionClientAsync(sessionCode);
+                        if (!sessionReady)
                         {
-                                SetStatus("Nie udało się dołączyć do Relay.");
+                                SetStatus("Nie udało się dołączyć do sesji sieciowej.");
                                 return;
                         }
 
@@ -663,80 +660,60 @@ public class LobbyMenu : MonoBehaviour
                 }
         }
 
-        private async Task<string> SetupRelayHostAsync()
+        private async Task<string> SetupSessionHostAsync(string lobbyName)
         {
                 try
                 {
-                        Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
-                        string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
-                        ConfigureTransport(allocation);
-                        return joinCode;
+                        SessionOptions options = new SessionOptions
+                        {
+                                MaxPlayers = 2,
+                                Name = lobbyName,
+                                Type = SessionType
+                        };
+                        options.WithPlayerName();
+                        options.WithRelayNetwork();
+
+                        IHostSession session = await MultiplayerService.Instance.CreateSessionAsync(options);
+                        return session?.Code;
                 }
                 catch (Exception ex)
                 {
-                        SetStatus($"Relay host error: {ex.Message}");
+                        SetStatus($"Błąd tworzenia sesji: {ex.Message}");
                         return null;
                 }
         }
 
-        private async Task<bool> SetupRelayClientAsync(string joinCode)
+        private async Task<bool> SetupSessionClientAsync(string sessionCode)
         {
                 try
                 {
-                        JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
-                        ConfigureTransport(allocation);
+                        JoinSessionOptions options = new JoinSessionOptions
+                        {
+                                Type = SessionType
+                        };
+                        options.WithPlayerName();
+
+                        await MultiplayerService.Instance.JoinSessionByCodeAsync(sessionCode, options);
                         return true;
                 }
                 catch (Exception ex)
                 {
-                        SetStatus($"Relay join error: {ex.Message}");
+                        SetStatus($"Błąd dołączania do sesji: {ex.Message}");
                         return false;
                 }
         }
 
-        private void ConfigureTransport(Allocation allocation)
+        private bool TryGetSessionCode(Lobby lobby, out string sessionCode)
         {
-                if (NetworkManager.Singleton == null)
-                {
-                        return;
-                }
-
-                UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-                if (transport == null)
-                {
-                        return;
-                }
-
-                transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
-        }
-
-        private void ConfigureTransport(JoinAllocation allocation)
-        {
-                if (NetworkManager.Singleton == null)
-                {
-                        return;
-                }
-
-                UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-                if (transport == null)
-                {
-                        return;
-                }
-
-                transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
-        }
-
-        private bool TryGetRelayJoinCode(Lobby lobby, out string joinCode)
-        {
-                joinCode = null;
+                sessionCode = null;
                 if (lobby?.Data == null)
                 {
                         return false;
                 }
 
-                if (lobby.Data.TryGetValue(RelayJoinCodeKey, out var data) && !string.IsNullOrWhiteSpace(data.Value))
+                if (lobby.Data.TryGetValue(SessionCodeKey, out var data) && !string.IsNullOrWhiteSpace(data.Value))
                 {
-                        joinCode = data.Value;
+                        sessionCode = data.Value;
                         return true;
                 }
 
