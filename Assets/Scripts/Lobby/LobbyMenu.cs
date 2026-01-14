@@ -59,6 +59,7 @@ public class LobbyMenu : MonoBehaviour
         private int tileColor1Index = 1;
         private Coroutine lobbyPollCoroutine;
         private Coroutine lobbyListPollCoroutine;
+        private Transform colorPanelDefaultParent;
 
         public void SetConnectionMenu(ConnectionMenu menu)
         {
@@ -75,6 +76,7 @@ public class LobbyMenu : MonoBehaviour
                 InitializeNameInput();
                 InitializeColorDropdowns();
                 InitializeColorPanel();
+                CacheColorPanelParent();
                 ApplyLocalTileColorSelection();
                 UpdatePanelVisibility(AuthenticationService.Instance.IsSignedIn);
                 StartLobbyPolling();
@@ -470,7 +472,7 @@ public class LobbyMenu : MonoBehaviour
                 GUIStyle textFieldStyle = new GUIStyle(GUI.skin.textField) { fontSize = 20 };
 
                 GUILayout.BeginArea(new Rect(x, y, panelWidth, panelHeight), GUI.skin.box);
-                GUILayout.Label("Lobby (UGS)", titleStyle);
+                GUILayout.Label("Lobby", titleStyle);
                 GUILayout.Space(10);
 
                 if (!AuthenticationService.Instance.IsSignedIn)
@@ -651,6 +653,16 @@ public class LobbyMenu : MonoBehaviour
                 }
         }
 
+        private void CacheColorPanelParent()
+        {
+                if (colorPanel == null)
+                {
+                        return;
+                }
+
+                colorPanelDefaultParent = colorPanel.transform.parent;
+        }
+
         private void BuildColorButtons(Transform container, Action<int> onSelect)
         {
                 for (int i = container.childCount - 1; i >= 0; i--)
@@ -737,6 +749,15 @@ public class LobbyMenu : MonoBehaviour
                 }
                 if (colorPanel != null)
                 {
+                        if (!signedIn && loginPanel != null)
+                        {
+                                colorPanel.transform.SetParent(loginPanel.transform, false);
+                        }
+                        else if (colorPanelDefaultParent != null)
+                        {
+                                colorPanel.transform.SetParent(colorPanelDefaultParent, false);
+                        }
+
                         colorPanel.SetActive(!signedIn);
                 }
                 if (tileColor0Dropdown != null)

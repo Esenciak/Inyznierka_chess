@@ -242,8 +242,25 @@ public class ShopManager : MonoBehaviour
                 Vector3 textOffset = (tile.row == 0) ? new Vector3(0, -1.2f, 0) : new Vector3(0, 1.2f, 0);
 
                 shopItem.Setup(type, GetPrice(type), this, tile, priceTextPrefab, textOffset);
+                EnsureShopItemCollider(itemGO);
 
                 tile.isOccupied = true;
+        }
+
+        private void EnsureShopItemCollider(GameObject itemGO)
+        {
+                if (itemGO == null || itemGO.GetComponent<Collider2D>() != null)
+                {
+                        return;
+                }
+
+                BoxCollider2D collider = itemGO.AddComponent<BoxCollider2D>();
+                SpriteRenderer renderer = itemGO.GetComponent<SpriteRenderer>();
+                if (renderer != null && renderer.sprite != null)
+                {
+                        collider.size = renderer.sprite.bounds.size;
+                        collider.offset = renderer.sprite.bounds.center;
+                }
         }
 
         public void TryBuyPiece(ShopItem item)
