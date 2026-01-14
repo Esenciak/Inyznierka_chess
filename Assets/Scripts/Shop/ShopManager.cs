@@ -24,6 +24,8 @@ public class ShopManager : MonoBehaviour
         public TextMeshProUGUI coinsText;
         public TextMeshProUGUI centerBoardSizeText;
         public TextMeshProUGUI roundText;
+        public TextMeshProUGUI playerNameText;
+        public TextMeshProUGUI enemyNameText;
         public Button startButton;
         public Button rerollButton;
 
@@ -92,6 +94,12 @@ public class ShopManager : MonoBehaviour
                 GameObject roundObj = GameObject.Find("UI_Round");
                 if (roundObj) roundText = roundObj.GetComponent<TextMeshProUGUI>();
 
+                GameObject playerNameObj = GameObject.Find("UI_Player_Name");
+                if (playerNameObj) playerNameText = playerNameObj.GetComponent<TextMeshProUGUI>();
+
+                GameObject enemyNameObj = GameObject.Find("UI_enemy_name");
+                if (enemyNameObj) enemyNameText = enemyNameObj.GetComponent<TextMeshProUGUI>();
+
                 GameObject sizeObj = GameObject.Find("UI_BoardSize");
                 if (sizeObj) centerBoardSizeText = sizeObj.GetComponent<TextMeshProUGUI>();
 
@@ -150,6 +158,8 @@ public class ShopManager : MonoBehaviour
                 if (coinsText) coinsText.gameObject.SetActive(state);
                 if (centerBoardSizeText) centerBoardSizeText.gameObject.SetActive(state);
                 if (roundText) roundText.gameObject.SetActive(state);
+                if (playerNameText) playerNameText.gameObject.SetActive(state);
+                if (enemyNameText) enemyNameText.gameObject.SetActive(state);
                 if (rerollButton) rerollButton.gameObject.SetActive(state);
         }
         // ----------------------------
@@ -456,10 +466,22 @@ public class ShopManager : MonoBehaviour
                 if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
                 if (roundText != null)
                 {
+                        roundText.text = $"Runda {GameProgress.Instance.gamesPlayed + 1}";
+                }
+                if (playerNameText != null || enemyNameText != null)
+                {
                         string opponentName = LobbyState.OpponentPlayerName;
+                        string localName = LobbyState.LocalPlayerName;
                         int wins = GameProgress.Instance.wins;
                         int losses = GameProgress.Instance.losses;
-                        roundText.text = $"Round {GameProgress.Instance.gamesPlayed + 1}\nYou {wins} || {opponentName} {losses}";
+                        if (playerNameText != null)
+                        {
+                                playerNameText.text = $"{localName}: {wins}";
+                        }
+                        if (enemyNameText != null)
+                        {
+                                enemyNameText.text = $"{opponentName}: {losses}";
+                        }
                 }
                 if (rerollButton != null)
                 {

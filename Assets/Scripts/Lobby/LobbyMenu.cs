@@ -11,11 +11,23 @@ using UnityEngine.UI;
 public class LobbyMenu : MonoBehaviour
 {
         private const string PlayerNameKey = "name";
+        private const string LobbyPasswordKey = "password";
+        private const string LobbyHasPasswordKey = "hasPassword";
+        private static readonly (string Label, Color Color)[] TileColorOptions =
+        {
+                ("Niebieski", new Color(0.25f, 0.55f, 0.95f)),
+                ("Zielony", new Color(0.2f, 0.75f, 0.4f)),
+                ("Czerwony", new Color(0.9f, 0.3f, 0.3f)),
+                ("Fioletowy", new Color(0.6f, 0.35f, 0.85f))
+        };
 
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
         [SerializeField] private InputField lobbyNameInput;
+        [SerializeField] private InputField lobbyPasswordInput;
+        [SerializeField] private InputField joinPasswordInput;
         [SerializeField] private Dropdown lobbyDropdown;
+        [SerializeField] private Dropdown tileColorDropdown;
         [SerializeField] private Text statusText;
         [SerializeField] private Button loginButton;
         [SerializeField] private Button createLobbyButton;
@@ -30,8 +42,11 @@ public class LobbyMenu : MonoBehaviour
         private Lobby currentLobby;
         private string customIdValue = string.Empty;
         private string lobbyNameValue = string.Empty;
+        private string lobbyPasswordValue = string.Empty;
+        private string joinPasswordValue = string.Empty;
         private string selectedLobbyId = string.Empty;
         private string statusMessage = string.Empty;
+        private int selectedTileColorIndex;
 
         public void SetConnectionMenu(ConnectionMenu menu)
         {
@@ -45,6 +60,8 @@ public class LobbyMenu : MonoBehaviour
 
         private void Start()
         {
+                InitializeColorDropdown();
+                ApplyLocalTileColorSelection();
                 if (createLobbyButton != null)
                         createLobbyButton.onClick.AddListener(() => RunSafe(CreateLobbyAsync()));
                 if (loginButton != null)
@@ -96,6 +113,7 @@ public class LobbyMenu : MonoBehaviour
                         return;
                 }
 
+                ApplyLocalTileColorSelection();
                 await SignInAsync(username);
                 PlayerPrefs.SetString("CustomId", username);
                 LobbyState.SetLocalPlayerName(username);
@@ -201,11 +219,14 @@ public class LobbyMenu : MonoBehaviour
                         playerName = "Player";
                 }
 
+                ApplyLocalTileColorSelection();
+                string colorHex = $"#{ColorUtility.ToHtmlStringRGBA(GetSelectedTileColor())}";
                 return new Player
                 {
                         Data = new Dictionary<string, PlayerDataObject>
                         {
-                                { PlayerNameKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) }
+                                { PlayerNameKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, playerName) },
+                                { LobbyState.PlayerColorKey, new PlayerDataObject(PlayerDataObject.VisibilityOptions.Member, colorHex) }
                         }
                 };
         }
@@ -298,6 +319,15 @@ public class LobbyMenu : MonoBehaviour
                                 IsPrivate = false,
                                 Player = BuildLocalPlayer(localName)
                         };
+                        string lobbyPassword = GetLobbyPasswordInput();
+                        if (!string.IsNullOrWhiteSpace(lobbyPassword))
+                        {
+                                options.Data = new Dictionary<string, DataObject>
+                                {
+                                        { LobbyPasswordKey, new DataObject(DataObject.VisibilityOptions.Public, lobbyPassword) },
+                                        { LobbyHasPasswordKey, new DataObject(DataObject.VisibilityOptions.Public, "1") }
+                                };
+                        }
 
                         currentLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, 2, options);
                         SetStatus($"Utworzono lobby: {currentLobby.Name} (kod: {currentLobby.LobbyCode})");
@@ -327,8 +357,14 @@ public class LobbyMenu : MonoBehaviour
                 try
                 {
                         string localName = ResolveLocalPlayerName();
+                        Lobby selectedLobby = null;
                         if (lobbyDropdown != null && lobbyDropdown.value >= 0 && lobbyDropdown.value < availableLobbies.Count)
                         {
+                                selectedLobby = availableLobbies[lobbyDropdown.value];
+                                if (!ValidateLobbyPassword(selectedLobby))
+                                {
+                                        return;
+                                }
                                 localName = EnsureUniqueName(localName, availableLobbies[lobbyDropdown.value]);
                                 JoinLobbyByIdOptions options = new JoinLobbyByIdOptions
                                 {
@@ -338,6 +374,11 @@ public class LobbyMenu : MonoBehaviour
                         }
                         else if (!string.IsNullOrWhiteSpace(selectedLobbyId))
                         {
+                                selectedLobby = FindLobbyById(selectedLobbyId);
+                                if (!ValidateLobbyPassword(selectedLobby))
+                                {
+                                        return;
+                                }
                                 JoinLobbyByIdOptions options = new JoinLobbyByIdOptions
                                 {
                                         Player = BuildLocalPlayer(localName)
@@ -375,7 +416,12 @@ public class LobbyMenu : MonoBehaviour
                 List<string> options = new List<string>();
                 foreach (Lobby lobby in availableLobbies)
                 {
-                        options.Add($"{lobby.Name} ({lobby.Players.Count}/2)");
+                        string label = $"{lobby.Name} ({lobby.Players.Count}/2)";
+                        if (HasLobbyPassword(lobby))
+                        {
+                                label += " [Prywatne]";
+                        }
+                        options.Add(label);
                 }
                 lobbyDropdown.AddOptions(options);
         }
@@ -434,6 +480,13 @@ public class LobbyMenu : MonoBehaviour
                 GUILayout.Label("Nazwa lobby:", labelStyle);
                 lobbyNameValue = GUILayout.TextField(lobbyNameValue, 32, textFieldStyle, GUILayout.Height(40));
 
+                GUILayout.Label("Hasło lobby (opcjonalne):", labelStyle);
+                lobbyPasswordValue = GUILayout.PasswordField(lobbyPasswordValue, '*', 32, textFieldStyle, GUILayout.Height(40));
+
+                GUILayout.Label("Kolor kafelków (kolor 1):", labelStyle);
+                selectedTileColorIndex = GUILayout.SelectionGrid(selectedTileColorIndex, GetTileColorLabels(), 2, buttonStyle, GUILayout.Height(80));
+                ApplyLocalTileColorSelection();
+
                 GUILayout.Space(10);
 
                 if (GUILayout.Button("Zaloguj", buttonStyle, GUILayout.Height(50)))
@@ -452,7 +505,12 @@ public class LobbyMenu : MonoBehaviour
                         GUILayout.Label("Dostępne lobby:", labelStyle);
                         foreach (Lobby lobby in availableLobbies)
                         {
-                                if (GUILayout.Button($"{lobby.Name} ({lobby.Players.Count}/2)", buttonStyle, GUILayout.Height(45)))
+                                string label = $"{lobby.Name} ({lobby.Players.Count}/2)";
+                                if (HasLobbyPassword(lobby))
+                                {
+                                        label += " [Prywatne]";
+                                }
+                                if (GUILayout.Button(label, buttonStyle, GUILayout.Height(45)))
                                 {
                                         selectedLobbyId = lobby.Id;
                                         RunSafe(JoinLobbyAsync());
@@ -467,6 +525,8 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 GUILayout.Space(10);
+                GUILayout.Label("Hasło dołączania:", labelStyle);
+                joinPasswordValue = GUILayout.PasswordField(joinPasswordValue, '*', 32, textFieldStyle, GUILayout.Height(40));
 
                 if (GUILayout.Button("Utwórz lobby (host)", buttonStyle, GUILayout.Height(55)))
                 {
@@ -503,7 +563,7 @@ public class LobbyMenu : MonoBehaviour
                 Lobby openLobby = null;
                 foreach (Lobby lobby in availableLobbies)
                 {
-                        if (lobby.Players.Count < lobby.MaxPlayers)
+                        if (lobby.Players.Count < lobby.MaxPlayers && !HasLobbyPassword(lobby))
                         {
                                 openLobby = lobby;
                                 break;
@@ -526,5 +586,151 @@ public class LobbyMenu : MonoBehaviour
                 {
                         GameProgress.Instance.ResetProgressForNewLobby();
                 }
+        }
+
+        private void InitializeColorDropdown()
+        {
+                if (tileColorDropdown == null)
+                {
+                        return;
+                }
+
+                tileColorDropdown.ClearOptions();
+                tileColorDropdown.AddOptions(new List<string>(GetTileColorLabels()));
+                tileColorDropdown.onValueChanged.RemoveAllListeners();
+                tileColorDropdown.onValueChanged.AddListener(index =>
+                {
+                        selectedTileColorIndex = index;
+                        ApplyLocalTileColorSelection();
+                });
+                tileColorDropdown.value = Mathf.Clamp(selectedTileColorIndex, 0, TileColorOptions.Length - 1);
+        }
+
+        private void ApplyLocalTileColorSelection()
+        {
+                LobbyState.SetLocalTileColor1(GetSelectedTileColor());
+        }
+
+        private Color GetSelectedTileColor()
+        {
+                if (TileColorOptions.Length == 0)
+                {
+                        return Color.white;
+                }
+
+                int index = Mathf.Clamp(selectedTileColorIndex, 0, TileColorOptions.Length - 1);
+                return TileColorOptions[index].Color;
+        }
+
+        private string[] GetTileColorLabels()
+        {
+                string[] labels = new string[TileColorOptions.Length];
+                for (int i = 0; i < TileColorOptions.Length; i++)
+                {
+                        labels[i] = TileColorOptions[i].Label;
+                }
+                return labels;
+        }
+
+        private string GetLobbyPasswordInput()
+        {
+                if (lobbyPasswordInput != null && !string.IsNullOrWhiteSpace(lobbyPasswordInput.text))
+                {
+                        return lobbyPasswordInput.text.Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(lobbyPasswordValue))
+                {
+                        return lobbyPasswordValue.Trim();
+                }
+
+                return string.Empty;
+        }
+
+        private string GetJoinPasswordInput()
+        {
+                if (joinPasswordInput != null && !string.IsNullOrWhiteSpace(joinPasswordInput.text))
+                {
+                        return joinPasswordInput.text.Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(joinPasswordValue))
+                {
+                        return joinPasswordValue.Trim();
+                }
+
+                if (lobbyPasswordInput != null && !string.IsNullOrWhiteSpace(lobbyPasswordInput.text))
+                {
+                        return lobbyPasswordInput.text.Trim();
+                }
+
+                if (!string.IsNullOrWhiteSpace(lobbyPasswordValue))
+                {
+                        return lobbyPasswordValue.Trim();
+                }
+
+                return string.Empty;
+        }
+
+        private bool HasLobbyPassword(Lobby lobby)
+        {
+                if (lobby?.Data == null)
+                {
+                        return false;
+                }
+
+                if (lobby.Data.TryGetValue(LobbyPasswordKey, out var data) && !string.IsNullOrWhiteSpace(data.Value))
+                {
+                        return true;
+                }
+
+                if (lobby.Data.TryGetValue(LobbyHasPasswordKey, out var hasData) && hasData.Value == "1")
+                {
+                        return true;
+                }
+
+                return false;
+        }
+
+        private bool ValidateLobbyPassword(Lobby lobby)
+        {
+                if (lobby == null || !HasLobbyPassword(lobby))
+                {
+                        return true;
+                }
+
+                string password = GetJoinPasswordInput();
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                        SetStatus("Podaj hasło do lobby.");
+                        return false;
+                }
+
+                if (lobby.Data != null && lobby.Data.TryGetValue(LobbyPasswordKey, out var data)
+                        && string.Equals(data.Value, password, StringComparison.Ordinal))
+                {
+                        return true;
+                }
+
+                SetStatus("Podaj poprawne hasło do lobby.");
+                return false;
+        }
+
+        private Lobby FindLobbyById(string lobbyId)
+        {
+                if (string.IsNullOrWhiteSpace(lobbyId))
+                {
+                        return null;
+                }
+
+                foreach (var lobby in availableLobbies)
+                {
+                        if (lobby.Id == lobbyId)
+                        {
+                                return lobby;
+                        }
+                }
+
+                return null;
         }
 }

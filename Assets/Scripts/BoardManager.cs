@@ -82,6 +82,7 @@ public class BoardManager : MonoBehaviour
 			CenterCols = GameProgress.Instance.centerBoardSize;
 		}
 
+		ApplySelectedTileColors();
 		RecalculateGlobalLayout();
 		offsetCalculation(); // <-- Tutaj dzieje siê magia z pozycj¹
 
@@ -89,6 +90,19 @@ public class BoardManager : MonoBehaviour
 		else GenerateBattleLayout();
 
 		IsReady = true;
+	}
+
+	private void ApplySelectedTileColors()
+	{
+		if (playerColors != null && playerColors.Length > 1 && LobbyState.HasLocalTileColor1)
+		{
+			playerColors[1] = LobbyState.LocalTileColor1;
+		}
+
+		if (enemyColors != null && enemyColors.Length > 1 && LobbyState.HasOpponentTileColor1)
+		{
+			enemyColors[1] = LobbyState.OpponentTileColor1;
+		}
 	}
 
 	// --- Generowanie (Skrócone dla czytelnoci, logika bez zmian) ---
