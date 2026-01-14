@@ -94,14 +94,28 @@ public class BoardManager : MonoBehaviour
 
 	private void ApplySelectedTileColors()
 	{
-		if (playerColors != null && playerColors.Length > 1 && LobbyState.HasLocalTileColor1)
+		if (playerColors != null)
 		{
-			playerColors[1] = LobbyState.LocalTileColor1;
+			if (playerColors.Length > 0 && LobbyState.HasLocalTileColor0)
+			{
+				playerColors[0] = LobbyState.LocalTileColor0;
+			}
+			if (playerColors.Length > 1 && LobbyState.HasLocalTileColor1)
+			{
+				playerColors[1] = LobbyState.LocalTileColor1;
+			}
 		}
 
-		if (enemyColors != null && enemyColors.Length > 1 && LobbyState.HasOpponentTileColor1)
+		if (enemyColors != null)
 		{
-			enemyColors[1] = LobbyState.OpponentTileColor1;
+			if (enemyColors.Length > 0 && LobbyState.HasOpponentTileColor0)
+			{
+				enemyColors[0] = LobbyState.OpponentTileColor0;
+			}
+			if (enemyColors.Length > 1 && LobbyState.HasOpponentTileColor1)
+			{
+				enemyColors[1] = LobbyState.OpponentTileColor1;
+			}
 		}
 	}
 
