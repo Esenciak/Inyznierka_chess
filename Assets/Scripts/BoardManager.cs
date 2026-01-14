@@ -128,13 +128,17 @@ public class BoardManager : MonoBehaviour
 		}
 
 		Camera cam = Camera.main;
-		if (cam == null || enemyColors == null || enemyColors.Length == 0)
+		if (cam == null)
 		{
 			return;
 		}
 
-		Color colorA = enemyColors[0];
-		Color colorB = enemyColors.Length > 1 ? enemyColors[1] : enemyColors[0];
+		Color colorA = (LobbyState.HasLocalTileColor0 ? LobbyState.LocalTileColor0 : Color.black);
+		Color colorB = (LobbyState.HasOpponentTileColor0 ? LobbyState.OpponentTileColor0 : colorA);
+		if (enemyColors != null && enemyColors.Length > 0 && !LobbyState.HasOpponentTileColor0)
+		{
+			colorB = enemyColors[0];
+		}
 		cam.backgroundColor = Color.Lerp(colorA, colorB, 0.5f);
 	}
 

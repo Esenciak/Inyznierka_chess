@@ -735,9 +735,9 @@ public class LobbyMenu : MonoBehaviour
                 {
                         changeColorButton.gameObject.SetActive(!signedIn);
                 }
-                if (colorPanel != null && signedIn)
+                if (colorPanel != null)
                 {
-                        colorPanel.SetActive(false);
+                        colorPanel.SetActive(!signedIn);
                 }
                 if (tileColor0Dropdown != null)
                 {
