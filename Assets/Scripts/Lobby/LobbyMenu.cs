@@ -78,6 +78,8 @@ public class LobbyMenu : MonoBehaviour
                                 await UnityServices.InitializeAsync();
                         }
 
+                        await EnsureMultiplayerServiceInitializedAsync();
+
                         if (!AuthenticationService.Instance.IsSignedIn)
                         {
                                 SetStatus("Wpisz username i kliknij Zaloguj.");
@@ -142,6 +144,25 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 await service.SignInAnonymouslyAsync();
+        }
+
+        private async Task EnsureMultiplayerServiceInitializedAsync()
+        {
+                if (MultiplayerService.Instance == null)
+                {
+                        return;
+                }
+
+                var method = MultiplayerService.Instance.GetType().GetMethod("InitializeAsync", Type.EmptyTypes);
+                if (method == null)
+                {
+                        return;
+                }
+
+                if (method.Invoke(MultiplayerService.Instance, null) is Task task)
+                {
+                        await task;
+                }
         }
 
         private string GetOrCreateAuthId()
@@ -664,6 +685,12 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
+                        if (MultiplayerService.Instance == null)
+                        {
+                                SetStatus("Multiplayer Service nie jest dostępny.");
+                                return null;
+                        }
+
                         SessionOptions options = new SessionOptions
                         {
                                 MaxPlayers = 2,
@@ -674,7 +701,13 @@ public class LobbyMenu : MonoBehaviour
                         options.WithRelayNetwork();
 
                         IHostSession session = await MultiplayerService.Instance.CreateSessionAsync(options);
-                        return session?.Code;
+                        if (session == null || string.IsNullOrWhiteSpace(session.Code))
+                        {
+                                SetStatus("Sesja została utworzona bez kodu.");
+                                return null;
+                        }
+
+                        return session.Code;
                 }
                 catch (Exception ex)
                 {
@@ -687,6 +720,12 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
+                        if (MultiplayerService.Instance == null)
+                        {
+                                SetStatus("Multiplayer Service nie jest dostępny.");
+                                return false;
+                        }
+
                         JoinSessionOptions options = new JoinSessionOptions
                         {
                                 Type = SessionType
