@@ -731,6 +731,22 @@ public class LobbyMenu : MonoBehaviour
                 {
                         lobbyPanel.SetActive(signedIn);
                 }
+                if (changeColorButton != null)
+                {
+                        changeColorButton.gameObject.SetActive(!signedIn);
+                }
+                if (colorPanel != null && signedIn)
+                {
+                        colorPanel.SetActive(false);
+                }
+                if (tileColor0Dropdown != null)
+                {
+                        tileColor0Dropdown.gameObject.SetActive(!signedIn);
+                }
+                if (tileColor1Dropdown != null)
+                {
+                        tileColor1Dropdown.gameObject.SetActive(!signedIn);
+                }
         }
 
         private string[] GetTileColorLabels()

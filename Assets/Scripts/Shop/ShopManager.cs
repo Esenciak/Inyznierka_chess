@@ -177,6 +177,8 @@ public class ShopManager : MonoBehaviour
                                 tile.GetComponent<SpriteRenderer>().color = new Color(0.6f, 0.5f, 0.2f);
                                 Tile t = tile.GetComponent<Tile>();
                                 t.row = r;
+                                t.boardType = BoardType.Center;
+                                t.isInventory = false;
 
                                 shopTiles.Add(tile);
                         }

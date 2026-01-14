@@ -205,10 +205,7 @@ public class SceneFader : MonoBehaviour
 
                 if (sceneEvent.SceneEventType == Unity.Netcode.SceneEventType.LoadComplete)
                 {
-                        if (sceneEvent.ClientId == Unity.Netcode.NetworkManager.Singleton.LocalClientId)
-                        {
-                                FadeIn();
-                        }
+                        FadeIn();
                 }
         }
 }

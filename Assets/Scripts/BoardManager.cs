@@ -83,6 +83,7 @@ public class BoardManager : MonoBehaviour
 		}
 
 		ApplySelectedTileColors();
+		ApplyBattleBackground(sceneName);
 		RecalculateGlobalLayout();
 		offsetCalculation(); // <-- Tutaj dzieje siê magia z pozycj¹
 
@@ -117,6 +118,24 @@ public class BoardManager : MonoBehaviour
 				enemyColors[1] = LobbyState.OpponentTileColor1;
 			}
 		}
+	}
+
+	private void ApplyBattleBackground(string sceneName)
+	{
+		if (sceneName != "Battle")
+		{
+			return;
+		}
+
+		Camera cam = Camera.main;
+		if (cam == null || enemyColors == null || enemyColors.Length == 0)
+		{
+			return;
+		}
+
+		Color colorA = enemyColors[0];
+		Color colorB = enemyColors.Length > 1 ? enemyColors[1] : enemyColors[0];
+		cam.backgroundColor = Color.Lerp(colorA, colorB, 0.5f);
 	}
 
 	// --- Generowanie (Skrócone dla czytelnoci, logika bez zmian) ---
@@ -159,6 +178,7 @@ public class BoardManager : MonoBehaviour
 				Vector3 pos = new Vector3(c + offset.x, r + offset.y, 0);
 				GameObject tileGO = Instantiate(tilePrefab, pos, Quaternion.identity);
 				tileGO.transform.parent = transform;
+				CreateUnderlay(tileGO);
 
 				if (colors != null && colors.Length > 0)
 				{
@@ -197,6 +217,7 @@ public class BoardManager : MonoBehaviour
 				Vector3 pos = new Vector3(c + offset.x, r + offset.y, 0);
 				GameObject tileGO = Instantiate(tilePrefab, pos, Quaternion.identity);
 				tileGO.transform.parent = transform;
+				CreateUnderlay(tileGO);
 
 				float t = (rows > 1) ? (float)r / (rows - 1) : 0f;
 				int gx = Mathf.RoundToInt(offset.x) + c;
@@ -265,6 +286,31 @@ public class BoardManager : MonoBehaviour
 	}
 
 	// --- PUBLIC API (Przywrócone metody) ---
+
+	private void CreateUnderlay(GameObject tileGO)
+	{
+		if (tileGO == null)
+		{
+			return;
+		}
+
+		SpriteRenderer tileRenderer = tileGO.GetComponent<SpriteRenderer>();
+		if (tileRenderer == null || tileRenderer.sprite == null)
+		{
+			return;
+		}
+
+		GameObject underlay = new GameObject("TileUnderlay");
+		underlay.transform.SetParent(tileGO.transform, false);
+		underlay.transform.localPosition = new Vector3(0f, 0f, 0.1f);
+		underlay.transform.localScale = Vector3.one * 1.1f;
+
+		SpriteRenderer underlayRenderer = underlay.AddComponent<SpriteRenderer>();
+		underlayRenderer.sprite = tileRenderer.sprite;
+		underlayRenderer.color = Color.black;
+		underlayRenderer.sortingLayerID = tileRenderer.sortingLayerID;
+		underlayRenderer.sortingOrder = tileRenderer.sortingOrder - 1;
+	}
 
 	public Tile GetTileGlobal(int globalRow, int globalCol)
 	{
