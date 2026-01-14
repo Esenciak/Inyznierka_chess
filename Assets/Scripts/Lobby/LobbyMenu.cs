@@ -116,6 +116,7 @@ public class LobbyMenu : MonoBehaviour
 
                 string authId = GetOrCreateAuthId();
                 await SignInAsync(authId);
+                await EnsureMultiplayerServiceInitializedAsync();
                 PlayerPrefs.SetString(PlayerNamePrefsKey, username);
                 LobbyState.SetLocalPlayerName(username);
                 SetStatus($"Zalogowano jako: {username}");
@@ -685,6 +686,7 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
+                        await EnsureMultiplayerServiceInitializedAsync();
                         if (MultiplayerService.Instance == null)
                         {
                                 SetStatus("Multiplayer Service nie jest dostępny.");
@@ -720,6 +722,7 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
+                        await EnsureMultiplayerServiceInitializedAsync();
                         if (MultiplayerService.Instance == null)
                         {
                                 SetStatus("Multiplayer Service nie jest dostępny.");
