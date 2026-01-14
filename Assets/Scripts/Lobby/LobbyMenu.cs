@@ -5,12 +5,17 @@ using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
+using Unity.Services.Relay;
+using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.UI;
+using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 
 public class LobbyMenu : MonoBehaviour
 {
         private const string PlayerNameKey = "name";
+        private const string RelayJoinCodeKey = "joinCode";
         private const string AuthIdPrefsKey = "AuthId";
         private const string PlayerNamePrefsKey = "PlayerName";
         [Header("UI References")]
@@ -282,6 +287,13 @@ public class LobbyMenu : MonoBehaviour
 
                 try
                 {
+                        string relayJoinCode = await SetupRelayHostAsync();
+                        if (string.IsNullOrWhiteSpace(relayJoinCode))
+                        {
+                                SetStatus("Nie udało się utworzyć Relay.");
+                                return;
+                        }
+
                         string lobbyName = lobbyNameInput != null && !string.IsNullOrWhiteSpace(lobbyNameInput.text)
                                 ? lobbyNameInput.text.Trim()
                                 : !string.IsNullOrWhiteSpace(lobbyNameValue)
@@ -292,7 +304,14 @@ public class LobbyMenu : MonoBehaviour
                         CreateLobbyOptions options = new CreateLobbyOptions
                         {
                                 IsPrivate = false,
-                                Player = BuildLocalPlayer(localName)
+                                Player = BuildLocalPlayer(localName),
+                                Data = new Dictionary<string, DataObject>
+                                {
+                                        {
+                                                RelayJoinCodeKey,
+                                                new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode)
+                                        }
+                                }
                         };
 
                         currentLobby = await LobbyService.Instance.CreateLobbyAsync(lobbyName, 2, options);
@@ -323,6 +342,7 @@ public class LobbyMenu : MonoBehaviour
                 try
                 {
                         string localName = ResolveLocalPlayerName();
+                        Lobby joinedLobby = null;
                         if (lobbyDropdown != null && lobbyDropdown.value >= 0 && lobbyDropdown.value < availableLobbies.Count)
                         {
                                 localName = EnsureUniqueName(localName, availableLobbies[lobbyDropdown.value]);
@@ -330,7 +350,7 @@ public class LobbyMenu : MonoBehaviour
                                 {
                                         Player = BuildLocalPlayer(localName)
                                 };
-                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id, options);
+                                joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id, options);
                         }
                         else if (!string.IsNullOrWhiteSpace(selectedLobbyId))
                         {
@@ -338,11 +358,25 @@ public class LobbyMenu : MonoBehaviour
                                 {
                                         Player = BuildLocalPlayer(localName)
                                 };
-                                currentLobby = await LobbyService.Instance.JoinLobbyByIdAsync(selectedLobbyId, options);
+                                joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(selectedLobbyId, options);
                         }
                         else
                         {
                                 SetStatus("Wybierz lobby z listy.");
+                                return;
+                        }
+
+                        currentLobby = joinedLobby;
+                        if (!TryGetRelayJoinCode(currentLobby, out string relayJoinCode))
+                        {
+                                SetStatus("Brak kodu Relay w lobby.");
+                                return;
+                        }
+
+                        bool relayReady = await SetupRelayClientAsync(relayJoinCode);
+                        if (!relayReady)
+                        {
+                                SetStatus("Nie udało się dołączyć do Relay.");
                                 return;
                         }
 
@@ -626,5 +660,85 @@ public class LobbyMenu : MonoBehaviour
                         currentLobby = updated;
                         LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
                 }
+        }
+
+        private async Task<string> SetupRelayHostAsync()
+        {
+                try
+                {
+                        Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
+                        string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+                        ConfigureTransport(allocation);
+                        return joinCode;
+                }
+                catch (Exception ex)
+                {
+                        SetStatus($"Relay host error: {ex.Message}");
+                        return null;
+                }
+        }
+
+        private async Task<bool> SetupRelayClientAsync(string joinCode)
+        {
+                try
+                {
+                        JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+                        ConfigureTransport(allocation);
+                        return true;
+                }
+                catch (Exception ex)
+                {
+                        SetStatus($"Relay join error: {ex.Message}");
+                        return false;
+                }
+        }
+
+        private void ConfigureTransport(Allocation allocation)
+        {
+                if (NetworkManager.Singleton == null)
+                {
+                        return;
+                }
+
+                UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport == null)
+                {
+                        return;
+                }
+
+                transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
+        }
+
+        private void ConfigureTransport(JoinAllocation allocation)
+        {
+                if (NetworkManager.Singleton == null)
+                {
+                        return;
+                }
+
+                UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport == null)
+                {
+                        return;
+                }
+
+                transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
+        }
+
+        private bool TryGetRelayJoinCode(Lobby lobby, out string joinCode)
+        {
+                joinCode = null;
+                if (lobby?.Data == null)
+                {
+                        return false;
+                }
+
+                if (lobby.Data.TryGetValue(RelayJoinCodeKey, out var data) && !string.IsNullOrWhiteSpace(data.Value))
+                {
+                        joinCode = data.Value;
+                        return true;
+                }
+
+                return false;
         }
 }
