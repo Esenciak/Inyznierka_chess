@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -322,14 +323,10 @@ public class GameManager : MonoBehaviour
 
                 if (GameProgress.Instance != null)
                 {
+                        UpdateArmyAfterBattle();
                         int winValue = economyConfig != null ? economyConfig.winReward : winReward;
                         int loseValue = economyConfig != null ? economyConfig.loseReward : loseReward;
                         GameProgress.Instance.CompleteRound(playerWon, winValue, loseValue);
-                        if (!playerWon)
-                        {
-                                GameProgress.Instance.myArmy.Clear();
-                                GameProgress.Instance.inventoryPieces.Clear();
-                        }
                         if (GameProgress.Instance.gamesPlayed >= 9)
                         {
                                 GameProgress.Instance.lastWinnerMessage = playerWon ? "Winner: You" : "Winner: Enemy";
@@ -377,5 +374,107 @@ public class GameManager : MonoBehaviour
 
                 currentPhase = GamePhase.Placement;
                 currentTurn = PieceOwner.Player;
+        }
+
+        private void UpdateArmyAfterBattle()
+        {
+                if (GameProgress.Instance == null || BoardManager.Instance == null)
+                {
+                        return;
+                }
+
+                Dictionary<PieceType, int> aliveCounts = CountLocalAlivePieces();
+                EnsureKingRespawn(aliveCounts);
+
+                List<SavedPieceData> updatedArmy = new List<SavedPieceData>();
+                foreach (SavedPieceData data in GameProgress.Instance.myArmy)
+                {
+                        if (aliveCounts.TryGetValue(data.type, out int remaining) && remaining > 0)
+                        {
+                                updatedArmy.Add(data);
+                                aliveCounts[data.type] = remaining - 1;
+                        }
+                }
+
+                GameProgress.Instance.myArmy = updatedArmy;
+        }
+
+        private void EnsureKingRespawn(Dictionary<PieceType, int> aliveCounts)
+        {
+                if (aliveCounts == null)
+                {
+                        return;
+                }
+
+                if (!aliveCounts.TryGetValue(PieceType.King, out int count) || count <= 0)
+                {
+                        aliveCounts[PieceType.King] = 1;
+                        if (GameProgress.Instance != null)
+                        {
+                                int col = BoardManager.Instance.PlayerCols / 2;
+                                int row = BoardManager.Instance.PlayerRows / 2;
+                                GameProgress.Instance.myArmy.Add(new SavedPieceData
+                                {
+                                        type = PieceType.King,
+                                        x = col,
+                                        y = row
+                                });
+                        }
+                }
+        }
+
+        private Dictionary<PieceType, int> CountLocalAlivePieces()
+        {
+                Dictionary<PieceType, int> counts = new Dictionary<PieceType, int>();
+                CountPiecesOnBoard(BoardType.Player, BoardManager.Instance.PlayerRows, BoardManager.Instance.PlayerCols, counts);
+                CountPiecesOnBoard(BoardType.Center, BoardManager.Instance.CenterRows, BoardManager.Instance.CenterCols, counts);
+                CountPiecesOnBoard(BoardType.Enemy, BoardManager.Instance.PlayerRows, BoardManager.Instance.PlayerCols, counts);
+                return counts;
+        }
+
+        private void CountPiecesOnBoard(BoardType boardType, int rows, int cols, Dictionary<PieceType, int> counts)
+        {
+                for (int r = 0; r < rows; r++)
+                {
+                        for (int c = 0; c < cols; c++)
+                        {
+                                Tile tile = BoardManager.Instance.GetTile(boardType, r, c);
+                                if (tile == null || tile.currentPiece == null)
+                                {
+                                        continue;
+                                }
+
+                                Piece piece = tile.currentPiece;
+                                if (!IsLocalPieceOwner(piece.owner))
+                                {
+                                        continue;
+                                }
+
+                                if (counts.TryGetValue(piece.pieceType, out int value))
+                                {
+                                        counts[piece.pieceType] = value + 1;
+                                }
+                                else
+                                {
+                                        counts[piece.pieceType] = 1;
+                                }
+                        }
+                }
+        }
+
+        private bool IsLocalPieceOwner(PieceOwner owner)
+        {
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                        bool localIsHost = NetworkManager.Singleton.IsHost;
+                        return localIsHost ? owner == PieceOwner.Player : owner == PieceOwner.Enemy;
+                }
+
+                if (GameProgress.Instance != null && isMultiplayer)
+                {
+                        return GameProgress.Instance.isHostPlayer ? owner == PieceOwner.Player : owner == PieceOwner.Enemy;
+                }
+
+                return owner == PieceOwner.Player;
         }
 }
