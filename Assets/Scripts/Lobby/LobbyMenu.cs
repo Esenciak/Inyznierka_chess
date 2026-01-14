@@ -6,7 +6,6 @@ using Unity.Services.Core;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using Unity.Services.Relay;
-using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
@@ -666,7 +665,7 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
-                        Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
+                        Unity.Services.Relay.Models.Allocation allocation = await RelayService.Instance.CreateAllocationAsync(1);
                         string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
                         ConfigureTransport(allocation);
                         return joinCode;
@@ -682,7 +681,7 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
-                        JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+                        Unity.Services.Relay.Models.JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
                         ConfigureTransport(allocation);
                         return true;
                 }
@@ -693,7 +692,7 @@ public class LobbyMenu : MonoBehaviour
                 }
         }
 
-        private void ConfigureTransport(Allocation allocation)
+        private void ConfigureTransport(Unity.Services.Relay.Models.Allocation allocation)
         {
                 if (NetworkManager.Singleton == null)
                 {
@@ -709,7 +708,7 @@ public class LobbyMenu : MonoBehaviour
                 transport.SetRelayServerData(new RelayServerData(allocation, "dtls"));
         }
 
-        private void ConfigureTransport(JoinAllocation allocation)
+        private void ConfigureTransport(Unity.Services.Relay.Models.JoinAllocation allocation)
         {
                 if (NetworkManager.Singleton == null)
                 {
