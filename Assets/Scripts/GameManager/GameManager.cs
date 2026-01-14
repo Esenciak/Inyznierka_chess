@@ -384,11 +384,7 @@ public class GameManager : MonoBehaviour
                 }
 
                 Dictionary<PieceType, int> aliveCounts = CountLocalAlivePieces();
-                if (aliveCounts.Count == 0)
-                {
-                        GameProgress.Instance.myArmy.Clear();
-                        return;
-                }
+                EnsureKingRespawn(aliveCounts);
 
                 List<SavedPieceData> updatedArmy = new List<SavedPieceData>();
                 foreach (SavedPieceData data in GameProgress.Instance.myArmy)
@@ -401,6 +397,30 @@ public class GameManager : MonoBehaviour
                 }
 
                 GameProgress.Instance.myArmy = updatedArmy;
+        }
+
+        private void EnsureKingRespawn(Dictionary<PieceType, int> aliveCounts)
+        {
+                if (aliveCounts == null)
+                {
+                        return;
+                }
+
+                if (!aliveCounts.TryGetValue(PieceType.King, out int count) || count <= 0)
+                {
+                        aliveCounts[PieceType.King] = 1;
+                        if (GameProgress.Instance != null)
+                        {
+                                int col = BoardManager.Instance.PlayerCols / 2;
+                                int row = BoardManager.Instance.PlayerRows / 2;
+                                GameProgress.Instance.myArmy.Add(new SavedPieceData
+                                {
+                                        type = PieceType.King,
+                                        x = col,
+                                        y = row
+                                });
+                        }
+                }
         }
 
         private Dictionary<PieceType, int> CountLocalAlivePieces()

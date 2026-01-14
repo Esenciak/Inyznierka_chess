@@ -32,11 +32,17 @@ public class LobbyMenu : MonoBehaviour
         [SerializeField] private Dropdown tileColor1Dropdown;
         [SerializeField] private Dropdown lobbyDropdown;
         [SerializeField] private Text statusText;
+        [SerializeField] private Text activePlayersText;
         [SerializeField] private Button loginButton;
         [SerializeField] private Button createLobbyButton;
         [SerializeField] private Button joinLobbyButton;
         [SerializeField] private Button refreshButton;
         [SerializeField] private Button quickPlayButton;
+        [SerializeField] private Button changeColorButton;
+        [SerializeField] private GameObject colorPanel;
+        [SerializeField] private Transform whiteColorContainer;
+        [SerializeField] private Transform blackColorContainer;
+        [SerializeField] private GameObject colorButtonPrefab;
         [SerializeField] private GameObject loginPanel;
         [SerializeField] private GameObject lobbyPanel;
 
@@ -52,6 +58,7 @@ public class LobbyMenu : MonoBehaviour
         private int tileColor0Index;
         private int tileColor1Index = 1;
         private Coroutine lobbyPollCoroutine;
+        private Coroutine lobbyListPollCoroutine;
 
         public void SetConnectionMenu(ConnectionMenu menu)
         {
@@ -67,6 +74,7 @@ public class LobbyMenu : MonoBehaviour
         {
                 InitializeNameInput();
                 InitializeColorDropdowns();
+                InitializeColorPanel();
                 ApplyLocalTileColorSelection();
                 UpdatePanelVisibility(AuthenticationService.Instance.IsSignedIn);
                 StartLobbyPolling();
@@ -80,6 +88,8 @@ public class LobbyMenu : MonoBehaviour
                         refreshButton.onClick.AddListener(() => RunSafe(RefreshLobbiesAsync()));
                 if (quickPlayButton != null)
                         quickPlayButton.onClick.AddListener(() => RunSafe(QuickPlayAsync()));
+                if (changeColorButton != null)
+                        changeColorButton.onClick.AddListener(ToggleColorPanel);
         }
 
         private async Task InitializeServicesAsync()
@@ -100,6 +110,7 @@ public class LobbyMenu : MonoBehaviour
 
                         UpdatePanelVisibility(true);
                         StartLobbyPolling();
+                        StartLobbyListPolling();
                         await RefreshLobbiesAsync();
                 }
                 catch (Exception ex)
@@ -132,6 +143,7 @@ public class LobbyMenu : MonoBehaviour
                 SetStatus($"Zalogowano jako: {username}");
                 UpdatePanelVisibility(true);
                 StartLobbyPolling();
+                StartLobbyListPolling();
                 await RefreshLobbiesAsync();
         }
 
@@ -284,6 +296,7 @@ public class LobbyMenu : MonoBehaviour
                         availableLobbies.Clear();
                         availableLobbies.AddRange(response.Results);
                         UpdateLobbyDropdown();
+                        UpdateActivePlayersCount();
                         SetStatus($"Znaleziono lobby: {availableLobbies.Count}");
                 }
                 catch (Exception ex)
@@ -394,6 +407,22 @@ public class LobbyMenu : MonoBehaviour
                         options.Add($"{lobby.Name} ({lobby.Players.Count}/2)");
                 }
                 lobbyDropdown.AddOptions(options);
+        }
+
+        private void UpdateActivePlayersCount()
+        {
+                if (activePlayersText == null)
+                {
+                        return;
+                }
+
+                int totalPlayers = 0;
+                foreach (Lobby lobby in availableLobbies)
+                {
+                        totalPlayers += lobby.Players.Count;
+                }
+
+                activePlayersText.text = $"Aktywni gracze: {totalPlayers}";
         }
 
         private void SetStatus(string message)
@@ -604,6 +633,94 @@ public class LobbyMenu : MonoBehaviour
                 }
         }
 
+        private void InitializeColorPanel()
+        {
+                if (colorPanel != null)
+                {
+                        colorPanel.SetActive(false);
+                }
+
+                if (whiteColorContainer != null)
+                {
+                        BuildColorButtons(whiteColorContainer, SetWhiteColorIndex);
+                }
+
+                if (blackColorContainer != null)
+                {
+                        BuildColorButtons(blackColorContainer, SetBlackColorIndex);
+                }
+        }
+
+        private void BuildColorButtons(Transform container, Action<int> onSelect)
+        {
+                for (int i = container.childCount - 1; i >= 0; i--)
+                {
+                        Destroy(container.GetChild(i).gameObject);
+                }
+
+                for (int i = 0; i < TileColorOptions.Length; i++)
+                {
+                        GameObject buttonObject = colorButtonPrefab != null
+                                ? Instantiate(colorButtonPrefab, container)
+                                : CreateColorButtonObject(container);
+
+                        Image image = buttonObject.GetComponent<Image>();
+                        if (image != null)
+                        {
+                                image.color = TileColorOptions[i].Color;
+                        }
+
+                        Button button = buttonObject.GetComponent<Button>();
+                        if (button != null)
+                        {
+                                int index = i;
+                                button.onClick.RemoveAllListeners();
+                                button.onClick.AddListener(() =>
+                                {
+                                        onSelect(index);
+                                        ApplyLocalTileColorSelection();
+                                });
+                        }
+                }
+        }
+
+        private GameObject CreateColorButtonObject(Transform parent)
+        {
+                GameObject go = new GameObject("ColorButton", typeof(RectTransform), typeof(Image), typeof(Button));
+                go.transform.SetParent(parent, false);
+                RectTransform rect = go.GetComponent<RectTransform>();
+                rect.sizeDelta = new Vector2(48f, 48f);
+                return go;
+        }
+
+        private void SetWhiteColorIndex(int index)
+        {
+                tileColor0Index = index;
+                if (tileColor0Dropdown != null)
+                {
+                        tileColor0Dropdown.value = index;
+                }
+        }
+
+        private void SetBlackColorIndex(int index)
+        {
+                tileColor1Index = index;
+                if (tileColor1Dropdown != null)
+                {
+                        tileColor1Dropdown.value = index;
+                }
+        }
+
+        private void ToggleColorPanel()
+        {
+                if (colorPanel == null)
+                {
+                        return;
+                }
+
+                colorPanel.SetActive(!colorPanel.activeSelf);
+        }
+
         private void UpdatePanelVisibility(bool signedIn)
         {
                 if (loginPanel != null)
@@ -647,6 +764,16 @@ public class LobbyMenu : MonoBehaviour
                 lobbyPollCoroutine = StartCoroutine(PollCurrentLobbyRoutine());
         }
 
+        private void StartLobbyListPolling()
+        {
+                if (lobbyListPollCoroutine != null)
+                {
+                        return;
+                }
+
+                lobbyListPollCoroutine = StartCoroutine(PollLobbyListRoutine());
+        }
+
         private System.Collections.IEnumerator PollCurrentLobbyRoutine()
         {
                 while (true)
@@ -657,6 +784,19 @@ public class LobbyMenu : MonoBehaviour
                         }
 
                         yield return new WaitForSeconds(2f);
+                }
+        }
+
+        private System.Collections.IEnumerator PollLobbyListRoutine()
+        {
+                while (true)
+                {
+                        if (AuthenticationService.Instance.IsSignedIn)
+                        {
+                                RunSafe(RefreshLobbiesAsync());
+                        }
+
+                        yield return new WaitForSeconds(10f);
                 }
         }
 
