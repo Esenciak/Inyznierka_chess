@@ -41,6 +41,8 @@ public class LobbyMenu : MonoBehaviour
         private string statusMessage = string.Empty;
         private Coroutine lobbyPollCoroutine;
         private Coroutine lobbyListPollCoroutine;
+        private DateTime nextLobbyRefreshAllowedAt = DateTime.MinValue;
+        private const float LobbyListPollIntervalSeconds = 30f;
 
         public void SetConnectionMenu(ConnectionMenu menu)
         {
@@ -278,6 +280,11 @@ public class LobbyMenu : MonoBehaviour
                         return;
                 }
 
+                if (DateTime.UtcNow < nextLobbyRefreshAllowedAt)
+                {
+                        return;
+                }
+
                 try
                 {
                         QueryLobbiesOptions options = new QueryLobbiesOptions
@@ -290,9 +297,17 @@ public class LobbyMenu : MonoBehaviour
                         UpdateLobbyDropdown();
                         UpdateActivePlayersCount();
                         SetStatus($"Znaleziono lobby: {availableLobbies.Count}");
+                        nextLobbyRefreshAllowedAt = DateTime.MinValue;
                 }
                 catch (Exception ex)
                 {
+                        if (ex.Message.Contains("Too Many Requests", StringComparison.OrdinalIgnoreCase))
+                        {
+                                nextLobbyRefreshAllowedAt = DateTime.UtcNow.AddSeconds(15);
+                                SetStatus("Zbyt wiele zapytań do lobby. Spróbuj ponownie za chwilę.");
+                                return;
+                        }
+
                         SetStatus($"Błąd pobierania lobby: {ex.Message}");
                 }
         }
@@ -663,7 +678,7 @@ public class LobbyMenu : MonoBehaviour
                                 RunSafe(RefreshLobbiesAsync());
                         }
 
-                        yield return new WaitForSeconds(10f);
+                        yield return new WaitForSeconds(LobbyListPollIntervalSeconds);
                 }
         }
 
