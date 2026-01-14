@@ -13,14 +13,23 @@ public class LobbyMenu : MonoBehaviour
         private const string PlayerNameKey = "name";
         private const string AuthIdPrefsKey = "AuthId";
         private const string PlayerNamePrefsKey = "PlayerName";
-        private const string DefaultColor0Hex = "#FFFFFF";
-        private const string DefaultColor1Hex = "#2A7CD8";
+        private static readonly (string Label, Color Color)[] TileColorOptions =
+        {
+                ("Biały", Color.white),
+                ("Jasny Niebieski", new Color(0.4f, 0.7f, 1f)),
+                ("Niebieski", new Color(0.25f, 0.55f, 0.95f)),
+                ("Zielony", new Color(0.2f, 0.75f, 0.4f)),
+                ("Żółty", new Color(0.95f, 0.85f, 0.25f)),
+                ("Pomarańczowy", new Color(0.95f, 0.55f, 0.2f)),
+                ("Czerwony", new Color(0.9f, 0.3f, 0.3f)),
+                ("Fioletowy", new Color(0.6f, 0.35f, 0.85f))
+        };
 
         [Header("UI References")]
         [SerializeField] private InputField customIdInput;
         [SerializeField] private InputField lobbyNameInput;
-        [SerializeField] private InputField tileColor0Input;
-        [SerializeField] private InputField tileColor1Input;
+        [SerializeField] private Dropdown tileColor0Dropdown;
+        [SerializeField] private Dropdown tileColor1Dropdown;
         [SerializeField] private Dropdown lobbyDropdown;
         [SerializeField] private Text statusText;
         [SerializeField] private Button loginButton;
@@ -40,8 +49,9 @@ public class LobbyMenu : MonoBehaviour
         private string lobbyNameValue = string.Empty;
         private string selectedLobbyId = string.Empty;
         private string statusMessage = string.Empty;
-        private string tileColor0Value = string.Empty;
-        private string tileColor1Value = string.Empty;
+        private int tileColor0Index;
+        private int tileColor1Index = 1;
+        private Coroutine lobbyPollCoroutine;
 
         public void SetConnectionMenu(ConnectionMenu menu)
         {
@@ -56,9 +66,10 @@ public class LobbyMenu : MonoBehaviour
         private void Start()
         {
                 InitializeNameInput();
-                InitializeColorInputs();
+                InitializeColorDropdowns();
                 ApplyLocalTileColorSelection();
                 UpdatePanelVisibility(AuthenticationService.Instance.IsSignedIn);
+                StartLobbyPolling();
                 if (createLobbyButton != null)
                         createLobbyButton.onClick.AddListener(() => RunSafe(CreateLobbyAsync()));
                 if (loginButton != null)
@@ -88,6 +99,7 @@ public class LobbyMenu : MonoBehaviour
                         }
 
                         UpdatePanelVisibility(true);
+                        StartLobbyPolling();
                         await RefreshLobbiesAsync();
                 }
                 catch (Exception ex)
@@ -119,6 +131,7 @@ public class LobbyMenu : MonoBehaviour
                 LobbyState.SetLocalPlayerName(username);
                 SetStatus($"Zalogowano jako: {username}");
                 UpdatePanelVisibility(true);
+                StartLobbyPolling();
                 await RefreshLobbiesAsync();
         }
 
@@ -200,8 +213,8 @@ public class LobbyMenu : MonoBehaviour
                 }
 
                 ApplyLocalTileColorSelection();
-                string color0Hex = $"#{ColorUtility.ToHtmlStringRGBA(GetSelectedTileColor(tileColor0Input, tileColor0Value, DefaultColor0Hex))}";
-                string color1Hex = $"#{ColorUtility.ToHtmlStringRGBA(GetSelectedTileColor(tileColor1Input, tileColor1Value, DefaultColor1Hex))}";
+                string color0Hex = $"#{ColorUtility.ToHtmlStringRGBA(GetSelectedTileColor(tileColor0Dropdown, tileColor0Index))}";
+                string color1Hex = $"#{ColorUtility.ToHtmlStringRGBA(GetSelectedTileColor(tileColor1Dropdown, tileColor1Index))}";
                 return new Player
                 {
                         Data = new Dictionary<string, PlayerDataObject>
@@ -449,10 +462,10 @@ public class LobbyMenu : MonoBehaviour
                 lobbyNameValue = GUILayout.TextField(lobbyNameValue, 32, textFieldStyle, GUILayout.Height(40));
 
                 GUILayout.Label("Kolor kafelków (0):", labelStyle);
-                tileColor0Value = GUILayout.TextField(tileColor0Value, 16, textFieldStyle, GUILayout.Height(40));
+                tileColor0Index = GUILayout.SelectionGrid(tileColor0Index, GetTileColorLabels(), 2, buttonStyle, GUILayout.Height(120));
 
                 GUILayout.Label("Kolor kafelków (1):", labelStyle);
-                tileColor1Value = GUILayout.TextField(tileColor1Value, 16, textFieldStyle, GUILayout.Height(40));
+                tileColor1Index = GUILayout.SelectionGrid(tileColor1Index, GetTileColorLabels(), 2, buttonStyle, GUILayout.Height(120));
                 ApplyLocalTileColorSelection();
 
                 GUILayout.Space(10);
@@ -547,38 +560,47 @@ public class LobbyMenu : MonoBehaviour
 
         private void ApplyLocalTileColorSelection()
         {
-                Color color0 = GetSelectedTileColor(tileColor0Input, tileColor0Value, DefaultColor0Hex);
-                Color color1 = GetSelectedTileColor(tileColor1Input, tileColor1Value, DefaultColor1Hex);
+                Color color0 = GetSelectedTileColor(tileColor0Dropdown, tileColor0Index);
+                Color color1 = GetSelectedTileColor(tileColor1Dropdown, tileColor1Index);
                 LobbyState.SetLocalTileColors(color0, color1);
         }
 
         private void InitializeNameInput()
         {
-                string savedName = PlayerPrefs.GetString(PlayerNamePrefsKey, string.Empty);
-                if (string.IsNullOrWhiteSpace(savedName))
+                if (customIdInput != null)
                 {
-                        savedName = PlayerPrefs.GetString("CustomId", string.Empty);
+                        customIdInput.text = string.Empty;
                 }
-
-                if (customIdInput != null && string.IsNullOrWhiteSpace(customIdInput.text))
-                {
-                        customIdInput.text = savedName;
-                }
-                else if (string.IsNullOrWhiteSpace(customIdValue))
-                {
-                        customIdValue = savedName;
-                }
+                customIdValue = string.Empty;
         }
 
-        private void InitializeColorInputs()
+        private void InitializeColorDropdowns()
         {
-                if (tileColor0Input != null && string.IsNullOrWhiteSpace(tileColor0Input.text))
+                List<string> labels = new List<string>(GetTileColorLabels());
+                if (tileColor0Dropdown != null)
                 {
-                        tileColor0Input.text = DefaultColor0Hex;
+                        tileColor0Dropdown.ClearOptions();
+                        tileColor0Dropdown.AddOptions(labels);
+                        tileColor0Dropdown.onValueChanged.RemoveAllListeners();
+                        tileColor0Dropdown.onValueChanged.AddListener(index =>
+                        {
+                                tileColor0Index = index;
+                                ApplyLocalTileColorSelection();
+                        });
+                        tileColor0Dropdown.value = Mathf.Clamp(tileColor0Index, 0, TileColorOptions.Length - 1);
                 }
-                if (tileColor1Input != null && string.IsNullOrWhiteSpace(tileColor1Input.text))
+
+                if (tileColor1Dropdown != null)
                 {
-                        tileColor1Input.text = DefaultColor1Hex;
+                        tileColor1Dropdown.ClearOptions();
+                        tileColor1Dropdown.AddOptions(labels);
+                        tileColor1Dropdown.onValueChanged.RemoveAllListeners();
+                        tileColor1Dropdown.onValueChanged.AddListener(index =>
+                        {
+                                tileColor1Index = index;
+                                ApplyLocalTileColorSelection();
+                        });
+                        tileColor1Dropdown.value = Mathf.Clamp(tileColor1Index, 0, TileColorOptions.Length - 1);
                 }
         }
 
@@ -594,29 +616,62 @@ public class LobbyMenu : MonoBehaviour
                 }
         }
 
-        private Color GetSelectedTileColor(InputField inputField, string fallbackValue, string defaultHex)
+        private string[] GetTileColorLabels()
         {
-                string raw = inputField != null ? inputField.text : fallbackValue;
-                if (string.IsNullOrWhiteSpace(raw))
+                string[] labels = new string[TileColorOptions.Length];
+                for (int i = 0; i < TileColorOptions.Length; i++)
                 {
-                        raw = defaultHex;
+                        labels[i] = TileColorOptions[i].Label;
+                }
+                return labels;
+        }
+
+        private Color GetSelectedTileColor(Dropdown dropdown, int fallbackIndex)
+        {
+                int index = fallbackIndex;
+                if (dropdown != null)
+                {
+                        index = dropdown.value;
                 }
 
-                if (!raw.StartsWith("#"))
+                index = Mathf.Clamp(index, 0, TileColorOptions.Length - 1);
+                return TileColorOptions[index].Color;
+        }
+
+        private void StartLobbyPolling()
+        {
+                if (lobbyPollCoroutine != null)
                 {
-                        raw = $"#{raw}";
+                        return;
+                }
+                lobbyPollCoroutine = StartCoroutine(PollCurrentLobbyRoutine());
+        }
+
+        private System.Collections.IEnumerator PollCurrentLobbyRoutine()
+        {
+                while (true)
+                {
+                        if (AuthenticationService.Instance.IsSignedIn && currentLobby != null)
+                        {
+                                RunSafe(UpdateCurrentLobbyAsync());
+                        }
+
+                        yield return new WaitForSeconds(2f);
+                }
+        }
+
+        private async Task UpdateCurrentLobbyAsync()
+        {
+                if (currentLobby == null)
+                {
+                        return;
                 }
 
-                if (ColorUtility.TryParseHtmlString(raw, out Color parsed))
+                Lobby updated = await LobbyService.Instance.GetLobbyAsync(currentLobby.Id);
+                if (updated != null)
                 {
-                        return parsed;
+                        currentLobby = updated;
+                        LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
                 }
-
-                if (ColorUtility.TryParseHtmlString(defaultHex, out Color defaultColor))
-                {
-                        return defaultColor;
-                }
-
-                return Color.white;
         }
 }
