@@ -387,22 +387,25 @@ public class LobbyMenu : MonoBehaviour
                 {
                         string localName = ResolveLocalPlayerName();
                         Lobby joinedLobby = null;
+                        string targetLobbyId = string.Empty;
                         if (lobbyDropdown != null && lobbyDropdown.value >= 0 && lobbyDropdown.value < availableLobbies.Count)
                         {
+                                targetLobbyId = availableLobbies[lobbyDropdown.value].Id;
                                 localName = EnsureUniqueName(localName, availableLobbies[lobbyDropdown.value]);
                                 JoinLobbyByIdOptions options = new JoinLobbyByIdOptions
                                 {
                                         Player = BuildLocalPlayer(localName)
                                 };
-                                joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(availableLobbies[lobbyDropdown.value].Id, options);
+                                joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(targetLobbyId, options);
                         }
                         else if (!string.IsNullOrWhiteSpace(selectedLobbyId))
                         {
+                                targetLobbyId = selectedLobbyId;
                                 JoinLobbyByIdOptions options = new JoinLobbyByIdOptions
                                 {
                                         Player = BuildLocalPlayer(localName)
                                 };
-                                joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(selectedLobbyId, options);
+                                joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(targetLobbyId, options);
                         }
                         else
                         {
@@ -441,6 +444,43 @@ public class LobbyMenu : MonoBehaviour
                 }
                 catch (Exception ex)
                 {
+                        if (ex.Message.Contains("already a member", StringComparison.OrdinalIgnoreCase))
+                        {
+                                Lobby fallbackLobby = await TryGetJoinedLobbyAsync();
+                                if (fallbackLobby != null)
+                                {
+                                        currentLobby = fallbackLobby;
+                                        if (!TryGetSessionCode(currentLobby, out string sessionCode))
+                                        {
+                                                sessionCode = await WaitForLobbySessionCodeAsync(currentLobby.Id);
+                                        }
+
+                                        if (string.IsNullOrWhiteSpace(sessionCode))
+                                        {
+                                                SetStatus("Lobby nie ma jeszcze kodu sesji. Spróbuj ponownie za chwilę.");
+                                                return;
+                                        }
+
+                                        bool sessionReady = await SetupSessionClientAsync(sessionCode);
+                                        if (!sessionReady)
+                                        {
+                                                SetStatus("Nie udało się dołączyć do sesji sieciowej.");
+                                                return;
+                                        }
+
+                                        SetStatus($"Dołączono do lobby: {currentLobby.Name}");
+                                        LobbyState.RegisterLobby(currentLobby.Id, false);
+                                        LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
+                                        ResetProgressForNewLobby();
+
+                                        if (connectionMenu != null)
+                                        {
+                                                connectionMenu.StartClient();
+                                        }
+                                        return;
+                                }
+                        }
+
                         SetStatus($"Błąd dołączania do lobby: {ex.Message}");
                 }
         }
@@ -876,6 +916,25 @@ public class LobbyMenu : MonoBehaviour
                         }
 
                         await Task.Delay(delayMs);
+                }
+
+                return null;
+        }
+
+        private async Task<Lobby> TryGetJoinedLobbyAsync()
+        {
+                try
+                {
+                        var joinedLobbies = await LobbyService.Instance.GetJoinedLobbiesAsync();
+                        if (joinedLobbies != null && joinedLobbies.Count > 0)
+                        {
+                                string lobbyId = joinedLobbies[0];
+                                return await LobbyService.Instance.GetLobbyAsync(lobbyId);
+                        }
+                }
+                catch (Exception ex)
+                {
+                        SetStatus($"Nie udało się pobrać istniejącego lobby: {ex.Message}");
                 }
 
                 return null;
