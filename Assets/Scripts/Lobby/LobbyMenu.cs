@@ -109,7 +109,7 @@ public class LobbyMenu : MonoBehaviour
                 scaler.referenceResolution = new Vector2(1920, 1080);
 
                 loginPanel = CreatePanel(canvas.transform, "LoginPanel", new Vector2(0.5f, 0.5f), new Vector2(600f, 280f));
-                TMP_Text loginTitle = CreateLabel(loginPanel.transform, "LoginTitle", "Relay Lobby", 42, TextAlignmentOptions.Center);
+                TMP_Text loginTitle = CreateLabel(loginPanel.transform, "LoginTitle", "Lobby", 42, TextAlignmentOptions.Center);
                 SetAnchors(loginTitle.rectTransform, new Vector2(0.1f, 0.72f), new Vector2(0.9f, 0.95f));
                 customIdInput = CreateInputField(loginPanel.transform, "NicknameInput", "Wpisz nick");
                 SetAnchors(customIdInput.GetComponent<RectTransform>(), new Vector2(0.15f, 0.45f), new Vector2(0.85f, 0.65f));
