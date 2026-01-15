@@ -1,81 +1,121 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI; // Jeśli używasz starego UI, lub TMPro jeśli nowego
-using TMPro;
+using UnityEngine.UI;
+
 public class ConnectionMenu : MonoBehaviour
 {
-        [Header("UI References")]
-        public Button hostBtn;
-        public Button clientBtn;
-        public Button singleplayerBtn;
+	[Header("UI References")]
+	public Button hostBtn;          // Przycisk "Host (LAN/Direct)" - Opcjonalny
+	public Button clientBtn;        // Przycisk "Client (LAN/Direct)" - Opcjonalny
+	public Button singleplayerBtn;  // Przycisk Singleplayer
 
-        void Start()
-        {
-                // Przypisanie funkcji do przycisków
-                hostBtn.onClick.AddListener(StartHost);
-                clientBtn.onClick.AddListener(StartClient);
+	[Header("Dependencies")]
+	public LobbyMenu lobbyMenu;     // Przypisz tu skrypt LobbyMenu w Inspektorze!
 
-                if (singleplayerBtn != null)
-                        singleplayerBtn.onClick.AddListener(StartSingleplayer);
+	void Start()
+	{
+		// Obsługa przycisków bezpośrednich (tylko do testów LAN lub Single)
+		if (hostBtn != null)
+			hostBtn.onClick.AddListener(StartHost);
 
-                LobbyMenu lobbyMenu = GetComponent<LobbyMenu>();
-                if (lobbyMenu == null)
-                {
-                        lobbyMenu = gameObject.AddComponent<LobbyMenu>();
-                }
-                lobbyMenu.SetConnectionMenu(this);
-        }
+		if (clientBtn != null)
+			clientBtn.onClick.AddListener(StartClient);
 
-        public void StartHost()
-        {
-                Debug.Log("Startuj jako HOST...");
+		if (singleplayerBtn != null)
+			singleplayerBtn.onClick.AddListener(StartSingleplayer);
 
-                // 1. To musi być aktywne, żeby gra wiedziała, że to multiplayer
-                if (GameManager.Instance != null)
-                {
-                        GameManager.Instance.isMultiplayer = true;
-                        if (GameProgress.Instance != null)
-                        {
-                                GameProgress.Instance.isHostPlayer = true;
-                        }
-                }
-                else
-                {
-                        Debug.LogError("GameManager jest null! Upewnij się, że obiekt Manager jest włączony w scenie.");
-                        return;
-                }
+		// Łączymy się z LobbyMenu, jeśli zostało przypisane
+		if (lobbyMenu != null)
+		{
+			lobbyMenu.SetConnectionMenu(this);
+		}
+		else
+		{
+			// Próba znalezienia, jeśli zapomniałeś przypisać
+			lobbyMenu = GetComponent<LobbyMenu>();
+			if (lobbyMenu != null)
+			{
+				lobbyMenu.SetConnectionMenu(this);
+			}
+			else
+			{
+				Debug.LogWarning("Brak LobbyMenu na obiekcie! Multiplayer przez internet nie zadziała z tego poziomu.");
+			}
+		}
+	}
 
-                // 2. Start Hosta
-                NetworkManager.Singleton.StartHost();
+	public void StartHost()
+	{
+		Debug.Log("[ConnectionMenu] Startuj jako HOST...");
 
-                // 3. Ładowanie sceny
-                SceneFader.FadeOutThen(() =>
-                {
-                        NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
-                });
-        }
-        public void StartClient()
-        {
-                Debug.Log("Dołączam jako KLIENT...");
-                GameManager.Instance.isMultiplayer = true;
-                if (GameProgress.Instance != null)
-                {
-                        GameProgress.Instance.isHostPlayer = false;
-                }
+		if (GameManager.Instance != null)
+		{
+			GameManager.Instance.isMultiplayer = true;
+			if (GameProgress.Instance != null)
+			{
+				GameProgress.Instance.isHostPlayer = true;
+			}
+		}
+		else
+		{
+			Debug.LogError("GameManager jest null!");
+			return;
+		}
 
-                // Klient tylko się łączy. To Host przeniesie go do sklepu automatycznie.
-                NetworkManager.Singleton.StartClient();
-        }
+		// WAŻNE: Jeśli startujemy przez Lobby, Relay został już skonfigurowany w LobbyMenu.
+		// Jeśli kliknąłeś zwykły przycisk "Host", Relay NIE jest skonfigurowany i gra ruszy na LAN (127.0.0.1).
+		NetworkManager.Singleton.StartHost();
 
-        public void StartSingleplayer()
-        {
-                Debug.Log("Tryb Singleplayer");
-                GameManager.Instance.isMultiplayer = false;
-                if (GameProgress.Instance != null)
-                {
-                        GameProgress.Instance.isHostPlayer = true;
-                }
-                SceneFader.LoadSceneWithFade("Shop");
-        }
+		// Przenosimy graczy do sklepu
+		// SceneFader to twój system przejść
+		if (SceneFader.Instance != null) // Zabezpieczenie
+		{
+			SceneFader.FadeOutThen(() =>
+			{
+				NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
+			});
+		}
+		else
+		{
+			// Fallback jeśli nie ma fadera
+			NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
+		}
+	}
+
+	public void StartClient()
+	{
+		Debug.Log("[ConnectionMenu] Dołączam jako KLIENT...");
+
+		if (GameManager.Instance != null)
+		{
+			GameManager.Instance.isMultiplayer = true;
+			if (GameProgress.Instance != null)
+			{
+				GameProgress.Instance.isHostPlayer = false;
+			}
+		}
+
+		// Tutaj UnityTransport musi mieć już dane z Relay (ustawione przez LobbyMenu)
+		NetworkManager.Singleton.StartClient();
+
+		// Klient NIE ładuje sceny sam. Czeka aż Host go pociągnie za sobą.
+	}
+
+	public void StartSingleplayer()
+	{
+		Debug.Log("[ConnectionMenu] Tryb Singleplayer");
+
+		if (GameManager.Instance != null)
+			GameManager.Instance.isMultiplayer = false;
+
+		if (GameProgress.Instance != null)
+			GameProgress.Instance.isHostPlayer = true;
+
+		// W singlu ładujemy scenę lokalnie
+		if (SceneFader.Instance != null)
+			SceneFader.LoadSceneWithFade("Shop");
+		else
+			SceneManager.LoadScene("Shop");
+	}
 }
