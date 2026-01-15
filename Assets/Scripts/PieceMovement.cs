@@ -10,6 +10,7 @@ public class PieceMovement : MonoBehaviour
         private Piece pieceComponent;
         private SpriteRenderer sr;
         private int originalOrder;
+        [SerializeField] private bool logInputBlocks = false;
 
         void Start()
         {
@@ -20,28 +21,48 @@ public class PieceMovement : MonoBehaviour
         void OnMouseDown()
         {
                 bool isBattle = SceneManager.GetActiveScene().name == "Battle";
+                bool isNetworked = isBattle
+                        && ((GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                                || (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
+                                || (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned));
 
                 if (isBattle)
                 {
-                        if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                        if (isNetworked)
                         {
                                 if (!IsLocalPlayersPiece())
                                 {
+                                        if (logInputBlocks)
+                                        {
+                                                Debug.Log($"[PieceMovement] Blocked: not local piece. Owner={pieceComponent.owner}");
+                                        }
                                         return;
                                 }
                                 if (BattleMoveSync.Instance != null && !GameManager.Instance.IsMyTurn())
                                 {
+                                        if (logInputBlocks)
+                                        {
+                                                Debug.Log($"[PieceMovement] Blocked: not your turn. Owner={pieceComponent.owner}");
+                                        }
                                         Debug.Log("To nie twoja tura!");
                                         return;
                                 }
                         }
                         else if (GameManager.Instance != null && !GameManager.Instance.IsMyTurn())
                         {
+                                if (logInputBlocks)
+                                {
+                                        Debug.Log($"[PieceMovement] Blocked: not your turn (offline). Owner={pieceComponent.owner}");
+                                }
                                 Debug.Log("To nie twoja tura!");
                                 return;
                         }
                         else if (pieceComponent.owner != PieceOwner.Player)
                         {
+                                if (logInputBlocks)
+                                {
+                                        Debug.Log($"[PieceMovement] Blocked: owner is {pieceComponent.owner} in offline mode.");
+                                }
                                 return;
                         }
 
@@ -187,13 +208,25 @@ public class PieceMovement : MonoBehaviour
 
         bool IsLocalPlayersPiece()
         {
-                if (GameManager.Instance == null || !GameManager.Instance.isMultiplayer)
+                bool networkActive = (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                        || (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
+                        || (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                        || (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned);
+
+                if (!networkActive)
                 {
                         return pieceComponent.owner == PieceOwner.Player;
                 }
 
                 if (NetworkManager.Singleton == null)
                 {
+                        if (GameProgress.Instance != null)
+                        {
+                                return GameProgress.Instance.isHostPlayer
+                                        ? pieceComponent.owner == PieceOwner.Player
+                                        : pieceComponent.owner == PieceOwner.Enemy;
+                        }
+
                         return pieceComponent.owner == PieceOwner.Player;
                 }
 

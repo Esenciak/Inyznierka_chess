@@ -1,6 +1,10 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using TMPro;
+using UnityEngine.UI;
 
 
 
@@ -33,23 +37,173 @@ public class GameManager : MonoBehaviour
                         return;
                 }
                 Instance = this;
+                DontDestroyOnLoad(gameObject);
+                SceneFader.EnsureInstance();
+                SyncMultiplayerState();
+        }
+
+        private void OnEnable()
+        {
+                SceneManager.sceneLoaded += HandleSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+                SceneManager.sceneLoaded -= HandleSceneLoaded;
+        }
+
+        private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+                SyncMultiplayerState();
+                if (scene.name == "Battle")
+                {
+                        currentPhase = GamePhase.Battle;
+                        if (isMultiplayer && BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned)
+                        {
+                                currentTurn = BattleMoveSync.Instance.CurrentTurn.Value;
+                        }
+                        else if (isMultiplayer && BattleSession.Instance != null)
+                        {
+                                currentTurn = BattleSession.Instance.ActiveTeam.Value == 0
+                                        ? PieceOwner.Player
+                                        : PieceOwner.Enemy;
+                        }
+                        else
+                        {
+                                currentTurn = PieceOwner.Player;
+                        }
+                        gameEnded = false;
+                        UpdateBattleHeaderTexts();
+                        return;
+                }
+
+                if (scene.name == "Shop")
+                {
+                        currentPhase = GamePhase.Placement;
+                        currentTurn = PieceOwner.Player;
+                        return;
+                }
+
+                if (scene.name == "MainMenu")
+                {
+                        ShowWinnerBanner();
+                }
+        }
+
+        private void UpdateBattleHeaderTexts()
+        {
+                if (GameProgress.Instance == null)
+                {
+                        return;
+                }
+
+                string localName = LobbyState.LocalPlayerName;
+                string opponentName = LobbyState.OpponentPlayerName;
+                int wins = GameProgress.Instance.wins;
+                int losses = GameProgress.Instance.losses;
+
+                GameObject playerObj = GameObject.Find("Player_name");
+                if (playerObj != null)
+                {
+                        TextMeshProUGUI playerText = playerObj.GetComponent<TextMeshProUGUI>();
+                        if (playerText != null)
+                        {
+                                playerText.text = $"{localName}: {wins}";
+                        }
+                }
+
+                GameObject enemyObj = GameObject.Find("Enemy_name");
+                if (enemyObj != null)
+                {
+                        TextMeshProUGUI enemyText = enemyObj.GetComponent<TextMeshProUGUI>();
+                        if (enemyText != null)
+                        {
+                                enemyText.text = $"{opponentName}: {losses}";
+                        }
+                }
+        }
+
+        private void SyncMultiplayerState()
+        {
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                        isMultiplayer = true;
+                        if (GameProgress.Instance != null)
+                        {
+                                GameProgress.Instance.isHostPlayer = NetworkManager.Singleton.IsHost;
+                        }
+                }
+        }
+
+        private void ShowWinnerBanner()
+        {
+                if (GameProgress.Instance == null)
+                {
+                        return;
+                }
+
+                string message = GameProgress.Instance.lastWinnerMessage;
+                if (string.IsNullOrEmpty(message))
+                {
+                        return;
+                }
+
+                GameObject canvasObject = new GameObject("WinnerBannerCanvas");
+                var canvas = canvasObject.AddComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                canvasObject.AddComponent<CanvasScaler>();
+                canvasObject.AddComponent<GraphicRaycaster>();
+
+                GameObject textObject = new GameObject("WinnerBannerText");
+                textObject.transform.SetParent(canvasObject.transform, false);
+                var text = textObject.AddComponent<TextMeshProUGUI>();
+                text.text = message;
+                text.fontSize = 48;
+                text.alignment = TextAlignmentOptions.Center;
+                text.color = Color.white;
+                if (TMP_Settings.defaultFontAsset != null)
+                {
+                        text.font = TMP_Settings.defaultFontAsset;
+                }
+
+                RectTransform rectTransform = text.rectTransform;
+                rectTransform.anchorMin = new Vector2(0f, 0f);
+                rectTransform.anchorMax = new Vector2(1f, 1f);
+                rectTransform.offsetMin = Vector2.zero;
+                rectTransform.offsetMax = Vector2.zero;
+
+                GameProgress.Instance.lastWinnerMessage = string.Empty;
         }
 
 	public bool IsMyTurn()
 	{
-		if (!isMultiplayer)
-		{
-			return currentTurn == PieceOwner.Player;
-		}
+		bool networkActive = isMultiplayer
+			|| (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer))
+			|| (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned);
 
-		if (BattleMoveSync.Instance != null)
+		if (networkActive && BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned)
 		{
 			return BattleMoveSync.Instance.IsLocalPlayersTurn();
 		}
 
+		if (!networkActive)
+		{
+			return currentTurn == PieceOwner.Player;
+		}
+
 		if (BattleSession.Instance == null || NetworkManager.Singleton == null)
 		{
-			return false;
+			PieceOwner localSide = PieceOwner.Player;
+			if (NetworkManager.Singleton != null)
+			{
+				localSide = NetworkManager.Singleton.IsHost ? PieceOwner.Player : PieceOwner.Enemy;
+			}
+			else if (GameProgress.Instance != null)
+			{
+				localSide = GameProgress.Instance.isHostPlayer ? PieceOwner.Player : PieceOwner.Enemy;
+			}
+
+			return currentTurn == localSide;
 		}
 
 		int activeTeam = BattleSession.Instance.ActiveTeam.Value;
@@ -169,9 +323,29 @@ public class GameManager : MonoBehaviour
 
                 if (GameProgress.Instance != null)
                 {
+                        UpdateArmyAfterBattle();
                         int winValue = economyConfig != null ? economyConfig.winReward : winReward;
                         int loseValue = economyConfig != null ? economyConfig.loseReward : loseReward;
                         GameProgress.Instance.CompleteRound(playerWon, winValue, loseValue);
+                        if (GameProgress.Instance.gamesPlayed >= 9)
+                        {
+                                GameProgress.Instance.lastWinnerMessage = playerWon ? "Winner: You" : "Winner: Enemy";
+                                if (isMultiplayer && Unity.Netcode.NetworkManager.Singleton != null)
+                                {
+                                        if (Unity.Netcode.NetworkManager.Singleton.IsServer)
+                                        {
+                                                SceneFader.FadeOutThen(() =>
+                                                {
+                                                        Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("MainMenu", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                                                });
+                                        }
+                                }
+                                else
+                                {
+                                        SceneFader.LoadSceneWithFade("MainMenu");
+                                }
+                                return;
+                        }
                         if (isMultiplayer && Unity.Netcode.NetworkManager.Singleton != null)
                         {
                                 if (Unity.Netcode.NetworkManager.Singleton.IsServer)
@@ -182,7 +356,10 @@ public class GameManager : MonoBehaviour
                                                 BattleSession.Instance.SharedPlayerBoardSize.Value = GameProgress.Instance.playerBoardSize;
                                                 BattleSession.Instance.ResetSessionState();
                                         }
-                                        Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("Shop", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                                        SceneFader.FadeOutThen(() =>
+                                        {
+                                                Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("Shop", UnityEngine.SceneManagement.LoadSceneMode.Single);
+                                        });
                                 }
                         }
                         else
@@ -197,5 +374,107 @@ public class GameManager : MonoBehaviour
 
                 currentPhase = GamePhase.Placement;
                 currentTurn = PieceOwner.Player;
+        }
+
+        private void UpdateArmyAfterBattle()
+        {
+                if (GameProgress.Instance == null || BoardManager.Instance == null)
+                {
+                        return;
+                }
+
+                Dictionary<PieceType, int> aliveCounts = CountLocalAlivePieces();
+                EnsureKingRespawn(aliveCounts);
+
+                List<SavedPieceData> updatedArmy = new List<SavedPieceData>();
+                foreach (SavedPieceData data in GameProgress.Instance.myArmy)
+                {
+                        if (aliveCounts.TryGetValue(data.type, out int remaining) && remaining > 0)
+                        {
+                                updatedArmy.Add(data);
+                                aliveCounts[data.type] = remaining - 1;
+                        }
+                }
+
+                GameProgress.Instance.myArmy = updatedArmy;
+        }
+
+        private void EnsureKingRespawn(Dictionary<PieceType, int> aliveCounts)
+        {
+                if (aliveCounts == null)
+                {
+                        return;
+                }
+
+                if (!aliveCounts.TryGetValue(PieceType.King, out int count) || count <= 0)
+                {
+                        aliveCounts[PieceType.King] = 1;
+                        if (GameProgress.Instance != null)
+                        {
+                                int col = BoardManager.Instance.PlayerCols / 2;
+                                int row = BoardManager.Instance.PlayerRows / 2;
+                                GameProgress.Instance.myArmy.Add(new SavedPieceData
+                                {
+                                        type = PieceType.King,
+                                        x = col,
+                                        y = row
+                                });
+                        }
+                }
+        }
+
+        private Dictionary<PieceType, int> CountLocalAlivePieces()
+        {
+                Dictionary<PieceType, int> counts = new Dictionary<PieceType, int>();
+                CountPiecesOnBoard(BoardType.Player, BoardManager.Instance.PlayerRows, BoardManager.Instance.PlayerCols, counts);
+                CountPiecesOnBoard(BoardType.Center, BoardManager.Instance.CenterRows, BoardManager.Instance.CenterCols, counts);
+                CountPiecesOnBoard(BoardType.Enemy, BoardManager.Instance.PlayerRows, BoardManager.Instance.PlayerCols, counts);
+                return counts;
+        }
+
+        private void CountPiecesOnBoard(BoardType boardType, int rows, int cols, Dictionary<PieceType, int> counts)
+        {
+                for (int r = 0; r < rows; r++)
+                {
+                        for (int c = 0; c < cols; c++)
+                        {
+                                Tile tile = BoardManager.Instance.GetTile(boardType, r, c);
+                                if (tile == null || tile.currentPiece == null)
+                                {
+                                        continue;
+                                }
+
+                                Piece piece = tile.currentPiece;
+                                if (!IsLocalPieceOwner(piece.owner))
+                                {
+                                        continue;
+                                }
+
+                                if (counts.TryGetValue(piece.pieceType, out int value))
+                                {
+                                        counts[piece.pieceType] = value + 1;
+                                }
+                                else
+                                {
+                                        counts[piece.pieceType] = 1;
+                                }
+                        }
+                }
+        }
+
+        private bool IsLocalPieceOwner(PieceOwner owner)
+        {
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                        bool localIsHost = NetworkManager.Singleton.IsHost;
+                        return localIsHost ? owner == PieceOwner.Player : owner == PieceOwner.Enemy;
+                }
+
+                if (GameProgress.Instance != null && isMultiplayer)
+                {
+                        return GameProgress.Instance.isHostPlayer ? owner == PieceOwner.Player : owner == PieceOwner.Enemy;
+                }
+
+                return owner == PieceOwner.Player;
         }
 }

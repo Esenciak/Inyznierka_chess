@@ -35,6 +35,7 @@ public class BattleMoveSync : NetworkBehaviour
                 if (IsServer)
                 {
                         CurrentTurn.Value = PieceOwner.Player;
+                        SyncActiveTeam(CurrentTurn.Value);
                 }
                 HandleTurnChanged(CurrentTurn.Value, CurrentTurn.Value);
         }
@@ -64,6 +65,36 @@ public class BattleMoveSync : NetworkBehaviour
                 }
 
                 SubmitMoveServerRpc(piece.currentTile.globalRow, piece.currentTile.globalCol, targetTile.globalRow, targetTile.globalCol);
+        }
+
+        public void RequestResign()
+        {
+                if (!IsSpawned || !IsClient)
+                {
+                        return;
+                }
+
+                RequestResignServerRpc();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        private void RequestResignServerRpc(ServerRpcParams rpcParams = default)
+        {
+                if (NetworkManager.Singleton == null)
+                {
+                        return;
+                }
+
+                ulong senderId = rpcParams.Receive.SenderClientId;
+                bool senderIsHost = senderId == NetworkManager.ServerClientId;
+                bool hostWon = !senderIsHost;
+
+                if (GameManager.Instance != null)
+                {
+                        GameManager.Instance.GameOver(hostWon);
+                }
+
+                SendResignToClients(hostWon);
         }
 
         [ServerRpc(RequireOwnership = false)]
@@ -121,6 +152,7 @@ public class BattleMoveSync : NetworkBehaviour
 
                 PieceOwner nextTurn = expectedOwner == PieceOwner.Player ? PieceOwner.Enemy : PieceOwner.Player;
                 CurrentTurn.Value = nextTurn;
+                SyncActiveTeam(nextTurn);
 
                 if (capturedKing && GameManager.Instance != null)
                 {
@@ -161,6 +193,36 @@ public class BattleMoveSync : NetworkBehaviour
                 ApplyMoveClientRpc(fromRow, fromCol, toRow, toCol, capturedKing, hostWon, rpcParams);
         }
 
+        private void SendResignToClients(bool hostWon)
+        {
+                if (NetworkManager.Singleton == null)
+                {
+                        return;
+                }
+
+                List<ulong> targetClients = new List<ulong>();
+                foreach (ulong clientId in NetworkManager.Singleton.ConnectedClientsIds)
+                {
+                        if (clientId == NetworkManager.Singleton.LocalClientId) continue;
+                        targetClients.Add(clientId);
+                }
+
+                if (targetClients.Count == 0)
+                {
+                        return;
+                }
+
+                ClientRpcParams rpcParams = new ClientRpcParams
+                {
+                        Send = new ClientRpcSendParams
+                        {
+                                TargetClientIds = targetClients
+                        }
+                };
+
+                ApplyResignClientRpc(hostWon, rpcParams);
+        }
+
         [ClientRpc]
         private void ApplyMoveClientRpc(int fromRow, int fromCol, int toRow, int toCol, bool capturedKing, bool hostWon, ClientRpcParams rpcParams = default)
         {
@@ -197,6 +259,19 @@ public class BattleMoveSync : NetworkBehaviour
                         bool localWon = localIsHost == hostWon;
                         GameManager.Instance.GameOver(localWon);
                 }
+        }
+
+        [ClientRpc]
+        private void ApplyResignClientRpc(bool hostWon, ClientRpcParams rpcParams = default)
+        {
+                if (GameManager.Instance == null)
+                {
+                        return;
+                }
+
+                bool localIsHost = NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost;
+                bool localWon = localIsHost == hostWon;
+                GameManager.Instance.GameOver(localWon);
         }
 
         private void ApplyMoveLocal(Piece piece, Tile targetTile)
@@ -237,5 +312,15 @@ public class BattleMoveSync : NetworkBehaviour
                 {
                         TurnIndicator.Instance.UpdateTurnText();
                 }
+        }
+
+        private void SyncActiveTeam(PieceOwner turn)
+        {
+                if (!IsServer || BattleSession.Instance == null)
+                {
+                        return;
+                }
+
+                BattleSession.Instance.ActiveTeam.Value = turn == PieceOwner.Player ? 0 : 1;
         }
 }

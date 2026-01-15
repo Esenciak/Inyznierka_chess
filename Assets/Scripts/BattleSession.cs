@@ -88,7 +88,10 @@ public class BattleSession : NetworkBehaviour
 		if (IsHostReady.Value && IsClientReady.Value)
 		{
 			Debug.Log("Obaj gracze gotowi! Ładowanie Bitwy...");
-			NetworkManager.Singleton.SceneManager.LoadScene("Battle", LoadSceneMode.Single);
+			SceneFader.FadeOutThen(() =>
+			{
+				NetworkManager.Singleton.SceneManager.LoadScene("Battle", LoadSceneMode.Single);
+			});
 		}
 	}
 

@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using Unity.Netcode;
 
 // To jest ta Twoja struktura danych (zamiast Stringa/Inta mamy obiekt)
 // [System.Serializable] jest KLUCZOWE - pozwala Unity widzieć i zapisywać tę klasę
@@ -27,12 +28,17 @@ public class GameProgress : MonoBehaviour
         [Header("Statystyki")]
         public int coins = 100;
         public int gamesPlayed = 0;
+        public int wins = 0;
+        public int losses = 0;
 
         [Header("Ekonomia")]
         public EconomyConfig economyConfig;
 
         [Header("Tryb gracza")]
         public bool isHostPlayer = true;
+
+        [Header("Podsumowanie rundy")]
+        public string lastWinnerMessage = string.Empty;
 
         [Header("Ustawienia Planszy")]
         public int playerBoardSize = 3;
@@ -70,6 +76,22 @@ public class GameProgress : MonoBehaviour
                 }
         }
 
+        public void ResetProgressForNewLobby()
+        {
+                gamesPlayed = 0;
+                wins = 0;
+                losses = 0;
+                lastWinnerMessage = string.Empty;
+                playerBoardSize = 3;
+                myArmy.Clear();
+                inventoryPieces.Clear();
+
+                if (economyConfig != null)
+                {
+                        coins = economyConfig.startingCoins;
+                }
+        }
+
         public bool SpendCoins(int amount)
         {
                 if (coins < amount) return false;
@@ -84,6 +106,11 @@ public class GameProgress : MonoBehaviour
 
         public bool IsLocalPlayerWhite()
         {
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                        return NetworkManager.Singleton.IsHost;
+                }
+
                 if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
                 {
                         return isHostPlayer;
@@ -95,11 +122,19 @@ public class GameProgress : MonoBehaviour
         public void CompleteRound(bool playerWon, int winReward, int loseReward)
         {
                 gamesPlayed++;
+                if (playerWon)
+                {
+                        wins++;
+                }
+                else
+                {
+                        losses++;
+                }
                 AddCoins(playerWon ? winReward : loseReward);
         }
 
         public void LoadScene(string sceneName)
         {
-                SceneManager.LoadScene(sceneName);
+                SceneFader.LoadSceneWithFade(sceneName);
         }
 }

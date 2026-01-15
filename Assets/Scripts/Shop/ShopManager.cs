@@ -24,7 +24,10 @@ public class ShopManager : MonoBehaviour
         public TextMeshProUGUI coinsText;
         public TextMeshProUGUI centerBoardSizeText;
         public TextMeshProUGUI roundText;
+        public TextMeshProUGUI playerNameText;
+        public TextMeshProUGUI enemyNameText;
         public Button startButton;
+        public Button rerollButton;
 
         [Header("Ekonomia")]
         public EconomyConfig economyConfig;
@@ -91,6 +94,12 @@ public class ShopManager : MonoBehaviour
                 GameObject roundObj = GameObject.Find("UI_Round");
                 if (roundObj) roundText = roundObj.GetComponent<TextMeshProUGUI>();
 
+                GameObject playerNameObj = GameObject.Find("UI_Player_Name");
+                if (playerNameObj) playerNameText = playerNameObj.GetComponent<TextMeshProUGUI>();
+
+                GameObject enemyNameObj = GameObject.Find("UI_enemy_name");
+                if (enemyNameObj) enemyNameText = enemyNameObj.GetComponent<TextMeshProUGUI>();
+
                 GameObject sizeObj = GameObject.Find("UI_BoardSize");
                 if (sizeObj) centerBoardSizeText = sizeObj.GetComponent<TextMeshProUGUI>();
 
@@ -104,6 +113,22 @@ public class ShopManager : MonoBehaviour
                         startButton.onClick.AddListener(StartGame);
                 }
 
+                GameObject rerollObj = GameObject.Find("RerollButton");
+                if (rerollObj != null)
+                {
+                        rerollButton = rerollObj.GetComponent<Button>();
+                }
+                else
+                {
+                        rerollButton = CreateRerollButton();
+                }
+
+                if (rerollButton != null)
+                {
+                        rerollButton.onClick.RemoveAllListeners();
+                        rerollButton.onClick.AddListener(TryRerollShop);
+                }
+
                 ToggleUI(true);
         }
 
@@ -115,6 +140,10 @@ public class ShopManager : MonoBehaviour
                 RefillShop();
                 ToggleUI(true);
                 UpdateUI();
+                if (InventoryManager.Instance != null)
+                {
+                        InventoryManager.Instance.EnsureInitialized();
+                }
                 StartCoroutine(RestoreLayoutRoutine());
         }
 
@@ -133,6 +162,9 @@ public class ShopManager : MonoBehaviour
                 if (coinsText) coinsText.gameObject.SetActive(state);
                 if (centerBoardSizeText) centerBoardSizeText.gameObject.SetActive(state);
                 if (roundText) roundText.gameObject.SetActive(state);
+                if (playerNameText) playerNameText.gameObject.SetActive(state);
+                if (enemyNameText) enemyNameText.gameObject.SetActive(state);
+                if (rerollButton) rerollButton.gameObject.SetActive(state);
         }
         // ----------------------------
 
@@ -149,6 +181,8 @@ public class ShopManager : MonoBehaviour
                                 tile.GetComponent<SpriteRenderer>().color = new Color(0.6f, 0.5f, 0.2f);
                                 Tile t = tile.GetComponent<Tile>();
                                 t.row = r;
+                                t.boardType = BoardType.Center;
+                                t.isInventory = false;
 
                                 shopTiles.Add(tile);
                         }
@@ -212,22 +246,63 @@ public class ShopManager : MonoBehaviour
                 Vector3 textOffset = (tile.row == 0) ? new Vector3(0, -1.2f, 0) : new Vector3(0, 1.2f, 0);
 
                 shopItem.Setup(type, GetPrice(type), this, tile, priceTextPrefab, textOffset);
+                EnsureShopItemCollider(itemGO);
 
                 tile.isOccupied = true;
         }
 
+        private void EnsureShopItemCollider(GameObject itemGO)
+        {
+                if (itemGO == null || itemGO.GetComponent<Collider2D>() != null)
+                {
+                        return;
+                }
+
+                BoxCollider2D collider = itemGO.AddComponent<BoxCollider2D>();
+                SpriteRenderer renderer = itemGO.GetComponent<SpriteRenderer>();
+                if (renderer != null && renderer.sprite != null)
+                {
+                        collider.size = renderer.sprite.bounds.size;
+                        collider.offset = renderer.sprite.bounds.center;
+                }
+        }
+
         public void TryBuyPiece(ShopItem item)
         {
+                InventoryManager inventory = InventoryManager.Instance;
+                if (inventory == null)
+                {
+                        inventory = FindObjectOfType<InventoryManager>();
+                }
+
+                if (inventory == null)
+                {
+                        Debug.Log("Nie kupiono: brak InventoryManager.");
+                        return;
+                }
+
+                if (!inventory.IsReady)
+                {
+                        inventory.EnsureInitialized();
+                        Debug.Log("Nie kupiono: ekwipunek jeszcze się ładuje.");
+                        return;
+                }
+
                 // 1. Czy stać nas?
                 if (GameProgress.Instance.coins >= item.price)
                 {
                         // 2. Czy jest miejsce w ekwipunku? (AddPieceToInventory zwraca teraz bool)
-                        bool success = InventoryManager.Instance.AddPieceToInventory(item.type, GetPrefabByType(item.type));
+                        bool success = inventory.AddPieceToInventory(item.type, GetPrefabByType(item.type));
 
                         if (success)
                         {
                                 // Dopiero teraz zabieramy kasę i niszczymy przedmiot
                                 GameProgress.Instance.SpendCoins(item.price);
+                                if (item.CurrentTile != null)
+                                {
+                                        item.CurrentTile.isOccupied = false;
+                                        item.CurrentTile.currentPiece = null;
+                                }
                                 Destroy(item.gameObject);
                                 UpdateUI();
                         }
@@ -418,11 +493,65 @@ public class ShopManager : MonoBehaviour
         {
                 if (coinsText != null) coinsText.text = "Coins: " + GameProgress.Instance.coins;
                 if (centerBoardSizeText != null) centerBoardSizeText.text = $"Board: {GameProgress.Instance.centerBoardSize}x{GameProgress.Instance.centerBoardSize}";
-                if (roundText != null) roundText.text = "Round: " + (GameProgress.Instance.gamesPlayed + 1);
+                if (roundText != null)
+                {
+                        roundText.text = $"Runda {GameProgress.Instance.gamesPlayed + 1}";
+                }
+                if (playerNameText != null || enemyNameText != null)
+                {
+                        string opponentName = LobbyState.OpponentPlayerName;
+                        string localName = LobbyState.LocalPlayerName;
+                        int wins = GameProgress.Instance.wins;
+                        int losses = GameProgress.Instance.losses;
+                        if (playerNameText != null)
+                        {
+                                playerNameText.text = $"{localName}: {wins}";
+                        }
+                        if (enemyNameText != null)
+                        {
+                                enemyNameText.text = $"{opponentName}: {losses}";
+                        }
+                }
+                if (rerollButton != null)
+                {
+                        int cost = economyConfig != null ? economyConfig.rerollCost : 0;
+                        TextMeshProUGUI label = rerollButton.GetComponentInChildren<TextMeshProUGUI>();
+                        if (label != null)
+                        {
+                                label.text = cost > 0 ? $"Przelosuj ({cost})" : "Przelosuj";
+                        }
+                }
         }
 
         PieceType GetRandomPieceType()
         {
+                if (economyConfig != null && GameProgress.Instance != null
+                        && economyConfig.TryGetSpawnWeights(GameProgress.Instance.gamesPlayed + 1, out var weights))
+                {
+                        int total = Mathf.Max(0, weights.pawnWeight)
+                                + Mathf.Max(0, weights.kingWeight)
+                                + Mathf.Max(0, weights.queenWeight)
+                                + Mathf.Max(0, weights.rookWeight)
+                                + Mathf.Max(0, weights.bishopWeight)
+                                + Mathf.Max(0, weights.knightWeight);
+
+                        if (total > 0)
+                        {
+                                int roll = Random.Range(0, total);
+                                int current = Mathf.Max(0, weights.pawnWeight);
+                                if (roll < current) return PieceType.Pawn;
+                                current += Mathf.Max(0, weights.kingWeight);
+                                if (roll < current) return PieceType.King;
+                                current += Mathf.Max(0, weights.queenWeight);
+                                if (roll < current) return PieceType.queen;
+                                current += Mathf.Max(0, weights.rookWeight);
+                                if (roll < current) return PieceType.Rook;
+                                current += Mathf.Max(0, weights.bishopWeight);
+                                if (roll < current) return PieceType.Bishop;
+                                return PieceType.Knight;
+                        }
+                }
+
                 int rand = Random.Range(0, 100);
                 if (rand < 40) return PieceType.Pawn;
                 if (rand < 60) return PieceType.Knight;
@@ -466,5 +595,65 @@ public class ShopManager : MonoBehaviour
                 }
 
                 return prices[type];
+        }
+
+        public void TryRerollShop()
+        {
+                if (GameProgress.Instance == null)
+                {
+                        return;
+                }
+
+                int cost = economyConfig != null ? economyConfig.rerollCost : 0;
+                if (cost > 0 && GameProgress.Instance.coins < cost)
+                {
+                        Debug.Log("Nie stać Cię na przelosowanie sklepu!");
+                        return;
+                }
+
+                if (cost > 0)
+                {
+                        GameProgress.Instance.SpendCoins(cost);
+                }
+
+                RefillShop();
+                UpdateUI();
+        }
+
+        private Button CreateRerollButton()
+        {
+                Canvas canvas = FindObjectOfType<Canvas>();
+                if (canvas == null)
+                {
+                        return null;
+                }
+
+                GameObject buttonObject = new GameObject("RerollButton", typeof(RectTransform), typeof(Image), typeof(Button));
+                buttonObject.transform.SetParent(canvas.transform, false);
+
+                RectTransform rect = buttonObject.GetComponent<RectTransform>();
+                rect.anchorMin = new Vector2(1f, 1f);
+                rect.anchorMax = new Vector2(1f, 1f);
+                rect.pivot = new Vector2(1f, 1f);
+                rect.sizeDelta = new Vector2(220f, 60f);
+                rect.anchoredPosition = new Vector2(-30f, -30f);
+
+                Image image = buttonObject.GetComponent<Image>();
+                image.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
+
+                GameObject labelObject = new GameObject("Label", typeof(TextMeshProUGUI));
+                labelObject.transform.SetParent(buttonObject.transform, false);
+                TextMeshProUGUI label = labelObject.GetComponent<TextMeshProUGUI>();
+                label.alignment = TextAlignmentOptions.Center;
+                label.fontSize = 24;
+                label.color = Color.white;
+
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = Vector2.zero;
+                labelRect.offsetMax = Vector2.zero;
+
+                return buttonObject.GetComponent<Button>();
         }
 }

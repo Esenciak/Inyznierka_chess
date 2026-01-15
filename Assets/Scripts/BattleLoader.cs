@@ -31,13 +31,21 @@ public class BattleLoader : MonoBehaviour
                         var session = BattleSession.Instance;
                         float waitTime = 0f;
                         while (session != null
-                                && session.HostArmy.Count == 0
-                                && session.ClientArmy.Count == 0
-                                && !(session.IsHostReady.Value && session.IsClientReady.Value)
-                                && waitTime < 3f)
+                                && waitTime < 10f
+                                && (!session.IsHostReady.Value || !session.IsClientReady.Value
+                                        || (session.HostArmy.Count == 0 && session.ClientArmy.Count == 0)))
                         {
                                 waitTime += Time.deltaTime;
                                 yield return null;
+                        }
+
+                        if (session == null
+                                || !session.IsHostReady.Value
+                                || !session.IsClientReady.Value
+                                || (session.HostArmy.Count == 0 && session.ClientArmy.Count == 0))
+                        {
+                                Debug.LogWarning("Brak danych armii w trybie multiplayer - przerywam ładowanie bitwy.");
+                                yield break;
                         }
                 }
 
@@ -50,7 +58,7 @@ public class BattleLoader : MonoBehaviour
                         && GameManager.Instance.isMultiplayer
                         && BattleSession.Instance != null
                         && NetworkManager.Singleton != null
-                        && NetworkManager.Singleton.IsListening;
+                        && (NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsClient);
 
                 if (isMultiplayerActive)
                 {
@@ -106,8 +114,7 @@ public class BattleLoader : MonoBehaviour
 
                 if (myArmy.Count == 0 && enemyArmy.Count == 0)
                 {
-                        Debug.LogWarning("Brak danych armii w trybie multiplayer. Generuję armię testową.");
-                        GenerateDebugArmy();
+                        Debug.LogWarning("Brak danych armii w trybie multiplayer. Przerywam ładowanie.");
                         return;
                 }
 
@@ -191,6 +198,12 @@ public class BattleLoader : MonoBehaviour
         {
                 bool localWhite = GameProgress.Instance == null || GameProgress.Instance.IsLocalPlayerWhite();
                 bool isLocalPiece = owner == PieceOwner.Player;
+
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                        bool localIsHost = NetworkManager.Singleton.IsHost;
+                        isLocalPiece = localIsHost ? owner == PieceOwner.Player : owner == PieceOwner.Enemy;
+                }
 
                 if (localWhite)
                 {
