@@ -8,7 +8,7 @@
   - Layers:
     - Default, TransparentFX, Ignore Raycast, Water, UI, LogicTile, Background, Tile, Piece
 - Active game object:
-  - Name: Buttons
+  - Name: Custom ID
   - Tag: Untagged
   - Layer: UI
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->

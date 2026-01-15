@@ -1,42 +1,54 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Unity.Services.Authentication;
+using UnityEngine;
+using UnityEngine.UI; // Zostaw to dla Buttonów
+using TMPro; // <--- DODAJ TO KONIECZNIE!
+
+// Pakiety Unity Services
 using Unity.Services.Core;
+using Unity.Services.Authentication;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
+using Unity.Services.Relay;
+using Unity.Services.Relay.Models;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Networking.Transport.Relay;
-using Unity.Services.Relay;
-using Unity.Services.Relay.Models;
-using UnityEngine;
-using UnityEngine.UI;
 
 
 
 public class LobbyMenu : MonoBehaviour
 {
-        private const string PlayerNameKey = "name";
-        private const string SessionCodeKey = "sessionCode";
-        private const string AuthIdPrefsKey = "AuthId";
-        private const string PlayerNamePrefsKey = "PlayerName";
-        private const string RelayConnectionType = "dtls";
-        [Header("UI References")]
-        [SerializeField] private InputField customIdInput;
-        [SerializeField] private InputField lobbyNameInput;
-        [SerializeField] private Dropdown lobbyDropdown;
-        [SerializeField] private Text statusText;
-        [SerializeField] private Text activePlayersText;
-        [SerializeField] private Button loginButton;
-        [SerializeField] private Button createLobbyButton;
-        [SerializeField] private Button joinLobbyButton;
-        [SerializeField] private Button refreshButton;
-        [SerializeField] private Button quickPlayButton;
-        [SerializeField] private GameObject loginPanel;
-        [SerializeField] private GameObject lobbyPanel;
+	private const string PlayerNameKey = "name";
+	private const string SessionCodeKey = "sessionCode";
+	private const string AuthIdPrefsKey = "AuthId";
+	private const string PlayerNamePrefsKey = "PlayerName";
+	private const string RelayConnectionType = "dtls";
 
-        [Header("Networking")]
+	[Header("UI References")]
+	// ZMIANA: InputField -> TMP_InputField
+	[SerializeField] private TMP_InputField customIdInput;
+	[SerializeField] private TMP_InputField lobbyNameInput;
+
+	// ZMIANA: Dropdown -> TMP_Dropdown
+	[SerializeField] private TMP_Dropdown lobbyDropdown;
+
+	// ZMIANA: Text -> TMP_Text
+	[SerializeField] private TMP_Text statusText;
+	[SerializeField] private TMP_Text activePlayersText;
+
+	// Buttony zostają bez zmian (Unity używa tych samych buttonów dla obu systemów)
+	[SerializeField] private Button loginButton;
+	[SerializeField] private Button createLobbyButton;
+	[SerializeField] private Button joinLobbyButton;
+	[SerializeField] private Button refreshButton;
+	[SerializeField] private Button quickPlayButton; // Jeśli masz
+
+	[SerializeField] private GameObject loginPanel;
+	[SerializeField] private GameObject lobbyPanel;
+
+	[Header("Networking")]
         [SerializeField] private ConnectionMenu connectionMenu;
 
         private readonly List<Lobby> availableLobbies = new List<Lobby>();
