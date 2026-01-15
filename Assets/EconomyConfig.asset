@@ -22,6 +22,105 @@ MonoBehaviour:
   rookPrice: 50
   bishopPrice: 40
   knightPrice: 25
+  pricesByRound:
+  - roundNumber: 1
+    pawnPrice: 1
+    kingPrice: 0
+    queenPrice: 1
+    rookPrice: 1
+    bishopPrice: 1
+    knightPrice: 1
+  - roundNumber: 2
+    pawnPrice: 2
+    kingPrice: 0
+    queenPrice: 2
+    rookPrice: 2
+    bishopPrice: 2
+    knightPrice: 2
+  - roundNumber: 3
+    pawnPrice: 3
+    kingPrice: 0
+    queenPrice: 3
+    rookPrice: 3
+    bishopPrice: 3
+    knightPrice: 3
+  - roundNumber: 4
+    pawnPrice: 4
+    kingPrice: 0
+    queenPrice: 4
+    rookPrice: 4
+    bishopPrice: 4
+    knightPrice: 4
+  - roundNumber: 5
+    pawnPrice: 5
+    kingPrice: 0
+    queenPrice: 5
+    rookPrice: 5
+    bishopPrice: 5
+    knightPrice: 5
+  - roundNumber: 5
+    pawnPrice: 5
+    kingPrice: 0
+    queenPrice: 5
+    rookPrice: 5
+    bishopPrice: 5
+    knightPrice: 5
+  - roundNumber: 6
+    pawnPrice: 6
+    kingPrice: 0
+    queenPrice: 6
+    rookPrice: 6
+    bishopPrice: 6
+    knightPrice: 6
+  - roundNumber: 7
+    pawnPrice: 7
+    kingPrice: 0
+    queenPrice: 7
+    rookPrice: 7
+    bishopPrice: 7
+    knightPrice: 7
+  - roundNumber: 7
+    pawnPrice: 7
+    kingPrice: 0
+    queenPrice: 7
+    rookPrice: 7
+    bishopPrice: 7
+    knightPrice: 7
+  - roundNumber: 7
+    pawnPrice: 7
+    kingPrice: 0
+    queenPrice: 7
+    rookPrice: 7
+    bishopPrice: 7
+    knightPrice: 7
+  cashRewardsByRound:
+  - roundNumber: 1
+    winReward: 1
+    loseReward: 2
+  - roundNumber: 2
+    winReward: 2
+    loseReward: 4
+  - roundNumber: 3
+    winReward: 3
+    loseReward: 4
+  - roundNumber: 4
+    winReward: 3
+    loseReward: 4
+  - roundNumber: 5
+    winReward: 3
+    loseReward: 4
+  - roundNumber: 6
+    winReward: 3
+    loseReward: 4
+  - roundNumber: 7
+    winReward: 3
+    loseReward: 4
+  - roundNumber: 8
+    winReward: 3
+    loseReward: 4
+  - roundNumber: 9
+    winReward: 3
+    loseReward: 4
   spawnWeightsByRound:
   - roundNumber: 1
     pawnWeight: 50
