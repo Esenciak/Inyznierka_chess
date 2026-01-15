@@ -78,6 +78,8 @@ public class LobbyMenu : MonoBehaviour
         private void Start()
         {
                 InitializeNameInput();
+                ConfigureInputField(customIdInput);
+                ConfigureInputField(lobbyNameInput);
                 UpdatePanelVisibility(AuthenticationService.Instance.IsSignedIn);
                 StartLobbyPolling();
                 if (createLobbyButton != null)
@@ -161,6 +163,9 @@ public class LobbyMenu : MonoBehaviour
 
                 activePlayersText = CreateLabel(lobbyPanel.transform, "ActivePlayers", string.Empty, 20, TextAlignmentOptions.Left);
                 SetAnchors(activePlayersText.rectTransform, new Vector2(0.08f, 0.15f), new Vector2(0.92f, 0.2f));
+
+                ConfigureInputField(customIdInput);
+                ConfigureInputField(lobbyNameInput);
         }
 
         private GameObject CreatePanel(Transform parent, string name, Vector2 anchoredPosition, Vector2 size)
@@ -256,6 +261,93 @@ public class LobbyMenu : MonoBehaviour
                 input.lineType = TMP_InputField.LineType.SingleLine;
                 input.characterLimit = 32;
                 return input;
+        }
+
+        private void ConfigureInputField(TMP_InputField input)
+        {
+                if (input == null)
+                {
+                        return;
+                }
+
+                TMP_FontAsset fallbackFont = TMP_Settings.defaultFontAsset;
+                if (fallbackFont == null)
+                {
+                        fallbackFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+                }
+
+                if (input.textViewport == null)
+                {
+                        Transform viewport = input.transform.Find("Viewport");
+                        if (viewport != null)
+                        {
+                                input.textViewport = viewport.GetComponent<RectTransform>();
+                        }
+                }
+
+                if (input.textComponent == null || input.placeholder == null)
+                {
+                        TextMeshProUGUI[] texts = input.GetComponentsInChildren<TextMeshProUGUI>(true);
+                        foreach (TextMeshProUGUI candidate in texts)
+                        {
+                                if (candidate == null)
+                                {
+                                        continue;
+                                }
+
+                                string lowerName = candidate.name.ToLowerInvariant();
+                                if (input.textComponent == null && lowerName == "text")
+                                {
+                                        input.textComponent = candidate;
+                                }
+                                else if (input.placeholder == null && lowerName.Contains("placeholder"))
+                                {
+                                        input.placeholder = candidate;
+                                }
+                        }
+
+                        if (input.textComponent == null)
+                        {
+                                foreach (TextMeshProUGUI candidate in texts)
+                                {
+                                        if (candidate != null && !candidate.name.ToLowerInvariant().Contains("placeholder"))
+                                        {
+                                                input.textComponent = candidate;
+                                                break;
+                                        }
+                                }
+                        }
+
+                        if (input.placeholder == null)
+                        {
+                                foreach (TextMeshProUGUI candidate in texts)
+                                {
+                                        if (candidate != null && candidate.name.ToLowerInvariant().Contains("placeholder"))
+                                        {
+                                                input.placeholder = candidate;
+                                                break;
+                                        }
+                                }
+                        }
+                }
+
+                if (input.textComponent != null)
+                {
+                        if (fallbackFont != null)
+                        {
+                                input.textComponent.font = fallbackFont;
+                        }
+                        input.textComponent.color = Color.white;
+                }
+
+                if (input.placeholder is TextMeshProUGUI placeholder)
+                {
+                        if (fallbackFont != null)
+                        {
+                                placeholder.font = fallbackFont;
+                        }
+                        placeholder.color = new Color(1f, 1f, 1f, 0.5f);
+                }
         }
 
         private Button CreateButton(Transform parent, string name, string label)
