@@ -326,8 +326,9 @@ public class GameManager : MonoBehaviour
                 if (GameProgress.Instance != null)
                 {
                         UpdateArmyAfterBattle();
-                        int winValue = economyConfig != null ? economyConfig.winReward : winReward;
-                        int loseValue = economyConfig != null ? economyConfig.loseReward : loseReward;
+                        int roundNumber = GameProgress.Instance.gamesPlayed + 1;
+                        int winValue = economyConfig != null ? economyConfig.GetWinReward(roundNumber) : winReward;
+                        int loseValue = economyConfig != null ? economyConfig.GetLoseReward(roundNumber) : loseReward;
                         GameProgress.Instance.CompleteRound(playerWon, winValue, loseValue);
                         if (GameProgress.Instance.gamesPlayed >= 9)
                         {
