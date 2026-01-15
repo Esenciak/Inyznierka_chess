@@ -10,30 +10,23 @@ public class SceneExitPrompt : MonoBehaviour
 {
         [Header("Tryb")]
         [SerializeField] private bool isBattleScene = true;
-        [SerializeField] private bool showResignButtonInShop = true;
 
         [Header("Teksty")]
         [SerializeField] private string battlePromptText = "Czy chcesz się poddać?";
         [SerializeField] private string shopPromptText = "Czy chcesz wyjść?";
         [SerializeField] private string confirmLabel = "Tak";
         [SerializeField] private string cancelLabel = "Nie";
-        [SerializeField] private string resignButtonLabel = "Poddaj się";
 
         private GameObject promptRoot;
         private Canvas promptCanvas;
         private TextMeshProUGUI promptLabel;
         private Button confirmButton;
         private Button cancelButton;
-        private Button resignButton;
 
         private void Start()
         {
                 EnsureSingleEventSystem();
                 BuildPromptUI();
-                if (isBattleScene || showResignButtonInShop)
-                {
-                        BuildResignButton();
-                }
                 SetPromptVisible(false);
         }
 
@@ -107,22 +100,6 @@ public class SceneExitPrompt : MonoBehaviour
 
                 confirmButton.onClick.AddListener(OnConfirm);
                 cancelButton.onClick.AddListener(() => SetPromptVisible(false));
-        }
-
-        private void BuildResignButton()
-        {
-                if (promptRoot == null)
-                {
-                        return;
-                }
-
-                if (promptCanvas == null)
-                {
-                        return;
-                }
-
-                resignButton = CreateButton(promptCanvas.transform, "ResignButton", resignButtonLabel, new Vector2(0.78f, 0.9f), new Vector2(0.97f, 0.98f));
-                resignButton.onClick.AddListener(() => SetPromptVisible(true));
         }
 
         private Button CreateButton(Transform parent, string name, string label, Vector2 anchorMin, Vector2 anchorMax)

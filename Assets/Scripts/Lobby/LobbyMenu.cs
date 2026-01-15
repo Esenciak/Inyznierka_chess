@@ -215,6 +215,10 @@ public class LobbyMenu : MonoBehaviour
                 text.fontSize = 24;
                 text.alignment = TextAlignmentOptions.Left;
                 text.color = Color.white;
+                if (TMP_Settings.defaultFontAsset != null)
+                {
+                        text.font = TMP_Settings.defaultFontAsset;
+                }
                 RectTransform textRect = textObject.GetComponent<RectTransform>();
                 textRect.anchorMin = Vector2.zero;
                 textRect.anchorMax = Vector2.one;
@@ -228,6 +232,10 @@ public class LobbyMenu : MonoBehaviour
                 placeholder.fontSize = 24;
                 placeholder.alignment = TextAlignmentOptions.Left;
                 placeholder.color = new Color(1f, 1f, 1f, 0.5f);
+                if (TMP_Settings.defaultFontAsset != null)
+                {
+                        placeholder.font = TMP_Settings.defaultFontAsset;
+                }
                 RectTransform placeholderRect = placeholderObject.GetComponent<RectTransform>();
                 placeholderRect.anchorMin = Vector2.zero;
                 placeholderRect.anchorMax = Vector2.one;
