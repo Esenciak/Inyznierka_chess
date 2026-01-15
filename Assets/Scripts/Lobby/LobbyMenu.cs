@@ -211,13 +211,19 @@ public class LobbyMenu : MonoBehaviour
 
                 GameObject textObject = new GameObject("Text", typeof(TextMeshProUGUI));
                 textObject.transform.SetParent(viewport.transform, false);
+                TMP_FontAsset fallbackFont = TMP_Settings.defaultFontAsset;
+                if (fallbackFont == null)
+                {
+                        fallbackFont = Resources.Load<TMP_FontAsset>("Fonts & Materials/LiberationSans SDF");
+                }
+
                 TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
                 text.fontSize = 24;
                 text.alignment = TextAlignmentOptions.Left;
                 text.color = Color.white;
-                if (TMP_Settings.defaultFontAsset != null)
+                if (fallbackFont != null)
                 {
-                        text.font = TMP_Settings.defaultFontAsset;
+                        text.font = fallbackFont;
                 }
                 RectTransform textRect = textObject.GetComponent<RectTransform>();
                 textRect.anchorMin = Vector2.zero;
@@ -232,9 +238,9 @@ public class LobbyMenu : MonoBehaviour
                 placeholder.fontSize = 24;
                 placeholder.alignment = TextAlignmentOptions.Left;
                 placeholder.color = new Color(1f, 1f, 1f, 0.5f);
-                if (TMP_Settings.defaultFontAsset != null)
+                if (fallbackFont != null)
                 {
-                        placeholder.font = TMP_Settings.defaultFontAsset;
+                        placeholder.font = fallbackFont;
                 }
                 RectTransform placeholderRect = placeholderObject.GetComponent<RectTransform>();
                 placeholderRect.anchorMin = Vector2.zero;
