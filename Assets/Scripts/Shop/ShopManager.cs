@@ -647,6 +647,7 @@ public class ShopManager : MonoBehaviour
                 label.alignment = TextAlignmentOptions.Center;
                 label.fontSize = 24;
                 label.color = Color.white;
+                label.text = "Przelosuj";
 
                 RectTransform labelRect = labelObject.GetComponent<RectTransform>();
                 labelRect.anchorMin = Vector2.zero;

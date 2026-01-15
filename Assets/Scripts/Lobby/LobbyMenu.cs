@@ -37,6 +37,7 @@ public class LobbyMenu : MonoBehaviour
 	// ZMIANA: Text -> TMP_Text
 	[SerializeField] private TMP_Text statusText;
 	[SerializeField] private TMP_Text activePlayersText;
+	[SerializeField] private Transform lobbyListParent;
 
 	// Buttony zostają bez zmian (Unity używa tych samych buttonów dla obu systemów)
 	[SerializeField] private Button loginButton;
@@ -61,6 +62,7 @@ public class LobbyMenu : MonoBehaviour
         private Coroutine lobbyListPollCoroutine;
         private DateTime nextLobbyRefreshAllowedAt = DateTime.MinValue;
         private const float LobbyListPollIntervalSeconds = 30f;
+        private readonly List<GameObject> lobbyListEntries = new List<GameObject>();
 
         public void SetConnectionMenu(ConnectionMenu menu)
         {
@@ -69,6 +71,7 @@ public class LobbyMenu : MonoBehaviour
 
         private async void Awake()
         {
+                BuildLobbyUiIfMissing();
                 await InitializeServicesAsync();
         }
 
@@ -87,6 +90,188 @@ public class LobbyMenu : MonoBehaviour
                         refreshButton.onClick.AddListener(() => RunSafe(RefreshLobbiesAsync()));
                 if (quickPlayButton != null)
                         quickPlayButton.onClick.AddListener(() => RunSafe(QuickPlayAsync()));
+        }
+
+        private void BuildLobbyUiIfMissing()
+        {
+                if (customIdInput != null || lobbyPanel != null || loginPanel != null)
+                {
+                        return;
+                }
+
+                GameObject canvasObject = new GameObject("LobbyCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+                Canvas canvas = canvasObject.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920, 1080);
+
+                loginPanel = CreatePanel(canvas.transform, "LoginPanel", new Vector2(0.5f, 0.5f), new Vector2(600f, 280f));
+                TMP_Text loginTitle = CreateLabel(loginPanel.transform, "LoginTitle", "Relay Lobby", 42, TextAlignmentOptions.Center);
+                SetAnchors(loginTitle.rectTransform, new Vector2(0.1f, 0.72f), new Vector2(0.9f, 0.95f));
+                customIdInput = CreateInputField(loginPanel.transform, "NicknameInput", "Wpisz nick");
+                SetAnchors(customIdInput.GetComponent<RectTransform>(), new Vector2(0.15f, 0.45f), new Vector2(0.85f, 0.65f));
+
+                loginButton = CreateButton(loginPanel.transform, "LoginButton", "Zaloguj");
+                SetAnchors(loginButton.GetComponent<RectTransform>(), new Vector2(0.3f, 0.15f), new Vector2(0.7f, 0.35f));
+
+                lobbyPanel = CreatePanel(canvas.transform, "LobbyPanel", new Vector2(0.5f, 0.5f), new Vector2(860f, 720f));
+                TMP_Text lobbyTitle = CreateLabel(lobbyPanel.transform, "LobbyTitle", "Lobby", 42, TextAlignmentOptions.Center);
+                SetAnchors(lobbyTitle.rectTransform, new Vector2(0.1f, 0.88f), new Vector2(0.9f, 0.98f));
+
+                TMP_Text lobbyNameLabel = CreateLabel(lobbyPanel.transform, "LobbyNameLabel", "Nazwa lobby:", 26, TextAlignmentOptions.Left);
+                SetAnchors(lobbyNameLabel.rectTransform, new Vector2(0.08f, 0.78f), new Vector2(0.4f, 0.86f));
+
+                lobbyNameInput = CreateInputField(lobbyPanel.transform, "LobbyNameInput", "Np. Lobby-1234");
+                SetAnchors(lobbyNameInput.GetComponent<RectTransform>(), new Vector2(0.08f, 0.7f), new Vector2(0.55f, 0.78f));
+
+                createLobbyButton = CreateButton(lobbyPanel.transform, "CreateLobbyButton", "Hostuj");
+                SetAnchors(createLobbyButton.GetComponent<RectTransform>(), new Vector2(0.6f, 0.7f), new Vector2(0.92f, 0.78f));
+
+                refreshButton = CreateButton(lobbyPanel.transform, "RefreshButton", "Odśwież");
+                SetAnchors(refreshButton.GetComponent<RectTransform>(), new Vector2(0.08f, 0.6f), new Vector2(0.35f, 0.68f));
+
+                quickPlayButton = CreateButton(lobbyPanel.transform, "QuickPlayButton", "Quick Play");
+                SetAnchors(quickPlayButton.GetComponent<RectTransform>(), new Vector2(0.38f, 0.6f), new Vector2(0.65f, 0.68f));
+
+                joinLobbyButton = CreateButton(lobbyPanel.transform, "JoinLobbyButton", "Dołącz");
+                SetAnchors(joinLobbyButton.GetComponent<RectTransform>(), new Vector2(0.68f, 0.6f), new Vector2(0.92f, 0.68f));
+
+                TMP_Text listLabel = CreateLabel(lobbyPanel.transform, "LobbyListLabel", "Dostępne lobby:", 24, TextAlignmentOptions.Left);
+                SetAnchors(listLabel.rectTransform, new Vector2(0.08f, 0.52f), new Vector2(0.6f, 0.58f));
+
+                GameObject listObject = new GameObject("LobbyList", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+                lobbyListParent = listObject.transform;
+                listObject.transform.SetParent(lobbyPanel.transform, false);
+                RectTransform listRect = listObject.GetComponent<RectTransform>();
+                SetAnchors(listRect, new Vector2(0.08f, 0.2f), new Vector2(0.92f, 0.52f));
+                Image listImage = listObject.GetComponent<Image>();
+                listImage.color = new Color(0f, 0f, 0f, 0.35f);
+                VerticalLayoutGroup layout = listObject.GetComponent<VerticalLayoutGroup>();
+                layout.spacing = 8f;
+                layout.childControlHeight = true;
+                layout.childControlWidth = true;
+                layout.childForceExpandHeight = false;
+                layout.childForceExpandWidth = true;
+                ContentSizeFitter fitter = listObject.GetComponent<ContentSizeFitter>();
+                fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+                statusText = CreateLabel(lobbyPanel.transform, "LobbyStatus", string.Empty, 22, TextAlignmentOptions.Left);
+                SetAnchors(statusText.rectTransform, new Vector2(0.08f, 0.05f), new Vector2(0.92f, 0.15f));
+
+                activePlayersText = CreateLabel(lobbyPanel.transform, "ActivePlayers", string.Empty, 20, TextAlignmentOptions.Left);
+                SetAnchors(activePlayersText.rectTransform, new Vector2(0.08f, 0.15f), new Vector2(0.92f, 0.2f));
+        }
+
+        private GameObject CreatePanel(Transform parent, string name, Vector2 anchoredPosition, Vector2 size)
+        {
+                GameObject panel = new GameObject(name, typeof(RectTransform), typeof(Image));
+                panel.transform.SetParent(parent, false);
+                RectTransform rect = panel.GetComponent<RectTransform>();
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = anchoredPosition;
+                rect.sizeDelta = size;
+                Image image = panel.GetComponent<Image>();
+                image.color = new Color(0f, 0f, 0f, 0.6f);
+                return panel;
+        }
+
+        private TMP_Text CreateLabel(Transform parent, string name, string text, int fontSize, TextAlignmentOptions alignment)
+        {
+                GameObject labelObject = new GameObject(name, typeof(TextMeshProUGUI));
+                labelObject.transform.SetParent(parent, false);
+                TextMeshProUGUI label = labelObject.GetComponent<TextMeshProUGUI>();
+                label.text = text;
+                label.fontSize = fontSize;
+                label.alignment = alignment;
+                label.color = Color.white;
+                return label;
+        }
+
+        private TMP_InputField CreateInputField(Transform parent, string name, string placeholderText)
+        {
+                GameObject inputObject = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(TMP_InputField));
+                inputObject.transform.SetParent(parent, false);
+                Image image = inputObject.GetComponent<Image>();
+                image.color = new Color(0.15f, 0.15f, 0.15f, 0.9f);
+
+                GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(Mask));
+                viewport.transform.SetParent(inputObject.transform, false);
+                RectTransform viewportRect = viewport.GetComponent<RectTransform>();
+                viewportRect.anchorMin = Vector2.zero;
+                viewportRect.anchorMax = Vector2.one;
+                viewportRect.offsetMin = new Vector2(10f, 6f);
+                viewportRect.offsetMax = new Vector2(-10f, -6f);
+                Image viewportImage = viewport.GetComponent<Image>();
+                viewportImage.color = new Color(0f, 0f, 0f, 0f);
+                Mask viewportMask = viewport.GetComponent<Mask>();
+                viewportMask.showMaskGraphic = false;
+
+                GameObject textObject = new GameObject("Text", typeof(TextMeshProUGUI));
+                textObject.transform.SetParent(viewport.transform, false);
+                TextMeshProUGUI text = textObject.GetComponent<TextMeshProUGUI>();
+                text.fontSize = 24;
+                text.alignment = TextAlignmentOptions.Left;
+                text.color = Color.white;
+                RectTransform textRect = textObject.GetComponent<RectTransform>();
+                textRect.anchorMin = Vector2.zero;
+                textRect.anchorMax = Vector2.one;
+                textRect.offsetMin = Vector2.zero;
+                textRect.offsetMax = Vector2.zero;
+
+                GameObject placeholderObject = new GameObject("Placeholder", typeof(TextMeshProUGUI));
+                placeholderObject.transform.SetParent(viewport.transform, false);
+                TextMeshProUGUI placeholder = placeholderObject.GetComponent<TextMeshProUGUI>();
+                placeholder.text = placeholderText;
+                placeholder.fontSize = 24;
+                placeholder.alignment = TextAlignmentOptions.Left;
+                placeholder.color = new Color(1f, 1f, 1f, 0.5f);
+                RectTransform placeholderRect = placeholderObject.GetComponent<RectTransform>();
+                placeholderRect.anchorMin = Vector2.zero;
+                placeholderRect.anchorMax = Vector2.one;
+                placeholderRect.offsetMin = Vector2.zero;
+                placeholderRect.offsetMax = Vector2.zero;
+
+                TMP_InputField input = inputObject.GetComponent<TMP_InputField>();
+                input.textViewport = viewportRect;
+                input.textComponent = text;
+                input.placeholder = placeholder;
+                input.pointSize = 24;
+                input.lineType = TMP_InputField.LineType.SingleLine;
+                input.characterLimit = 32;
+                return input;
+        }
+
+        private Button CreateButton(Transform parent, string name, string label)
+        {
+                GameObject buttonObject = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
+                buttonObject.transform.SetParent(parent, false);
+                Image image = buttonObject.GetComponent<Image>();
+                image.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
+
+                GameObject labelObject = new GameObject("Label", typeof(TextMeshProUGUI));
+                labelObject.transform.SetParent(buttonObject.transform, false);
+                TextMeshProUGUI labelText = labelObject.GetComponent<TextMeshProUGUI>();
+                labelText.text = label;
+                labelText.fontSize = 26;
+                labelText.alignment = TextAlignmentOptions.Center;
+                labelText.color = Color.white;
+                RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = Vector2.zero;
+                labelRect.offsetMax = Vector2.zero;
+                return buttonObject.GetComponent<Button>();
+        }
+
+        private void SetAnchors(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax)
+        {
+                rect.anchorMin = anchorMin;
+                rect.anchorMax = anchorMax;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
         }
 
         private async Task InitializeServicesAsync()
@@ -480,7 +665,10 @@ public class LobbyMenu : MonoBehaviour
         private void UpdateLobbyDropdown()
         {
                 if (lobbyDropdown == null)
+                {
+                        UpdateLobbyListButtons();
                         return;
+                }
 
                 lobbyDropdown.ClearOptions();
                 List<string> options = new List<string>();
@@ -489,6 +677,58 @@ public class LobbyMenu : MonoBehaviour
                         options.Add($"{lobby.Name} ({lobby.Players.Count}/2)");
                 }
                 lobbyDropdown.AddOptions(options);
+        }
+
+        private void UpdateLobbyListButtons()
+        {
+                if (lobbyListParent == null)
+                {
+                        return;
+                }
+
+                foreach (GameObject entry in lobbyListEntries)
+                {
+                        if (entry != null)
+                        {
+                                Destroy(entry);
+                        }
+                }
+                lobbyListEntries.Clear();
+
+                foreach (Lobby lobby in availableLobbies)
+                {
+                        GameObject entry = new GameObject($"LobbyEntry_{lobby.Name}", typeof(RectTransform), typeof(Image), typeof(Button));
+                        entry.transform.SetParent(lobbyListParent, false);
+                        Image background = entry.GetComponent<Image>();
+                        bool isSelected = lobby.Id == selectedLobbyId;
+                        background.color = isSelected ? new Color(0.35f, 0.35f, 0.35f, 0.9f) : new Color(0.2f, 0.2f, 0.2f, 0.8f);
+
+                        Button button = entry.GetComponent<Button>();
+                        button.onClick.AddListener(() =>
+                        {
+                                selectedLobbyId = lobby.Id;
+                                SetStatus($"Wybrano lobby: {lobby.Name}");
+                                UpdateLobbyListButtons();
+                        });
+
+                        GameObject labelObject = new GameObject("Label", typeof(TextMeshProUGUI));
+                        labelObject.transform.SetParent(entry.transform, false);
+                        TextMeshProUGUI label = labelObject.GetComponent<TextMeshProUGUI>();
+                        label.text = $"{lobby.Name} ({lobby.Players.Count}/2)";
+                        label.fontSize = 22;
+                        label.alignment = TextAlignmentOptions.Center;
+                        label.color = Color.white;
+                        RectTransform labelRect = labelObject.GetComponent<RectTransform>();
+                        labelRect.anchorMin = Vector2.zero;
+                        labelRect.anchorMax = Vector2.one;
+                        labelRect.offsetMin = Vector2.zero;
+                        labelRect.offsetMax = Vector2.zero;
+
+                        RectTransform entryRect = entry.GetComponent<RectTransform>();
+                        entryRect.sizeDelta = new Vector2(0f, 46f);
+
+                        lobbyListEntries.Add(entry);
+                }
         }
 
         private void UpdateActivePlayersCount()

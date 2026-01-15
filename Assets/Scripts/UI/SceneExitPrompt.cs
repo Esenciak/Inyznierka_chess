@@ -10,6 +10,7 @@ public class SceneExitPrompt : MonoBehaviour
 {
         [Header("Tryb")]
         [SerializeField] private bool isBattleScene = true;
+        [SerializeField] private bool showResignButtonInShop = true;
 
         [Header("Teksty")]
         [SerializeField] private string battlePromptText = "Czy chcesz się poddać?";
@@ -29,7 +30,7 @@ public class SceneExitPrompt : MonoBehaviour
         {
                 EnsureSingleEventSystem();
                 BuildPromptUI();
-                if (isBattleScene)
+                if (isBattleScene || showResignButtonInShop)
                 {
                         BuildResignButton();
                 }
