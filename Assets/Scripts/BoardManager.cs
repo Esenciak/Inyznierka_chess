@@ -17,12 +17,6 @@ public class BoardManager : MonoBehaviour
 	public Color[] playerColors;
 	public Color[] enemyColors;
 
-	[Header("Kamera i tło")]
-	[SerializeField] private float cameraPadding = 1.5f;
-	[SerializeField] private float cameraBoardPadding = 0.5f;
-	[SerializeField] private float backgroundBlend = 0.5f;
-	[SerializeField] private float backgroundDarken = 0.35f;
-
 	[Header("Pozycje (Offsety)")]
 	public Vector2 playerOffset = new Vector2(0, -5);
 	public Vector2 enemyOffset = new Vector2(0, 5);
@@ -95,7 +89,6 @@ public class BoardManager : MonoBehaviour
 		if (sceneName == "Shop") GenerateShopLayout();
 		else GenerateBattleLayout();
 
-		AdjustCameraForBoard(sceneName);
 		IsReady = true;
 	}
 
@@ -114,8 +107,7 @@ public class BoardManager : MonoBehaviour
 
 		Color colorA = (playerColors != null && playerColors.Length > 0) ? playerColors[0] : Color.black;
 		Color colorB = (enemyColors != null && enemyColors.Length > 0) ? enemyColors[0] : colorA;
-		Color blended = Color.Lerp(colorA, colorB, backgroundBlend);
-		cam.backgroundColor = Color.Lerp(blended, Color.black, backgroundDarken);
+		cam.backgroundColor = Color.Lerp(colorA, colorB, 0.5f);
 	}
 
 	// --- Generowanie (Skrócone dla czytelnoci, logika bez zmian) ---
@@ -263,44 +255,6 @@ public class BoardManager : MonoBehaviour
 		playerOffset = new Vector2(playerOffsetX, playerOffsetY);
 		enemyOffset = new Vector2(playerOffsetX, enemyOffsetY);
 		centerOffset = new Vector2(0f, 0f);
-	}
-
-	private void AdjustCameraForBoard(string sceneName)
-	{
-		if (sceneName != "Battle" && sceneName != "Shop")
-		{
-			return;
-		}
-
-		Camera cam = Camera.main;
-		if (cam == null || !cam.orthographic)
-		{
-			return;
-		}
-
-		float minX = playerOffset.x;
-		float maxX = playerOffset.x + PlayerCols - 1;
-		float minY = playerOffset.y;
-		float maxY = playerOffset.y + PlayerRows - 1;
-
-		if (sceneName == "Battle")
-		{
-			minX = Mathf.Min(minX, enemyOffset.x, centerOffset.x);
-			maxX = Mathf.Max(maxX, enemyOffset.x + PlayerCols - 1, centerOffset.x + CenterCols - 1);
-			minY = Mathf.Min(minY, enemyOffset.y, centerOffset.y);
-			maxY = Mathf.Max(maxY, enemyOffset.y + PlayerRows - 1, centerOffset.y + CenterRows - 1);
-		}
-
-		float boardWidth = maxX - minX + 1f + cameraBoardPadding;
-		float boardHeight = maxY - minY + 1f + cameraBoardPadding;
-
-		Vector3 center = new Vector3((minX + maxX) * 0.5f, (minY + maxY) * 0.5f, cam.transform.position.z);
-		cam.transform.position = center;
-
-		float halfHeight = boardHeight * 0.5f + cameraPadding;
-		float halfWidth = boardWidth * 0.5f + cameraPadding;
-		float sizeByWidth = halfWidth / Mathf.Max(0.01f, cam.aspect);
-		cam.orthographicSize = Mathf.Max(halfHeight, sizeByWidth);
 	}
 
 	// --- PUBLIC API (Przywrócone metody) ---

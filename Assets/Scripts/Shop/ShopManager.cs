@@ -518,7 +518,7 @@ public class ShopManager : MonoBehaviour
                         TextMeshProUGUI label = rerollButton.GetComponentInChildren<TextMeshProUGUI>();
                         if (label != null)
                         {
-                                label.text = $"Losuj za: {cost} C";
+                                label.text = cost > 0 ? $"Przelosuj ({cost})" : "Przelosuj";
                         }
                 }
         }
@@ -635,8 +635,8 @@ public class ShopManager : MonoBehaviour
                 rect.anchorMin = new Vector2(1f, 1f);
                 rect.anchorMax = new Vector2(1f, 1f);
                 rect.pivot = new Vector2(1f, 1f);
-                rect.sizeDelta = new Vector2(300f, 100f);
-                rect.anchoredPosition = new Vector2(-210f, -700f);
+                rect.sizeDelta = new Vector2(220f, 60f);
+                rect.anchoredPosition = new Vector2(-30f, -30f);
 
                 Image image = buttonObject.GetComponent<Image>();
                 image.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
@@ -647,8 +647,7 @@ public class ShopManager : MonoBehaviour
                 label.alignment = TextAlignmentOptions.Center;
                 label.fontSize = 24;
                 label.color = Color.white;
-                int cost = economyConfig != null ? economyConfig.rerollCost : 0;
-                label.text = $"Losuj za: {cost} C";
+                label.text = "Przelosuj";
 
                 RectTransform labelRect = labelObject.GetComponent<RectTransform>();
                 labelRect.anchorMin = Vector2.zero;
