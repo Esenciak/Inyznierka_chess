@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44ff70435d124196abf748b25e2283e0, type: 3}
   m_Name: EconomyConfig
   m_EditorClassIdentifier: Assembly-CSharp::EconomyConfig
-  startingCoins: 100
+  startingCoins: 101
   winReward: 20
   loseReward: 10
-  rerollCost: 5
+  rerollCost: 10
   pawnPrice: 10
   kingPrice: 0
   queenPrice: 100

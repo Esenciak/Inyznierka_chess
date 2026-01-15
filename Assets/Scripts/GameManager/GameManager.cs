@@ -151,7 +151,9 @@ public class GameManager : MonoBehaviour
                 GameObject canvasObject = new GameObject("WinnerBannerCanvas");
                 var canvas = canvasObject.AddComponent<Canvas>();
                 canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-                canvasObject.AddComponent<CanvasScaler>();
+                canvas.overrideSorting =true;
+		        canvas.sortingOrder = -10;
+		        canvasObject.AddComponent<CanvasScaler>();
                 canvasObject.AddComponent<GraphicRaycaster>();
 
                 GameObject textObject = new GameObject("WinnerBannerText");
