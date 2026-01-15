@@ -211,6 +211,7 @@ public class LobbyMenu : MonoBehaviour
                 viewportRect.offsetMax = new Vector2(-10f, -6f);
                 Image viewportImage = viewport.GetComponent<Image>();
                 viewportImage.color = new Color(0f, 0f, 0f, 0f);
+                viewportImage.enabled = false;
                 Mask viewportMask = viewport.GetComponent<Mask>();
                 viewportMask.showMaskGraphic = false;
 
@@ -803,7 +804,7 @@ public class LobbyMenu : MonoBehaviour
 
                 foreach (Lobby lobby in availableLobbies)
                 {
-                        GameObject entry = new GameObject($"LobbyEntry_{lobby.Name}", typeof(RectTransform), typeof(Image), typeof(Button));
+                        GameObject entry = new GameObject($"LobbyEntry_{lobby.Name}", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
                         entry.transform.SetParent(lobbyListParent, false);
                         Image background = entry.GetComponent<Image>();
                         bool isSelected = lobby.Id == selectedLobbyId;
@@ -830,8 +831,9 @@ public class LobbyMenu : MonoBehaviour
                         labelRect.offsetMin = Vector2.zero;
                         labelRect.offsetMax = Vector2.zero;
 
-                        RectTransform entryRect = entry.GetComponent<RectTransform>();
-                        entryRect.sizeDelta = new Vector2(0f, 46f);
+                        LayoutElement layoutElement = entry.GetComponent<LayoutElement>();
+                        layoutElement.preferredHeight = 46f;
+                        layoutElement.minHeight = 46f;
 
                         lobbyListEntries.Add(entry);
                 }
