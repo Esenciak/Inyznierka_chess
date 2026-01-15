@@ -731,6 +731,10 @@ PrefabInstance:
       propertyPath: economyConfig
       value: 
       objectReference: {fileID: 11400000, guid: b4227d8144030254cae0e9d82c02057e, type: 2}
+    - target: {fileID: 375164036611864473, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      propertyPath: playerBoardSize
+      value: 3
+      objectReference: {fileID: 0}
     - target: {fileID: 606439090516140873, guid: 93d1033599e6a084c844e18969831caf, type: 3}
       propertyPath: economyConfig
       value: 
