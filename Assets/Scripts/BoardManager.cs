@@ -17,6 +17,12 @@ public class BoardManager : MonoBehaviour
 	public Color[] playerColors;
 	public Color[] enemyColors;
 
+	[Header("Kamera Bitwy")]
+	public float battleCameraPadding = 1.5f;
+	public float battleCameraMinSize = 6f;
+	[Range(0f, 1f)] public float battleBackgroundBlend = 0.5f;
+	[Range(0f, 1f)] public float battleBackgroundDarken = 0.35f;
+
 	[Header("Pozycje (Offsety)")]
 	public Vector2 playerOffset = new Vector2(0, -5);
 	public Vector2 enemyOffset = new Vector2(0, 5);
@@ -89,6 +95,11 @@ public class BoardManager : MonoBehaviour
 		if (sceneName == "Shop") GenerateShopLayout();
 		else GenerateBattleLayout();
 
+		if (sceneName == "Battle")
+		{
+			AdjustBattleCamera();
+		}
+
 		IsReady = true;
 	}
 
@@ -105,9 +116,10 @@ public class BoardManager : MonoBehaviour
 			return;
 		}
 
-		Color colorA = (playerColors != null && playerColors.Length > 0) ? playerColors[0] : Color.black;
-		Color colorB = (enemyColors != null && enemyColors.Length > 0) ? enemyColors[0] : colorA;
-		cam.backgroundColor = Color.Lerp(colorA, colorB, 0.5f);
+		Color colorA = AverageColors(playerColors, Color.black);
+		Color colorB = AverageColors(enemyColors, colorA);
+		Color blended = Color.Lerp(colorA, colorB, battleBackgroundBlend);
+		cam.backgroundColor = Color.Lerp(blended, Color.black, battleBackgroundDarken);
 	}
 
 	// --- Generowanie (Skrócone dla czytelnoci, logika bez zmian) ---
@@ -282,6 +294,45 @@ public class BoardManager : MonoBehaviour
 		underlayRenderer.color = Color.black;
 		underlayRenderer.sortingLayerID = tileRenderer.sortingLayerID;
 		underlayRenderer.sortingOrder = tileRenderer.sortingOrder - 1;
+	}
+
+	private void AdjustBattleCamera()
+	{
+		Camera cam = Camera.main;
+		if (cam == null || !cam.orthographic)
+		{
+			return;
+		}
+
+		float minX = Mathf.Min(playerOffset.x, enemyOffset.x, centerOffset.x);
+		float maxX = Mathf.Max(playerOffset.x + PlayerCols - 1, enemyOffset.x + PlayerCols - 1, centerOffset.x + CenterCols - 1);
+		float minY = playerOffset.y;
+		float maxY = enemyOffset.y + PlayerRows - 1;
+
+		float centerX = (minX + maxX) * 0.5f;
+		float centerY = (minY + maxY) * 0.5f;
+		cam.transform.position = new Vector3(centerX, centerY, cam.transform.position.z);
+
+		float halfHeight = (maxY - minY + 1) * 0.5f + battleCameraPadding;
+		float halfWidth = (maxX - minX + 1) * 0.5f + battleCameraPadding;
+		float targetSize = Mathf.Max(halfHeight, halfWidth / Mathf.Max(0.01f, cam.aspect));
+		cam.orthographicSize = Mathf.Max(battleCameraMinSize, targetSize);
+	}
+
+	private static Color AverageColors(Color[] colors, Color fallback)
+	{
+		if (colors == null || colors.Length == 0)
+		{
+			return fallback;
+		}
+
+		Color sum = Color.black;
+		for (int i = 0; i < colors.Length; i++)
+		{
+			sum += colors[i];
+		}
+
+		return sum / colors.Length;
 	}
 
 	public Tile GetTileGlobal(int globalRow, int globalCol)

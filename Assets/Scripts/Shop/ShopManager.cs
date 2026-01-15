@@ -127,6 +127,7 @@ public class ShopManager : MonoBehaviour
                 {
                         rerollButton.onClick.RemoveAllListeners();
                         rerollButton.onClick.AddListener(TryRerollShop);
+                        PositionRerollButton(rerollButton);
                 }
 
                 ToggleUI(true);
@@ -518,7 +519,7 @@ public class ShopManager : MonoBehaviour
                         TextMeshProUGUI label = rerollButton.GetComponentInChildren<TextMeshProUGUI>();
                         if (label != null)
                         {
-                                label.text = cost > 0 ? $"Przelosuj ({cost})" : "Przelosuj";
+                                label.text = $"Losuj za: {cost} C";
                         }
                 }
         }
@@ -632,11 +633,11 @@ public class ShopManager : MonoBehaviour
                 buttonObject.transform.SetParent(canvas.transform, false);
 
                 RectTransform rect = buttonObject.GetComponent<RectTransform>();
-                rect.anchorMin = new Vector2(1f, 1f);
-                rect.anchorMax = new Vector2(1f, 1f);
-                rect.pivot = new Vector2(1f, 1f);
+                rect.anchorMin = new Vector2(1f, 0f);
+                rect.anchorMax = new Vector2(1f, 0f);
+                rect.pivot = new Vector2(1f, 0f);
                 rect.sizeDelta = new Vector2(220f, 60f);
-                rect.anchoredPosition = new Vector2(-30f, -30f);
+                rect.anchoredPosition = new Vector2(-30f, 30f);
 
                 Image image = buttonObject.GetComponent<Image>();
                 image.color = new Color(0.2f, 0.2f, 0.2f, 0.9f);
@@ -647,7 +648,7 @@ public class ShopManager : MonoBehaviour
                 label.alignment = TextAlignmentOptions.Center;
                 label.fontSize = 24;
                 label.color = Color.white;
-                label.text = "Przelosuj";
+                label.text = "Losuj za: 0 C";
 
                 RectTransform labelRect = labelObject.GetComponent<RectTransform>();
                 labelRect.anchorMin = Vector2.zero;
@@ -656,5 +657,20 @@ public class ShopManager : MonoBehaviour
                 labelRect.offsetMax = Vector2.zero;
 
                 return buttonObject.GetComponent<Button>();
+        }
+
+        private void PositionRerollButton(Button button)
+        {
+                RectTransform rect = button.GetComponent<RectTransform>();
+                if (rect == null)
+                {
+                        return;
+                }
+
+                rect.anchorMin = new Vector2(1f, 0f);
+                rect.anchorMax = new Vector2(1f, 0f);
+                rect.pivot = new Vector2(1f, 0f);
+                rect.sizeDelta = new Vector2(220f, 60f);
+                rect.anchoredPosition = new Vector2(-30f, 30f);
         }
 }
