@@ -3,22 +3,22 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
 
-// To jest ta Twoja struktura danych (zamiast Stringa/Inta mamy obiekt)
-// [System.Serializable] jest KLUCZOWE - pozwala Unity widzieć i zapisywać tę klasę
+
+
 [System.Serializable]
 public class SavedPieceData
 {
-        public PieceType type; // Jaka to figura?
-        public int x;          // Kolumna (Col)
-        public int y;          // Wiersz (Row)
+        public PieceType type;
+        public int x;
+        public int y;
 }
 
 [System.Serializable]
 public class SavedInventoryData
 {
-        public PieceType type; // Jaka to figura?
-        public int row;        // Wiersz w inventory
-        public int col;        // Kolumna w inventory
+        public PieceType type;
+        public int row;
+        public int col;
 }
 
 public class GameProgress : MonoBehaviour
@@ -43,7 +43,7 @@ public class GameProgress : MonoBehaviour
         [Header("Ustawienia Planszy")]
         public int playerBoardSize = 3;
 
-        // Dynamiczny rozmiar środka
+
         public int centerBoardSize
         {
                 get
@@ -53,11 +53,11 @@ public class GameProgress : MonoBehaviour
                 }
         }
 
-        // --- PAMIĘĆ ARMII ---
-        // Tu trzymamy zapisany układ (to jest bezpieczniejsze niż GameObjecty)
+
+
         public List<SavedPieceData> myArmy = new List<SavedPieceData>();
 
-        // --- PAMIĘĆ INVENTORY ---
+
         public List<SavedInventoryData> inventoryPieces = new List<SavedInventoryData>();
 
         private void Awake()
@@ -68,7 +68,7 @@ public class GameProgress : MonoBehaviour
                         return;
                 }
                 Instance = this;
-                DontDestroyOnLoad(gameObject); // To sprawia, że GameProgress przetrwa zmianę sceny
+                DontDestroyOnLoad(gameObject);
 
                 if (economyConfig != null)
                 {

@@ -2,10 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
-using UnityEngine.UI; // Zostaw to dla Buttonów
-using TMPro; // <--- DODAJ TO KONIECZNIE!
+using UnityEngine.UI;
+using TMPro;
 
-// Pakiety Unity Services
 using Unity.Services.Core;
 using Unity.Services.Authentication;
 using Unity.Services.Lobbies;
@@ -27,30 +26,27 @@ public class LobbyMenu : MonoBehaviour
 	private const string RelayConnectionType = "dtls";
 
 	[Header("UI References")]
-	// ZMIANA: InputField -> TMP_InputField
 	[SerializeField] private TMP_InputField customIdInput;
 	[SerializeField] private TMP_InputField lobbyNameInput;
 
-	// ZMIANA: Dropdown -> TMP_Dropdown
 	[SerializeField] private TMP_Dropdown lobbyDropdown;
 
-	// ZMIANA: Text -> TMP_Text
 	[SerializeField] private TMP_Text statusText;
 	[SerializeField] private TMP_Text activePlayersText;
 	[SerializeField] private Transform lobbyListParent;
 
-	// Buttony zostają bez zmian (Unity używa tych samych buttonów dla obu systemów)
 	[SerializeField] private Button loginButton;
 	[SerializeField] private Button createLobbyButton;
 	[SerializeField] private Button joinLobbyButton;
 	[SerializeField] private Button refreshButton;
-	[SerializeField] private Button quickPlayButton; // Jeśli masz
+	[SerializeField] private Button quickPlayButton;
 
 	[SerializeField] private GameObject loginPanel;
 	[SerializeField] private GameObject lobbyPanel;
 
 	[Header("Networking")]
         [SerializeField] private ConnectionMenu connectionMenu;
+        [SerializeField] private string relayRegionOverride = string.Empty;
 
         private readonly List<Lobby> availableLobbies = new List<Lobby>();
         private Lobby currentLobby;
@@ -1095,7 +1091,9 @@ public class LobbyMenu : MonoBehaviour
         {
                 try
                 {
-                        Allocation allocation = await RelayService.Instance.CreateAllocationAsync(2);
+                        Allocation allocation = string.IsNullOrWhiteSpace(relayRegionOverride)
+                                ? await RelayService.Instance.CreateAllocationAsync(2)
+                                : await RelayService.Instance.CreateAllocationAsync(2, relayRegionOverride);
                         string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
                         ConfigureRelayTransport(new RelayServerData(allocation, RelayConnectionType));
                         return joinCode;
