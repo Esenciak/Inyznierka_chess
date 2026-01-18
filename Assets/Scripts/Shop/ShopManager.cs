@@ -592,7 +592,8 @@ public class ShopManager : MonoBehaviour
         {
                 if (economyConfig != null)
                 {
-                        return economyConfig.GetPrice(type);
+                        int roundNumber = GameProgress.Instance != null ? GameProgress.Instance.gamesPlayed + 1 : 1;
+                        return economyConfig.GetPrice(type, roundNumber);
                 }
 
                 return prices[type];
