@@ -13,9 +13,9 @@ public class ShopManager : MonoBehaviour
 
         [Header("Prefabrykaty")]
         public GameObject tilePrefab;
-        public GameObject priceTextPrefab; // Pusty obiekt z TextMeshPro (nie UI!)
+        public GameObject priceTextPrefab;
 
-        // 0:Pawn, 1:King, 2:Queen, 3:Rook, 4:Bishop, 5:Knight
+
         public GameObject[] piecePrefabs;
         public GameObject[] whitePiecePrefabs;
         public GameObject[] blackPiecePrefabs;
@@ -44,7 +44,7 @@ public class ShopManager : MonoBehaviour
                 { PieceType.Knight, 30 }
         };
 
-        // --- ZARZĄDZANIE SCENAMI ---
+
         private void OnEnable()
         {
                 SceneManager.sceneLoaded += OnSceneLoaded;
@@ -57,7 +57,7 @@ public class ShopManager : MonoBehaviour
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-                // Jeśli weszliśmy do Sklepu -> Generuj
+
                 if (scene.name == "Shop")
                 {
                         FindUIReferences();
@@ -65,14 +65,14 @@ public class ShopManager : MonoBehaviour
                 }
                 else
                 {
-                        // W Menu i Bitwie czyścimy sklep
+
                         CleanupShop();
                 }
         }
 
         private void Start()
         {
-                // Fallback: jeśli startujemy prosto ze sceny Shop
+
                 if (SceneManager.GetActiveScene().name == "Shop")
                 {
                         FindUIReferences();
@@ -86,8 +86,8 @@ public class ShopManager : MonoBehaviour
 
         void FindUIReferences()
         {
-                // Szukamy obiektów w scenie po nazwie.
-                // UPEWNIJ SIĘ, ŻE NAZWAŁEŚ JE TAK SAMO W CANVASIE!
+
+
                 GameObject coinObj = GameObject.Find("UI_Coins");
                 if (coinObj) coinsText = coinObj.GetComponent<TextMeshProUGUI>();
 
@@ -107,9 +107,9 @@ public class ShopManager : MonoBehaviour
                 if (btnObj != null)
                 {
                         startButton = btnObj.GetComponent<Button>();
-                        // Czyścimy stare kliknięcia (żeby nie klikało się 2 razy)
+
                         startButton.onClick.RemoveAllListeners();
-                        // Dodajemy funkcję StartGame
+
                         startButton.onClick.AddListener(StartGame);
                 }
 
@@ -167,7 +167,7 @@ public class ShopManager : MonoBehaviour
                 if (enemyNameText) enemyNameText.gameObject.SetActive(state);
                 if (rerollButton) rerollButton.gameObject.SetActive(state);
         }
-        // ----------------------------
+
 
         void GenerateShopGrid()
         {
@@ -177,7 +177,7 @@ public class ShopManager : MonoBehaviour
                         {
                                 Vector3 pos = new Vector3(shopOffset.x + c, shopOffset.y + r, 0);
                                 GameObject tile = Instantiate(tilePrefab, pos, Quaternion.identity);
-                                tile.transform.parent = transform; // Porządek w hierarchii
+                                tile.transform.parent = transform;
 
                                 tile.GetComponent<SpriteRenderer>().color = new Color(0.6f, 0.5f, 0.2f);
                                 Tile t = tile.GetComponent<Tile>();
@@ -198,7 +198,7 @@ public class ShopManager : MonoBehaviour
 
                         Tile tile = tileGO.GetComponent<Tile>();
 
-                        // Czyścimy stare (szukamy w dzieciach lub przez Raycast)
+
                         ShopItem existingItem = tileGO.GetComponentInChildren<ShopItem>();
                         if (existingItem == null)
                         {
@@ -223,24 +223,24 @@ public class ShopManager : MonoBehaviour
                 Vector3 pos = tileGO.transform.position;
                 pos.z = -1;
 
-                // 1. Tworzymy obiekt
+
                 GameObject itemGO = Instantiate(prefab, pos, Quaternion.identity);
 
-                // 2. KLUCZOWA POPRAWKA: Najpierw usuwamy NetworkObject!
-                // Musimy użyć DestroyImmediate, żeby zniknął w tej milisekundzie, zanim kod pójdzie dalej
+
+
                 if (itemGO.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
                 {
                         DestroyImmediate(netObj);
                 }
 
-                // 3. Dopiero teraz bezpiecznie ustawiamy rodzica
+
                 itemGO.transform.parent = tileGO.transform;
 
-                // 4. Usuwamy resztę niepotrzebnych skryptów (logikę gry)
+
                 Destroy(itemGO.GetComponent<Piece>());
                 Destroy(itemGO.GetComponent<PieceMovement>());
 
-                // 5. Dodajemy logikę sklepową
+
                 ShopItem shopItem = itemGO.AddComponent<ShopItem>();
                 Tile tile = tileGO.GetComponent<Tile>();
 
@@ -289,15 +289,15 @@ public class ShopManager : MonoBehaviour
                         return;
                 }
 
-                // 1. Czy stać nas?
+
                 if (GameProgress.Instance.coins >= item.price)
                 {
-                        // 2. Czy jest miejsce w ekwipunku? (AddPieceToInventory zwraca teraz bool)
+
                         bool success = inventory.AddPieceToInventory(item.type, GetPrefabByType(item.type));
 
                         if (success)
                         {
-                                // Dopiero teraz zabieramy kasę i niszczymy przedmiot
+
                                 GameProgress.Instance.SpendCoins(item.price);
                                 if (item.CurrentTile != null)
                                 {
@@ -310,7 +310,7 @@ public class ShopManager : MonoBehaviour
                         else
                         {
                                 Debug.Log("Nie kupiono: Brak miejsca w ekwipunku!");
-                                // Tutaj można dodać jakiś efekt dźwiękowy błędu lub tekst "FULL"
+
                         }
                 }
                 else
@@ -319,21 +319,17 @@ public class ShopManager : MonoBehaviour
                 }
         }
 
-        // --- START GRY (MULTIPLAYER + SINGLEPLAYER) ---
         public void StartGame()
         {
-                // 1. Zapisz obecny stan planszy do GameProgress
                 SaveBoardLayout();
                 SaveInventoryLayout();
 
-                // 2. Sprawdź tryb gry
                 if (GameManager.Instance.isMultiplayer)
                 {
                         StartCoroutine(WaitForBattleSessionAndReady());
                 }
                 else
                 {
-                        // Singleplayer: ładuj od razu
                         Debug.Log("Singleplayer: Start bitwy!");
                         GameProgress.Instance.LoadScene("Battle");
                 }
@@ -365,6 +361,8 @@ public class ShopManager : MonoBehaviour
                                 }
                         }
                 }
+
+                EnsureKingInArmy();
         }
 
         void SaveInventoryLayout()
@@ -416,6 +414,62 @@ public class ShopManager : MonoBehaviour
 
                         SpawnPieceOnTile(GetPrefabByType(data.type), tile, data.type);
                 }
+        }
+
+        void EnsureKingInArmy()
+        {
+                if (GameProgress.Instance == null)
+                {
+                        return;
+                }
+
+                foreach (SavedPieceData data in GameProgress.Instance.myArmy)
+                {
+                        if (data.type == PieceType.King)
+                        {
+                                return;
+                        }
+                }
+
+                if (BoardManager.Instance == null)
+                {
+                        return;
+                }
+
+                Vector2Int coords = FindFallbackKingCoords();
+                GameProgress.Instance.myArmy.Add(new SavedPieceData
+                {
+                        type = PieceType.King,
+                        x = coords.x,
+                        y = coords.y
+                });
+        }
+
+        Vector2Int FindFallbackKingCoords()
+        {
+                int rows = BoardManager.Instance.PlayerRows;
+                int cols = BoardManager.Instance.PlayerCols;
+                int centerRow = rows / 2;
+                int centerCol = cols / 2;
+                Tile centerTile = BoardManager.Instance.GetTile(BoardType.Player, centerRow, centerCol);
+                if (centerTile != null && !centerTile.isOccupied)
+                {
+                        return new Vector2Int(centerCol, centerRow);
+                }
+
+                for (int r = 0; r < rows; r++)
+                {
+                        for (int c = 0; c < cols; c++)
+                        {
+                                Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
+                                if (tile != null && !tile.isOccupied)
+                                {
+                                        return new Vector2Int(c, r);
+                                }
+                        }
+                }
+
+                return new Vector2Int(centerCol, centerRow);
         }
 
         void RestoreInventoryLayout()

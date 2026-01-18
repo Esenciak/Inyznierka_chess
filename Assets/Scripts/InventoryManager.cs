@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Collections; // Potrzebne do Coroutine
+using System.Collections;
 using System.Collections.Generic;
 
 public class InventoryManager : MonoBehaviour
@@ -33,7 +33,6 @@ public class InventoryManager : MonoBehaviour
                 if (scene.name == "Shop")
                 {
                         IsReady = false;
-                        // Zmieniamy na Coroutine, żeby poczekać na BoardManagera
                         StartCoroutine(InitializeInventoryRoutine());
                 }
                 else
@@ -44,14 +43,12 @@ public class InventoryManager : MonoBehaviour
 
         private void Start()
         {
-                // Fallback dla testowania samej sceny Shop
                 if (SceneManager.GetActiveScene().name == "Shop")
                 {
                         StartCoroutine(InitializeInventoryRoutine());
                 }
         }
 
-        // --- POPRAWKA: Czekamy na BoardManagera ---
         IEnumerator InitializeInventoryRoutine()
         {
                 if (isInitializing)
@@ -61,23 +58,20 @@ public class InventoryManager : MonoBehaviour
 
                 isInitializing = true;
 
-                // Czekamy, aż BoardManager powstanie (jeśli jest null)
                 while (BoardManager.Instance == null)
                 {
                         yield return null;
                 }
 
-                // Ustawienie odpowiedniego króla przed generowaniem płytek
                 SelectKingPrefab();
 
-                // Czekamy jeszcze jedną klatkę dla pewności, że BoardManager obliczy offsety
                 yield return new WaitForEndOfFrame();
 
                 ClearInventory();
                 GenerateInventory();
 
-                // Króla też spawnujemy z małym opóźnieniem
-                if (GameProgress.Instance == null || GameProgress.Instance.myArmy.Count == 0)
+                EnsureKingInArmy();
+                if (GameProgress.Instance == null || !HasKingInArmy())
                 {
                         SpawnKingOnBoard();
                 }
@@ -85,7 +79,6 @@ public class InventoryManager : MonoBehaviour
                 IsReady = true;
                 isInitializing = false;
         }
-        // ------------------------------------------
 
         public void EnsureInitialized()
         {
@@ -158,11 +151,9 @@ public class InventoryManager : MonoBehaviour
 
         public bool AddPieceToInventory(PieceType type, GameObject prefab)
         {
-                // Zabezpieczenie przed pustą listą
                 if (inventoryTiles == null || inventoryTiles.Count == 0)
                 {
                         Debug.LogError("Błąd: Próba dodania do Inventory, ale lista jest pusta! Czy scena Shop załadowała się poprawnie?");
-                        // Próba ratunkowa: spróbuj wygenerować teraz
                         if (BoardManager.Instance != null) GenerateInventory();
                         if (inventoryTiles.Count == 0) return false;
                 }
@@ -217,7 +208,6 @@ public class InventoryManager : MonoBehaviour
         {
                 GameObject pieceGO = Instantiate(prefab, tile.transform.position, Quaternion.identity);
 
-                // Fix dla NetworkObject (DestroyImmediate jest wymagane, żeby uniknąć błędów parentowania)
                 if (pieceGO.TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
                 {
                         DestroyImmediate(netObj);
@@ -253,6 +243,46 @@ public class InventoryManager : MonoBehaviour
                         }
                 }
                 return null;
+        }
+
+        bool HasKingInArmy()
+        {
+                if (GameProgress.Instance == null)
+                {
+                        return false;
+                }
+
+                foreach (SavedPieceData piece in GameProgress.Instance.myArmy)
+                {
+                        if (piece.type == PieceType.King)
+                        {
+                                return true;
+                        }
+                }
+
+                return false;
+        }
+
+        void EnsureKingInArmy()
+        {
+                if (GameProgress.Instance == null || HasKingInArmy())
+                {
+                        return;
+                }
+
+                if (BoardManager.Instance == null)
+                {
+                        return;
+                }
+
+                int col = BoardManager.Instance.PlayerCols / 2;
+                int row = BoardManager.Instance.PlayerRows / 2;
+                GameProgress.Instance.myArmy.Add(new SavedPieceData
+                {
+                        type = PieceType.King,
+                        x = col,
+                        y = row
+                });
         }
 
         void SelectKingPrefab()
