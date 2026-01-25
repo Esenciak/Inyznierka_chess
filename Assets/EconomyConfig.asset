@@ -79,14 +79,14 @@ MonoBehaviour:
     rookPrice: 7
     bishopPrice: 7
     knightPrice: 7
-  - roundNumber: 7
+  - roundNumber: 8
     pawnPrice: 7
     kingPrice: 0
     queenPrice: 7
     rookPrice: 7
     bishopPrice: 7
     knightPrice: 7
-  - roundNumber: 7
+  - roundNumber: 9
     pawnPrice: 7
     kingPrice: 0
     queenPrice: 7
