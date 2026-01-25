@@ -160,7 +160,7 @@ public class SceneExitPrompt : MonoBehaviour
                         return;
                 }
 
-                GameManager.Instance.GameOver(false);
+                GameManager.Instance.GameOver(false, "Resign");
         }
 
         private async Task HandleShopExitAsync()

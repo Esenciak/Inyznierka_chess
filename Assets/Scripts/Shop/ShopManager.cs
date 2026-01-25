@@ -138,6 +138,11 @@ public class ShopManager : MonoBehaviour
                 ApplyPiecePrefabsForLocalPlayer();
                 CleanupShop();
                 GenerateShopGrid();
+                if (GameProgress.Instance != null && TelemetryService.Instance != null)
+                {
+                        int roundNumber = GameProgress.Instance.gamesPlayed + 1;
+                        TelemetryService.Instance.StartRound(roundNumber, GameProgress.Instance.coins);
+                }
                 RefillShop();
                 ToggleUI(true);
                 UpdateUI();
@@ -211,6 +216,8 @@ public class ShopManager : MonoBehaviour
                         tile.isOccupied = false;
                         SpawnRandomShopItem(tileGO);
                 }
+
+                LogShopOffer();
         }
 
         void SpawnRandomShopItem(GameObject tileGO)
@@ -292,6 +299,7 @@ public class ShopManager : MonoBehaviour
 
                 if (GameProgress.Instance.coins >= item.price)
                 {
+                        int coinsBefore = GameProgress.Instance.coins;
 
                         bool success = inventory.AddPieceToInventory(item.type, GetPrefabByType(item.type));
 
@@ -299,6 +307,17 @@ public class ShopManager : MonoBehaviour
                         {
 
                                 GameProgress.Instance.SpendCoins(item.price);
+                                if (TelemetryService.Instance != null && item.type != PieceType.King)
+                                {
+                                        int coinsAfter = GameProgress.Instance.coins;
+                                        int slotIndex = GetShopSlotIndex(item.CurrentTile);
+                                        TelemetryService.Instance.LogPurchase(
+                                                TelemetryService.ToTelemetryPieceType(item.type),
+                                                item.price,
+                                                slotIndex,
+                                                coinsBefore,
+                                                coinsAfter);
+                                }
                                 if (item.CurrentTile != null)
                                 {
                                         item.CurrentTile.isOccupied = false;
@@ -323,6 +342,10 @@ public class ShopManager : MonoBehaviour
         {
                 SaveBoardLayout();
                 SaveInventoryLayout();
+                if (TelemetryService.Instance != null && GameProgress.Instance != null)
+                {
+                        TelemetryService.Instance.RecordCoinsAfterShop(GameProgress.Instance.coins);
+                }
 
                 if (GameManager.Instance.isMultiplayer)
                 {
@@ -667,6 +690,7 @@ public class ShopManager : MonoBehaviour
                         return;
                 }
 
+                int coinsBefore = GameProgress.Instance.coins;
                 if (cost > 0)
                 {
                         GameProgress.Instance.SpendCoins(cost);
@@ -674,6 +698,10 @@ public class ShopManager : MonoBehaviour
 
                 RefillShop();
                 UpdateUI();
+                if (TelemetryService.Instance != null)
+                {
+                        TelemetryService.Instance.LogReroll(cost, coinsBefore, GameProgress.Instance.coins);
+                }
         }
 
         private Button CreateRerollButton()
@@ -727,5 +755,42 @@ public class ShopManager : MonoBehaviour
                 rect.pivot = new Vector2(1f, 0f);
                 rect.sizeDelta = new Vector2(220f, 60f);
                 rect.anchoredPosition = new Vector2(-30f, 30f);
+        }
+
+        private void LogShopOffer()
+        {
+                if (TelemetryService.Instance == null || economyConfig == null)
+                {
+                        return;
+                }
+
+                List<string> offeredPieces = new List<string>();
+                foreach (GameObject tileGO in shopTiles)
+                {
+                        if (tileGO == null) continue;
+                        ShopItem item = tileGO.GetComponentInChildren<ShopItem>();
+                        if (item == null) continue;
+                        if (item.type == PieceType.King) continue;
+                        offeredPieces.Add(TelemetryService.ToTelemetryPieceType(item.type));
+                }
+
+                int slots = shopRows * shopCols;
+                TelemetryService.Instance.LogShopOfferGenerated(offeredPieces, slots, economyConfig.rerollCost);
+        }
+
+        private int GetShopSlotIndex(Tile tile)
+        {
+                if (tile == null)
+                {
+                        return -1;
+                }
+
+                int index = shopTiles.FindIndex(t => t != null && t.GetComponent<Tile>() == tile);
+                if (index >= 0)
+                {
+                        return index;
+                }
+
+                return (tile.row * shopCols) + tile.col;
         }
 }

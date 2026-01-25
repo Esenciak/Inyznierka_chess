@@ -135,7 +135,16 @@ public class PieceMovement : MonoBehaviour
 
                                 if ((targetTile.isInventory || targetTile.boardType == BoardType.Player) && !targetTile.isOccupied)
                                 {
+                                        string source = GetPlacementSource(pieceComponent.currentTile);
                                         MoveToTile(targetTile);
+                                        if (TelemetryService.Instance != null)
+                                        {
+                                                TelemetryService.Instance.LogPiecePlaced(
+                                                        TelemetryService.ToTelemetryPieceType(pieceComponent.pieceType),
+                                                        targetTile.col,
+                                                        targetTile.row,
+                                                        source);
+                                        }
                                         return;
                                 }
                         }
@@ -146,11 +155,23 @@ public class PieceMovement : MonoBehaviour
 
                                 if (legalMoves.Contains(targetTile))
                                 {
+                                        bool shouldLogLocalMove = ShouldLogBattleMove();
+                                        string movingPieceType = TelemetryService.ToTelemetryPieceType(pieceComponent.pieceType);
+                                        Tile fromTile = pieceComponent.currentTile;
+                                        int fromX = fromTile != null ? fromTile.globalCol : 0;
+                                        int fromY = fromTile != null ? fromTile.globalRow : 0;
+                                        int toX = targetTile.globalCol;
+                                        int toY = targetTile.globalRow;
+
                                         if (GameManager.Instance != null && GameManager.Instance.isMultiplayer && BattleMoveSync.Instance != null)
                                         {
                                                 BattleMoveSync.Instance.SubmitMove(pieceComponent, targetTile);
                                                 if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
                                                 {
+                                                        if (shouldLogLocalMove && TelemetryService.Instance != null)
+                                                        {
+                                                                LogBattleTelemetry(movingPieceType, fromX, fromY, toX, toY, targetTile);
+                                                        }
                                                         transform.position = startPosition;
                                                 }
                                                 return;
@@ -169,9 +190,14 @@ public class PieceMovement : MonoBehaviour
 
                                         MoveToTile(targetTile);
 
+                                        if (shouldLogLocalMove && TelemetryService.Instance != null)
+                                        {
+                                                LogBattleTelemetry(movingPieceType, fromX, fromY, toX, toY, targetTile, capturedPiece);
+                                        }
+
                                         if (capturedPiece != null && capturedPiece.pieceType == PieceType.King && GameManager.Instance != null)
                                         {
-                                                GameManager.Instance.GameOver(pieceComponent.owner == PieceOwner.Player);
+                                                GameManager.Instance.GameOver(pieceComponent.owner == PieceOwner.Player, "KingCaptured");
                                                 return;
                                         }
 
@@ -232,5 +258,44 @@ public class PieceMovement : MonoBehaviour
 
                 bool localIsHost = NetworkManager.Singleton.IsHost;
                 return localIsHost ? pieceComponent.owner == PieceOwner.Player : pieceComponent.owner == PieceOwner.Enemy;
+        }
+
+        private string GetPlacementSource(Tile fromTile)
+        {
+                if (fromTile == null)
+                {
+                        return "Initial";
+                }
+
+                return fromTile.isInventory ? "Inventory" : "Swap";
+        }
+
+        private bool ShouldLogBattleMove()
+        {
+                if (GameManager.Instance != null && GameManager.Instance.isMultiplayer)
+                {
+                        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+                        {
+                                return false;
+                        }
+                }
+
+                return TelemetryService.Instance != null && TelemetryService.Instance.IsLocalOwner(pieceComponent.owner);
+        }
+
+        private void LogBattleTelemetry(string movingPieceType, int fromX, int fromY, int toX, int toY, Tile targetTile, Piece capturedPiece = null)
+        {
+                TelemetryService.Instance.LogPieceMoved(movingPieceType, fromX, fromY, toX, toY);
+
+                if (capturedPiece != null)
+                {
+                        TelemetryService.Instance.LogPieceCaptured(
+                                movingPieceType,
+                                fromX,
+                                fromY,
+                                toX,
+                                toY,
+                                TelemetryService.ToTelemetryPieceType(capturedPiece.pieceType));
+                }
         }
 }

@@ -74,6 +74,10 @@ public class GameManager : MonoBehaviour
                         }
                         gameEnded = false;
                         UpdateBattleHeaderTexts();
+                        if (TelemetryService.Instance != null && BoardManager.Instance != null)
+                        {
+                                TelemetryService.Instance.LogBattleStart(BoardManager.Instance.CenterRows);
+                        }
                         return;
                 }
 
@@ -316,7 +320,7 @@ public class GameManager : MonoBehaviour
                 currentTurn = PieceOwner.Player;
         }
 
-        public void GameOver(bool playerWon)
+        public void GameOver(bool playerWon, string reason = "KingCaptured")
         {
                 if (gameEnded) return;
 
@@ -325,11 +329,28 @@ public class GameManager : MonoBehaviour
 
                 if (GameProgress.Instance != null)
                 {
+                        int piecesRemaining = GetLocalPiecesRemaining();
                         UpdateArmyAfterBattle();
                         int roundNumber = GameProgress.Instance.gamesPlayed + 1;
                         int winValue = economyConfig != null ? economyConfig.GetWinReward(roundNumber) : winReward;
                         int loseValue = economyConfig != null ? economyConfig.GetLoseReward(roundNumber) : loseReward;
                         GameProgress.Instance.CompleteRound(playerWon, winValue, loseValue);
+                        if (GameProgress.Instance.gamesPlayed >= 9)
+                        {
+                                if (TelemetryService.Instance != null)
+                                {
+                                        string winnerColor = ResolveWinnerColor(playerWon);
+                                        TelemetryService.Instance.LogMatchEnd(winnerColor, reason, GameProgress.Instance.gamesPlayed);
+                                }
+                        }
+                        if (TelemetryService.Instance != null && BoardManager.Instance != null)
+                        {
+                                TelemetryService.Instance.LogRoundEnd(
+                                        playerWon,
+                                        GameProgress.Instance.coins,
+                                        piecesRemaining,
+                                        BoardManager.Instance.CenterRows);
+                        }
                         if (GameProgress.Instance.gamesPlayed >= 9)
                         {
                                 GameProgress.Instance.lastWinnerMessage = playerWon ? "Winner: You" : "Winner: Enemy";
@@ -479,5 +500,37 @@ public class GameManager : MonoBehaviour
                 }
 
                 return owner == PieceOwner.Player;
+        }
+
+        private int GetLocalPiecesRemaining()
+        {
+                if (BoardManager.Instance == null)
+                {
+                        return 0;
+                }
+
+                Dictionary<PieceType, int> counts = CountLocalAlivePieces();
+                int total = 0;
+                foreach (var entry in counts)
+                {
+                        total += entry.Value;
+                }
+                return total;
+        }
+
+        private string ResolveWinnerColor(bool playerWon)
+        {
+                if (GameProgress.Instance == null)
+                {
+                        return playerWon ? "White" : "Black";
+                }
+
+                bool localIsWhite = GameProgress.Instance.IsLocalPlayerWhite();
+                if (playerWon)
+                {
+                        return localIsWhite ? "White" : "Black";
+                }
+
+                return localIsWhite ? "Black" : "White";
         }
 }

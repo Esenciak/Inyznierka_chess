@@ -40,6 +40,7 @@ public class EconomyConfig : ScriptableObject
     public int winReward = 20;
     public int loseReward = 10;
     public int rerollCost = 5;
+    public string configVersion = "v1";
 
     [Header("Prices")]
     public int pawnPrice = 10;

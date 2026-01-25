@@ -91,7 +91,7 @@ public class BattleMoveSync : NetworkBehaviour
 
                 if (GameManager.Instance != null)
                 {
-                        GameManager.Instance.GameOver(hostWon);
+                        GameManager.Instance.GameOver(hostWon, "Resign");
                 }
 
                 SendResignToClients(hostWon);
@@ -142,13 +142,37 @@ public class BattleMoveSync : NetworkBehaviour
                 }
 
                 bool capturedKing = false;
+                Piece capturedPiece = null;
                 if (toTile.isOccupied && toTile.currentPiece != null && toTile.currentPiece.owner != expectedOwner)
                 {
                         capturedKing = toTile.currentPiece.pieceType == PieceType.King;
+                        capturedPiece = toTile.currentPiece;
                         Destroy(toTile.currentPiece.gameObject);
                 }
 
                 ApplyMoveLocal(movingPiece, toTile);
+
+                if (TelemetryService.Instance != null && TelemetryService.Instance.IsLocalOwner(expectedOwner))
+                {
+                        string movingPieceType = TelemetryService.ToTelemetryPieceType(movingPiece.pieceType);
+                        TelemetryService.Instance.LogPieceMoved(
+                                movingPieceType,
+                                fromCoords.y,
+                                fromCoords.x,
+                                toCoords.y,
+                                toCoords.x);
+
+                        if (capturedPiece != null)
+                        {
+                                TelemetryService.Instance.LogPieceCaptured(
+                                        movingPieceType,
+                                        fromCoords.y,
+                                        fromCoords.x,
+                                        toCoords.y,
+                                        toCoords.x,
+                                        TelemetryService.ToTelemetryPieceType(capturedPiece.pieceType));
+                        }
+                }
 
                 PieceOwner nextTurn = expectedOwner == PieceOwner.Player ? PieceOwner.Enemy : PieceOwner.Player;
                 CurrentTurn.Value = nextTurn;
@@ -157,7 +181,7 @@ public class BattleMoveSync : NetworkBehaviour
                 if (capturedKing && GameManager.Instance != null)
                 {
                         bool hostWon = expectedOwner == PieceOwner.Player;
-                        GameManager.Instance.GameOver(hostWon);
+                        GameManager.Instance.GameOver(hostWon, "KingCaptured");
                 }
 
                 SendMoveToClients(fromCoords.x, fromCoords.y, toCoords.x, toCoords.y, capturedKing, expectedOwner == PieceOwner.Player);
@@ -257,7 +281,7 @@ public class BattleMoveSync : NetworkBehaviour
                 {
                         bool localIsHost = NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost;
                         bool localWon = localIsHost == hostWon;
-                        GameManager.Instance.GameOver(localWon);
+                        GameManager.Instance.GameOver(localWon, "KingCaptured");
                 }
         }
 
@@ -271,7 +295,7 @@ public class BattleMoveSync : NetworkBehaviour
 
                 bool localIsHost = NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost;
                 bool localWon = localIsHost == hostWon;
-                GameManager.Instance.GameOver(localWon);
+                GameManager.Instance.GameOver(localWon, "Resign");
         }
 
         private void ApplyMoveLocal(Piece piece, Tile targetTile)
