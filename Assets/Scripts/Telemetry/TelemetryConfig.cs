@@ -1,10 +1,11 @@
 using UnityEngine;
+using WebSocketSharp.Server;
 
 [CreateAssetMenu(menuName = "Chess/Telemetry Config", fileName = "TelemetryConfig")]
 public class TelemetryConfig : ScriptableObject
 {
     [Header("Endpoint")]
-    public string baseUrl;
+    public string baseUrl = "https://127.0.0.1:1";
     public string roundBatchEndpointPath = "/telemetry/round";
 
     [Header("Transport")]

@@ -10,7 +10,8 @@ public class TelemetryQueueStorage
     public TelemetryQueueStorage()
     {
         queueDirectory = Path.Combine(Application.persistentDataPath, "telemetry_queue");
-    }
+		Debug.Log($"[TelemetryQueueStorage] queueDirectory = {queueDirectory}");
+	}
 
     public void EnsureQueueDirectory()
     {
@@ -22,8 +23,10 @@ public class TelemetryQueueStorage
 
     public void SaveBatch(string json)
     {
-        try
-        {
+		Debug.Log($"[TelemetryQueueStorage] Saving batch to {queueDirectory}");
+
+		try
+		{
             EnsureQueueDirectory();
             string fileName = $"batch_{DateTime.UtcNow:yyyyMMdd_HHmmss_fff}_{Guid.NewGuid():N}.json";
             string finalPath = Path.Combine(queueDirectory, fileName);
@@ -90,4 +93,7 @@ public class TelemetryQueueStorage
             Debug.LogWarning($"[TelemetryQueueStorage] Failed to delete batch: {ex.Message}");
         }
     }
+
+
+
 }

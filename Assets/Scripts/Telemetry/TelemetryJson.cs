@@ -1,21 +1,21 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 public static class TelemetryJson
 {
-    private static readonly JsonSerializerOptions Options = new JsonSerializerOptions
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
+	private static readonly JsonSerializerSettings Settings = new JsonSerializerSettings
+	{
+		ContractResolver = new CamelCasePropertyNamesContractResolver(),
+		NullValueHandling = NullValueHandling.Ignore
+	};
 
-    public static string SerializeBatch(TelemetryRoundBatchDto batch)
-    {
-        return JsonSerializer.Serialize(batch, Options);
-    }
+	public static string SerializeBatch(TelemetryRoundBatchDto batch)
+	{
+		return JsonConvert.SerializeObject(batch, Settings);
+	}
 
-    public static TelemetryRoundBatchDto DeserializeBatch(string json)
-    {
-        return JsonSerializer.Deserialize<TelemetryRoundBatchDto>(json, Options);
-    }
+	public static TelemetryRoundBatchDto DeserializeBatch(string json)
+	{
+		return JsonConvert.DeserializeObject<TelemetryRoundBatchDto>(json, Settings);
+	}
 }

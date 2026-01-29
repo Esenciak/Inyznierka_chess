@@ -2,7 +2,8 @@ using System.Collections.Generic;
 
 public class TelemetryRoundBatchDto
 {
-    public string MatchId { get; set; }
+	public int SchemaVersion { get; set; } = 1;
+	public string MatchId { get; set; }
     public string PlayerId { get; set; }
     public int RoundNumber { get; set; }
     public string BalanceVersion { get; set; }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 public class TelemetryService : MonoBehaviour
@@ -386,7 +387,7 @@ public class TelemetryService : MonoBehaviour
         }
 
         bool success = false;
-        yield return httpClient.SendJsonWithRetry(url, json, config.requestTimeoutSeconds, config.maxRetries, result => success = result);
+        yield return httpClient.SendJsonWithRetry(url, json, Timeout, config.maxRetries, result => success = result);
 
         if (!success)
         {
