@@ -1,23 +1,10 @@
-using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
 
 public class TelemetryHttpClient
 {
-	private readonly MonoBehaviour host;
-
-	public TelemetryHttpClient(MonoBehaviour host)
-	{
-		this.host = host;
-	}
-
-	public void SendJsonWithRetry(string url, string json, int timeoutSeconds, int maxRetries, Action<bool> onComplete)
-	{
-		host.StartCoroutine(SendJsonWithRetryCoroutine(url, json, timeoutSeconds, maxRetries, onComplete));
-	}
-
-	private IEnumerator SendJsonWithRetryCoroutine(string url, string json, int timeoutSeconds, int maxRetries, Action<bool> onComplete)
+	public IEnumerator SendJsonWithRetry(string url, string json, int timeoutSeconds, int maxRetries, System.Action<bool> onComplete)
 	{
 		bool success = false;
 		int attempts = Mathf.Max(1, maxRetries);
@@ -33,10 +20,7 @@ public class TelemetryHttpClient
 				request.SetRequestHeader("Content-Type", "application/json");
 				request.timeout = timeoutSeconds;
 
-				Debug.Log($"[TelemetryHttpClient] POST attempt {attempt + 1}/{attempts} -> {url}");
 				yield return request.SendWebRequest();
-
-				Debug.Log($"[TelemetryHttpClient] result={request.result} code={request.responseCode} err={request.error}");
 
 				if (request.result == UnityWebRequest.Result.Success &&
 					request.responseCode >= 200 && request.responseCode < 300)

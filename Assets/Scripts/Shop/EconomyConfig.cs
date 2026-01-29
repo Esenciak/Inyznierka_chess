@@ -15,7 +15,14 @@ public class EconomyConfig : ScriptableObject
         public int knightWeight;
     }
 
-    [System.Serializable]
+	[Header("Unlock rounds (1 = from start)")]
+	public int pawnUnlockRound = 1;
+	public int knightUnlockRound = 1;
+	public int bishopUnlockRound = 1;
+	public int rookUnlockRound = 3;  
+	public int queenUnlockRound = 5; 
+
+	[System.Serializable]
     public struct PiecePricesByRound
     {
         public int roundNumber;

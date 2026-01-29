@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
 
 public class TelemetryService : MonoBehaviour
@@ -9,12 +8,16 @@ public class TelemetryService : MonoBehaviour
     public static TelemetryService Instance { get; private set; }
 
     [SerializeField] private TelemetryConfig config;
+	private bool matchStartLogged;
 
-    private TelemetryClock clock;
+	private TelemetryClock clock;
     private TelemetryHttpClient httpClient;
     private TelemetryQueueStorage queueStorage;
 
-    private readonly List<TelemetryEventBase> currentEvents = new List<TelemetryEventBase>();
+	private TelemetryFileLogger fileLogger;
+
+
+	private readonly List<TelemetryEventBase> currentEvents = new List<TelemetryEventBase>();
 
     private string matchId;
     private string playerId;
@@ -50,7 +53,7 @@ public class TelemetryService : MonoBehaviour
 
         config = config != null ? config : Resources.Load<TelemetryConfig>("Telemetry/TelemetryConfig");
         clock = new TelemetryClock();
-        httpClient = new TelemetryHttpClient(this);
+        httpClient = new TelemetryHttpClient();
         queueStorage = new TelemetryQueueStorage();
         playerId = TelemetryIds.GetOrCreatePlayerId();
 
@@ -60,25 +63,51 @@ public class TelemetryService : MonoBehaviour
             flushRoutine = StartCoroutine(FlushLoop());
             StartCoroutine(FlushOfflineQueue());
         }
-    }
 
-    public void StartMatchIfNeeded(int roundNumber)
+		fileLogger = new TelemetryFileLogger();
+		Debug.Log($"[Telemetry] persistentDataPath = {Application.persistentDataPath}");
+
+	}
+
+	public void StartMatchIfNeeded(int roundNumber)
     {
         if (!IsTelemetryEnabled())
         {
             return;
         }
 
-        if (!matchStarted)
-        {
-            matchId = TelemetryIds.CreateMatchId();
-            matchStarted = true;
-            clock.Reset();
-            LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
-        }
-    }
+		if (!matchStarted)
+		{
+			matchId = TelemetryIds.CreateMatchId();
+			matchStarted = true;
+			clock.Reset();
+		}
 
-    public void StartRound(int roundNumber, int coinsAtStart)
+		if (!matchStartLogged)
+		{
+			LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
+			matchStartLogged = true;
+		}
+	}
+
+	public void SetMatchContext(string newMatchId)
+	{
+		if (!IsTelemetryEnabled())
+			return;
+
+		if (string.IsNullOrEmpty(newMatchId))
+			return;
+
+		if (!string.IsNullOrEmpty(matchId) && matchId == newMatchId)
+			return;
+
+		matchId = newMatchId;
+		matchStarted = true;
+		matchStartLogged = false;   
+		clock.Reset();
+	}
+
+	public void StartRound(int roundNumber, int coinsAtStart)
     {
         if (!IsTelemetryEnabled())
         {
@@ -353,11 +382,20 @@ public class TelemetryService : MonoBehaviour
             Events = new List<TelemetryEventBase>(currentEvents)
         };
 
-        string json = TelemetryJson.SerializeBatch(batch);
-        StartCoroutine(SendOrQueue(json));
-    }
+		string json = TelemetryJson.SerializeBatch(batch);
 
-    private string GetBalanceVersion()
+		// DEBUG: zawsze zapisuj batch lokalnie, ¿eby sprawdziæ czy dzia³a
+		if (config != null && config.writeBatchesToDisk)
+		{
+			fileLogger.WriteBatch(json, currentRoundNumber);
+		}
+
+		StartCoroutine(SendOrQueue(json));
+
+
+	}
+
+	private string GetBalanceVersion()
     {
         if (GameProgress.Instance != null && GameProgress.Instance.economyConfig != null)
         {
@@ -372,44 +410,47 @@ public class TelemetryService : MonoBehaviour
         return "unknown";
     }
 
-    private IEnumerator SendOrQueue(string json)
-    {
-        if (!IsTelemetryEnabled())
-        {
-            yield break;
-        }
+	private IEnumerator SendOrQueue(string json)
+	{
+		if (!IsTelemetryEnabled())
+			yield break;
 
-        string url = BuildRoundBatchUrl();
-        if (string.IsNullOrEmpty(url))
-        {
-            queueStorage.SaveBatch(json);
-            yield break;
-        }
+		string url = BuildRoundBatchUrl();
+		if (string.IsNullOrEmpty(url))
+		{
+			queueStorage.SaveBatch(json);
+			yield break;
+		}
 
-        bool success = false;
-        yield return httpClient.SendJsonWithRetry(url, json, Timeout, config.maxRetries, result => success = result);
+		bool success = false;
 
-        if (!success)
-        {
-            queueStorage.SaveBatch(json);
-        }
-    }
+		int timeout = (config != null) ? config.requestTimeoutSeconds : 10;
+		int retries = (config != null) ? config.maxRetries : 3;
 
-    private IEnumerator FlushLoop()
-    {
-        while (true)
-        {
-            if (IsTelemetryEnabled())
-            {
-                yield return FlushOfflineQueue();
-            }
+		// jawnie uruchamiamy coroutine (najbardziej kompatybilne)
+		yield return StartCoroutine(
+	        httpClient.SendJsonWithRetry(url, json, timeout, retries, result => success = result)
+                                    );
 
-            int wait = config != null ? Mathf.Max(1, config.flushIntervalSeconds) : 15;
-            yield return new WaitForSeconds(wait);
-        }
-    }
+		if (!success)
+			queueStorage.SaveBatch(json);
+	}
 
-    private IEnumerator FlushOfflineQueue()
+	private IEnumerator FlushLoop()
+	{
+		while (true)
+		{
+			if (IsTelemetryEnabled())
+			{
+				yield return StartCoroutine(FlushOfflineQueue());
+			}
+
+			int wait = config != null ? Mathf.Max(1, config.flushIntervalSeconds) : 15;
+			yield return new WaitForSeconds(wait);
+		}
+	}
+
+	private IEnumerator FlushOfflineQueue()
     {
         if (!IsTelemetryEnabled())
         {

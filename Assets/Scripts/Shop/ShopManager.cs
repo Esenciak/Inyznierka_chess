@@ -6,7 +6,9 @@ using UnityEngine.UI;
 
 public class ShopManager : MonoBehaviour
 {
-        [Header("Ustawienia Sklepu")]
+	    private bool shopInitialized = false;
+    
+	    [Header("Ustawienia Sklepu")]
         public int shopRows = 2;
         public int shopCols = 3;
         public Vector2 shopOffset = new Vector2(-5, 0);
@@ -44,8 +46,9 @@ public class ShopManager : MonoBehaviour
                 { PieceType.Knight, 30 }
         };
 
-
-        private void OnEnable()
+	    private List<string> currentOfferPieces = new List<string>();
+	    private int offerIndexThisRound = 0;
+	    private void OnEnable()
         {
                 SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -135,7 +138,16 @@ public class ShopManager : MonoBehaviour
 
         void InitializeShop()
         {
-                ApplyPiecePrefabsForLocalPlayer();
+		    if (TelemetryService.Instance != null && !string.IsNullOrWhiteSpace(LobbyState.CurrentLobbyId))
+	        {
+			    TelemetryService.Instance.SetMatchContext(LobbyState.CurrentLobbyId);
+	    	}
+
+
+		        if (shopInitialized) return;
+                shopInitialized = true;
+
+        		ApplyPiecePrefabsForLocalPlayer();
                 CleanupShop();
                 GenerateShopGrid();
                 if (GameProgress.Instance != null && TelemetryService.Instance != null)
@@ -155,7 +167,8 @@ public class ShopManager : MonoBehaviour
 
         void CleanupShop()
         {
-                foreach (var tile in shopTiles)
+		        shopInitialized = false;
+		        foreach (var tile in shopTiles)
                 {
                         if (tile != null) Destroy(tile);
                 }
@@ -195,37 +208,44 @@ public class ShopManager : MonoBehaviour
                 }
         }
 
-        public void RefillShop()
-        {
-                foreach (var tileGO in shopTiles)
-                {
-                        if (tileGO == null) continue;
 
-                        Tile tile = tileGO.GetComponent<Tile>();
+	    public void RefillShop()
+	    {
+		    currentOfferPieces.Clear();
+
+		    for (int i = 0; i < shopTiles.Count; i++)
+		    {
+			    var tileGO = shopTiles[i];
+			    if (tileGO == null)
+			    {
+				    currentOfferPieces.Add("Empty");
+				    continue;
+			    }
+
+			    // usuń stary item
+			    ShopItem existingItem = tileGO.GetComponentInChildren<ShopItem>();
+			    if (existingItem != null) Destroy(existingItem.gameObject);
+
+			    Tile tile = tileGO.GetComponent<Tile>();
+			    tile.isOccupied = false;
+
+			    // spawn i zapisz do oferty w tej samej kolejności co sloty
+			    PieceType spawned = SpawnRandomShopItem(tileGO);
+			    string typeStr = (spawned == PieceType.King) ? "Empty" : TelemetryService.ToTelemetryPieceType(spawned);
+			    currentOfferPieces.Add(typeStr);
+		    }
+
+		    // 1 log na ofertę
+		    LogShopOfferFromCurrent();
+	    }
 
 
-                        ShopItem existingItem = tileGO.GetComponentInChildren<ShopItem>();
-                        if (existingItem == null)
-                        {
-                                RaycastHit2D hit = Physics2D.Raycast(tileGO.transform.position, Vector2.zero);
-                                if (hit.collider != null) existingItem = hit.collider.GetComponent<ShopItem>();
-                        }
-
-                        if (existingItem != null) Destroy(existingItem.gameObject);
-
-                        tile.isOccupied = false;
-                        SpawnRandomShopItem(tileGO);
-                }
-
-                LogShopOffer();
-        }
-
-        void SpawnRandomShopItem(GameObject tileGO)
+	    PieceType SpawnRandomShopItem(GameObject tileGO)
         {
                 PieceType type = GetRandomPieceType();
                 GameObject prefab = GetPrefabByType(type);
 
-                if (prefab == null) return;
+                if (prefab == null) return type;
 
                 Vector3 pos = tileGO.transform.position;
                 pos.z = -1;
@@ -257,9 +277,25 @@ public class ShopManager : MonoBehaviour
                 EnsureShopItemCollider(itemGO);
 
                 tile.isOccupied = true;
-        }
+        		return type;
 
-        private void EnsureShopItemCollider(GameObject itemGO)
+	    }
+	private void LogShopOfferFromCurrent()
+	{
+		if (TelemetryService.Instance == null || economyConfig == null)
+			return;
+
+		int slots = shopRows * shopCols;
+
+		// gwarancja długości
+		while (currentOfferPieces.Count < slots) currentOfferPieces.Add("Empty");
+		if (currentOfferPieces.Count > slots) currentOfferPieces.RemoveRange(slots, currentOfferPieces.Count - slots);
+
+		TelemetryService.Instance.LogShopOfferGenerated(currentOfferPieces, slots, economyConfig.rerollCost);
+	}
+
+
+	private void EnsureShopItemCollider(GameObject itemGO)
         {
                 if (itemGO == null || itemGO.GetComponent<Collider2D>() != null)
                 {
@@ -275,70 +311,79 @@ public class ShopManager : MonoBehaviour
                 }
         }
 
-        public void TryBuyPiece(ShopItem item)
-        {
-                InventoryManager inventory = InventoryManager.Instance;
-                if (inventory == null)
-                {
-                        inventory = FindObjectOfType<InventoryManager>();
-                }
+	public void TryBuyPiece(ShopItem item)
+	{
+		InventoryManager inventory = InventoryManager.Instance;
+		if (inventory == null) inventory = FindObjectOfType<InventoryManager>();
 
-                if (inventory == null)
-                {
-                        Debug.Log("Nie kupiono: brak InventoryManager.");
-                        return;
-                }
+		if (inventory == null)
+		{
+			Debug.Log("Nie kupiono: brak InventoryManager.");
+			return;
+		}
 
-                if (!inventory.IsReady)
-                {
-                        inventory.EnsureInitialized();
-                        Debug.Log("Nie kupiono: ekwipunek jeszcze się ładuje.");
-                        return;
-                }
+		if (!inventory.IsReady)
+		{
+			inventory.EnsureInitialized();
+			Debug.Log("Nie kupiono: ekwipunek jeszcze się ładuje.");
+			return;
+		}
+
+		if (GameProgress.Instance == null)
+			return;
+
+		if (GameProgress.Instance.coins < item.price)
+		{
+			Debug.Log("Nie stać Cię!");
+			return;
+		}
+
+		int coinsBefore = GameProgress.Instance.coins;
+
+		bool success = inventory.AddPieceToInventory(item.type, GetPrefabByType(item.type));
+		if (!success)
+		{
+			Debug.Log("Nie kupiono: Brak miejsca w ekwipunku!");
+			return;
+		}
+
+		// Zapłać
+		GameProgress.Instance.SpendCoins(item.price);
+		int coinsAfter = GameProgress.Instance.coins;
+
+		// Telemetria (best-effort)
+		if (TelemetryService.Instance != null && item.type != PieceType.King)
+		{
+			int slotIndex = GetShopSlotIndex(item.CurrentTile);
+
+			string bought = TelemetryService.ToTelemetryPieceType(item.type);
+			if (slotIndex >= 0 && slotIndex < currentOfferPieces.Count)
+			{
+				string offered = currentOfferPieces[slotIndex];
+				if (offered != bought)
+					Debug.LogWarning($"[Shop] Telemetry mismatch slot {slotIndex}: offer={offered}, buy={bought}");
+			}
+			else
+			{
+				Debug.LogWarning($"[Shop] Invalid slotIndex={slotIndex}, offerCount={currentOfferPieces.Count}");
+			}
+
+			TelemetryService.Instance.LogPurchase(bought, item.price, slotIndex, coinsBefore, coinsAfter);
+		}
+
+		// Zawsze usuń item ze sklepu (niezależnie od telemetry)
+		if (item.CurrentTile != null)
+		{
+			item.CurrentTile.isOccupied = false;
+			item.CurrentTile.currentPiece = null;
+		}
+
+		Destroy(item.gameObject);
+		UpdateUI();
+	}
 
 
-                if (GameProgress.Instance.coins >= item.price)
-                {
-                        int coinsBefore = GameProgress.Instance.coins;
-
-                        bool success = inventory.AddPieceToInventory(item.type, GetPrefabByType(item.type));
-
-                        if (success)
-                        {
-
-                                GameProgress.Instance.SpendCoins(item.price);
-                                if (TelemetryService.Instance != null && item.type != PieceType.King)
-                                {
-                                        int coinsAfter = GameProgress.Instance.coins;
-                                        int slotIndex = GetShopSlotIndex(item.CurrentTile);
-                                        TelemetryService.Instance.LogPurchase(
-                                                TelemetryService.ToTelemetryPieceType(item.type),
-                                                item.price,
-                                                slotIndex,
-                                                coinsBefore,
-                                                coinsAfter);
-                                }
-                                if (item.CurrentTile != null)
-                                {
-                                        item.CurrentTile.isOccupied = false;
-                                        item.CurrentTile.currentPiece = null;
-                                }
-                                Destroy(item.gameObject);
-                                UpdateUI();
-                        }
-                        else
-                        {
-                                Debug.Log("Nie kupiono: Brak miejsca w ekwipunku!");
-
-                        }
-                }
-                else
-                {
-                        Debug.Log("Nie stać Cię!");
-                }
-        }
-
-        public void StartGame()
+	public void StartGame()
         {
                 SaveBoardLayout();
                 SaveInventoryLayout();
@@ -601,44 +646,52 @@ public class ShopManager : MonoBehaviour
                 }
         }
 
-        PieceType GetRandomPieceType()
-        {
-                if (economyConfig != null && GameProgress.Instance != null
-                        && economyConfig.TryGetSpawnWeights(GameProgress.Instance.gamesPlayed + 1, out var weights))
-                {
-                        int total = Mathf.Max(0, weights.pawnWeight)
-                                + Mathf.Max(0, weights.kingWeight)
-                                + Mathf.Max(0, weights.queenWeight)
-                                + Mathf.Max(0, weights.rookWeight)
-                                + Mathf.Max(0, weights.bishopWeight)
-                                + Mathf.Max(0, weights.knightWeight);
+	PieceType GetRandomPieceType()
+	{
+		int round = GameProgress.Instance != null ? GameProgress.Instance.gamesPlayed + 1 : 1;
 
-                        if (total > 0)
-                        {
-                                int roll = Random.Range(0, total);
-                                int current = Mathf.Max(0, weights.pawnWeight);
-                                if (roll < current) return PieceType.Pawn;
-                                current += Mathf.Max(0, weights.kingWeight);
-                                if (roll < current) return PieceType.King;
-                                current += Mathf.Max(0, weights.queenWeight);
-                                if (roll < current) return PieceType.queen;
-                                current += Mathf.Max(0, weights.rookWeight);
-                                if (roll < current) return PieceType.Rook;
-                                current += Mathf.Max(0, weights.bishopWeight);
-                                if (roll < current) return PieceType.Bishop;
-                                return PieceType.Knight;
-                        }
-                }
+		if (economyConfig != null && GameProgress.Instance != null
+			&& economyConfig.TryGetSpawnWeights(round, out var weights))
+		{
+			int pawnW = Mathf.Max(0, weights.pawnWeight);
+			int knightW = Mathf.Max(0, weights.knightWeight);
+			int bishopW = Mathf.Max(0, weights.bishopWeight);
 
-                int rand = Random.Range(0, 100);
-                if (rand < 40) return PieceType.Pawn;
-                if (rand < 60) return PieceType.Knight;
-                if (rand < 80) return PieceType.Bishop;
-                if (rand < 95) return PieceType.Rook;
-                return PieceType.queen;
-        }
+			// KING zawsze wyłączony
+			int kingW = 0;
 
-        GameObject GetPrefabByType(PieceType type)
+			// unlock
+			int rookW = (economyConfig != null && round >= economyConfig.rookUnlockRound) ? Mathf.Max(0, weights.rookWeight) : 0;
+			int queenW = (economyConfig != null && round >= economyConfig.queenUnlockRound) ? Mathf.Max(0, weights.queenWeight) : 0;
+
+			int total = pawnW + knightW + bishopW + rookW + queenW;
+			if (total > 0)
+			{
+				int roll = Random.Range(0, total);
+				int current = pawnW;
+				if (roll < current) return PieceType.Pawn;
+				current += knightW;
+				if (roll < current) return PieceType.Knight;
+				current += bishopW;
+				if (roll < current) return PieceType.Bishop;
+				current += rookW;
+				if (roll < current) return PieceType.Rook;
+				return PieceType.queen;
+			}
+		}
+
+		// fallback (też z unlock)
+		int r = Random.Range(0, 100);
+		if (r < 45) return PieceType.Pawn;
+		if (r < 70) return PieceType.Knight;
+		if (r < 90) return PieceType.Bishop;
+		if (economyConfig == null || round >= economyConfig.rookUnlockRound) return PieceType.Rook;
+		if (economyConfig == null || round >= economyConfig.queenUnlockRound) return PieceType.queen;
+		return PieceType.Pawn;
+	}
+
+
+	GameObject GetPrefabByType(PieceType type)
         {
                 switch (type)
                 {
@@ -676,35 +729,35 @@ public class ShopManager : MonoBehaviour
                 return prices[type];
         }
 
-        public void TryRerollShop()
-        {
-                if (GameProgress.Instance == null)
-                {
-                        return;
-                }
+	public void TryRerollShop()
+	{
+		if (GameProgress.Instance == null)
+			return;
 
-                int cost = economyConfig != null ? economyConfig.rerollCost : 0;
-                if (cost > 0 && GameProgress.Instance.coins < cost)
-                {
-                        Debug.Log("Nie stać Cię na przelosowanie sklepu!");
-                        return;
-                }
+		int cost = economyConfig != null ? economyConfig.rerollCost : 0;
+		if (cost > 0 && GameProgress.Instance.coins < cost)
+		{
+			Debug.Log("Nie stać Cię na przelosowanie sklepu!");
+			return;
+		}
 
-                int coinsBefore = GameProgress.Instance.coins;
-                if (cost > 0)
-                {
-                        GameProgress.Instance.SpendCoins(cost);
-                }
+		int coinsBefore = GameProgress.Instance.coins;
 
-                RefillShop();
-                UpdateUI();
-                if (TelemetryService.Instance != null)
-                {
-                        TelemetryService.Instance.LogReroll(cost, coinsBefore, GameProgress.Instance.coins);
-                }
-        }
+		if (cost > 0)
+			GameProgress.Instance.SpendCoins(cost);
 
-        private Button CreateRerollButton()
+		int coinsAfter = GameProgress.Instance.coins;
+
+		if (TelemetryService.Instance != null)
+			TelemetryService.Instance.LogReroll(cost, coinsBefore, coinsAfter);
+
+		RefillShop(); // to wygeneruje ofertę i zaloguje ShopOfferGenerated
+		UpdateUI();
+	}
+
+
+
+	private Button CreateRerollButton()
         {
                 Canvas canvas = FindObjectOfType<Canvas>();
                 if (canvas == null)
@@ -757,28 +810,40 @@ public class ShopManager : MonoBehaviour
                 rect.anchoredPosition = new Vector2(-30f, 30f);
         }
 
-        private void LogShopOffer()
-        {
-                if (TelemetryService.Instance == null || economyConfig == null)
-                {
-                        return;
-                }
+	//private void LogShopOffer()
+	//{
+	//	if (TelemetryService.Instance == null || economyConfig == null)
+	//		return;
 
-                List<string> offeredPieces = new List<string>();
-                foreach (GameObject tileGO in shopTiles)
-                {
-                        if (tileGO == null) continue;
-                        ShopItem item = tileGO.GetComponentInChildren<ShopItem>();
-                        if (item == null) continue;
-                        if (item.type == PieceType.King) continue;
-                        offeredPieces.Add(TelemetryService.ToTelemetryPieceType(item.type));
-                }
+	//	List<string> offeredPieces = new List<string>();
 
-                int slots = shopRows * shopCols;
-                TelemetryService.Instance.LogShopOfferGenerated(offeredPieces, slots, economyConfig.rerollCost);
-        }
+	//	foreach (GameObject tileGO in shopTiles)
+	//	{
+	//		if (tileGO == null)
+	//		{
+	//			offeredPieces.Add("Empty");
+	//			continue;
+	//		}
 
-        private int GetShopSlotIndex(Tile tile)
+	//		ShopItem item = tileGO.GetComponentInChildren<ShopItem>();
+	//		if (item == null || item.type == PieceType.King)
+	//		{
+	//			offeredPieces.Add("Empty");
+	//			continue;
+	//		}
+
+	//		offeredPieces.Add(TelemetryService.ToTelemetryPieceType(item.type));
+	//	}
+
+	//	// cache oferty pod sanity-check
+	//	currentOfferPieces = new List<string>(offeredPieces);
+
+	//	int slots = shopRows * shopCols;
+	//	TelemetryService.Instance.LogShopOfferGenerated(offeredPieces, slots, economyConfig.rerollCost);
+	//}
+
+
+	private int GetShopSlotIndex(Tile tile)
         {
                 if (tile == null)
                 {
