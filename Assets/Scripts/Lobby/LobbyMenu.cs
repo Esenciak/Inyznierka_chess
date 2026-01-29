@@ -642,6 +642,8 @@ public class LobbyMenu : MonoBehaviour
                         }
                         LobbyState.RegisterLobby(currentLobby.Id, true);
                         LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
+                            if (TelemetryService.Instance != null)
+                                TelemetryService.Instance.SetMatchContext(LobbyState.CurrentLobbyId);
                         ResetProgressForNewLobby();
 
                         if (connectionMenu != null)
@@ -715,7 +717,9 @@ public class LobbyMenu : MonoBehaviour
                         SetStatus($"Dołączono do lobby: {currentLobby.Name}");
                         LobbyState.RegisterLobby(currentLobby.Id, false);
                         LobbyState.UpdateFromLobby(currentLobby, AuthenticationService.Instance.PlayerId);
-                        ResetProgressForNewLobby();
+                        if (TelemetryService.Instance != null)
+                            TelemetryService.Instance.SetMatchContext(LobbyState.CurrentLobbyId);
+	   	            	ResetProgressForNewLobby();
 
                         if (connectionMenu != null)
                         {

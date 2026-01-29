@@ -78,9 +78,12 @@ public class TelemetryService : MonoBehaviour
 
 		if (!matchStarted)
 		{
-			matchId = TelemetryIds.CreateMatchId();
+			if (string.IsNullOrEmpty(matchId))
+				matchId = TelemetryIds.CreateMatchId(); // fallback offline
+
 			matchStarted = true;
 			clock.Reset();
+			LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
 		}
 
 		if (!matchStartLogged)
@@ -106,6 +109,8 @@ public class TelemetryService : MonoBehaviour
 		matchStartLogged = false;   
 		clock.Reset();
 	}
+
+
 
 	public void StartRound(int roundNumber, int coinsAtStart)
     {

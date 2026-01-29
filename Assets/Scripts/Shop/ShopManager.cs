@@ -313,9 +313,7 @@ public class ShopManager : MonoBehaviour
 
 	public void TryBuyPiece(ShopItem item)
 	{
-		InventoryManager inventory = InventoryManager.Instance;
-		if (inventory == null) inventory = FindObjectOfType<InventoryManager>();
-
+		InventoryManager inventory = InventoryManager.Instance ?? FindObjectOfType<InventoryManager>();
 		if (inventory == null)
 		{
 			Debug.Log("Nie kupiono: brak InventoryManager.");
@@ -329,9 +327,6 @@ public class ShopManager : MonoBehaviour
 			return;
 		}
 
-		if (GameProgress.Instance == null)
-			return;
-
 		if (GameProgress.Instance.coins < item.price)
 		{
 			Debug.Log("Nie stać Cię!");
@@ -339,19 +334,19 @@ public class ShopManager : MonoBehaviour
 		}
 
 		int coinsBefore = GameProgress.Instance.coins;
-
 		bool success = inventory.AddPieceToInventory(item.type, GetPrefabByType(item.type));
+
 		if (!success)
 		{
 			Debug.Log("Nie kupiono: Brak miejsca w ekwipunku!");
 			return;
 		}
 
-		// Zapłać
+		// kasa
 		GameProgress.Instance.SpendCoins(item.price);
 		int coinsAfter = GameProgress.Instance.coins;
 
-		// Telemetria (best-effort)
+		// telemetry (NIE BLOKUJE logiki sklepu)
 		if (TelemetryService.Instance != null && item.type != PieceType.King)
 		{
 			int slotIndex = GetShopSlotIndex(item.CurrentTile);
@@ -371,7 +366,7 @@ public class ShopManager : MonoBehaviour
 			TelemetryService.Instance.LogPurchase(bought, item.price, slotIndex, coinsBefore, coinsAfter);
 		}
 
-		// Zawsze usuń item ze sklepu (niezależnie od telemetry)
+		// usuń z tile + zniszcz
 		if (item.CurrentTile != null)
 		{
 			item.CurrentTile.isOccupied = false;
@@ -381,6 +376,7 @@ public class ShopManager : MonoBehaviour
 		Destroy(item.gameObject);
 		UpdateUI();
 	}
+
 
 
 	public void StartGame()
@@ -731,8 +727,7 @@ public class ShopManager : MonoBehaviour
 
 	public void TryRerollShop()
 	{
-		if (GameProgress.Instance == null)
-			return;
+		if (GameProgress.Instance == null) return;
 
 		int cost = economyConfig != null ? economyConfig.rerollCost : 0;
 		if (cost > 0 && GameProgress.Instance.coins < cost)
@@ -746,14 +741,16 @@ public class ShopManager : MonoBehaviour
 		if (cost > 0)
 			GameProgress.Instance.SpendCoins(cost);
 
+		RefillShop();
+		UpdateUI();
+
 		int coinsAfter = GameProgress.Instance.coins;
 
 		if (TelemetryService.Instance != null)
 			TelemetryService.Instance.LogReroll(cost, coinsBefore, coinsAfter);
-
-		RefillShop(); // to wygeneruje ofertę i zaloguje ShopOfferGenerated
-		UpdateUI();
 	}
+
+
 
 
 

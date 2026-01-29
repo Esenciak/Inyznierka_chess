@@ -1,3 +1,4 @@
+using Unity.VisualScripting;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Chess/Economy Config", fileName = "EconomyConfig")]
@@ -20,7 +21,7 @@ public class EconomyConfig : ScriptableObject
 	public int knightUnlockRound = 1;
 	public int bishopUnlockRound = 1;
 	public int rookUnlockRound = 3;  
-	public int queenUnlockRound = 5; 
+	public int queenUnlockRound = 5;
 
 	[System.Serializable]
     public struct PiecePricesByRound
@@ -66,7 +67,7 @@ public class EconomyConfig : ScriptableObject
     [Header("Shop Spawn Weights (per round)")]
     public PieceSpawnWeights[] spawnWeightsByRound;
 
-    public int GetPrice(PieceType type)
+	public int GetPrice(PieceType type)
     {
         switch (type)
         {
@@ -171,7 +172,10 @@ public class EconomyConfig : ScriptableObject
         }
 
         weights = spawnWeightsByRound[bestIndex];
-        return true;
+		ApplyUnlocks(roundNumber, ref weights);
+		return true;
+
+
     }
 
     public bool TryGetPricesForRound(int roundNumber, out PiecePricesByRound prices)
@@ -245,4 +249,17 @@ public class EconomyConfig : ScriptableObject
         rewards = cashRewardsByRound[bestIndex];
         return true;
     }
+
+
+	private void ApplyUnlocks(int roundNumber, ref PieceSpawnWeights w)
+	{
+		// King nigdy w sklepie
+		w.kingWeight = 0;
+
+		if (roundNumber < pawnUnlockRound) w.pawnWeight = 0;
+		if (roundNumber < knightUnlockRound) w.knightWeight = 0;
+		if (roundNumber < bishopUnlockRound) w.bishopWeight = 0;
+		if (roundNumber < rookUnlockRound) w.rookWeight = 0;
+		if (roundNumber < queenUnlockRound) w.queenWeight = 0;
+	}
 }
