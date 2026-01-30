@@ -379,6 +379,7 @@ public class TelemetryService : MonoBehaviour
         {
             MatchId = matchId,
             PlayerId = playerId,
+            PlayerName = LobbyState.LocalPlayerName,
             RoundNumber = currentRoundNumber,
             BalanceVersion = GetBalanceVersion(),
             BoardSize = boardSize,
@@ -503,4 +504,16 @@ public class TelemetryService : MonoBehaviour
         string path = string.IsNullOrEmpty(config.roundBatchEndpointPath) ? string.Empty : config.roundBatchEndpointPath.TrimStart('/');
         return string.IsNullOrEmpty(path) ? baseUrlTrimmed : $"{baseUrlTrimmed}/{path}";
     }
+
+	public void LogResignAndFlush(int boardSize, int coinsEnd, int piecesRemaining, string winnerColor, int totalRounds)
+	{
+		if (!IsTelemetryEnabled()) return;
+
+		// Najpierw MatchEnd, ¿eby znalaz³ siê w batchu
+		LogMatchEnd(winnerColor, "Resign", totalRounds);
+
+		// Potem RoundEnd -> to wysy³a batch i czyœci currentEvents
+		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize);
+	}
+
 }

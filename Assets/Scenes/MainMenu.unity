@@ -827,8 +827,28 @@ PrefabInstance:
     m_RemovedGameObjects:
     - {fileID: 6546161023823653397, guid: 93d1033599e6a084c844e18969831caf, type: 3}
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 9190330379715019098, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1216551664}
   m_SourcePrefab: {fileID: 100100000, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+--- !u!1 &1216551657 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9190330379715019098, guid: 93d1033599e6a084c844e18969831caf, type: 3}
+  m_PrefabInstance: {fileID: 1059313607}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1216551664
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1216551657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a2e2711e1f51f1488f1214f0f96f436, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EventSystemGuard
 --- !u!1 &1244178006
 GameObject:
   m_ObjectHideFlags: 0
@@ -1106,6 +1126,7 @@ MonoBehaviour:
   loginPanel: {fileID: 0}
   lobbyPanel: {fileID: 0}
   connectionMenu: {fileID: 1551498438}
+  relayRegionOverride: 
 --- !u!1 &1838831303
 GameObject:
   m_ObjectHideFlags: 0

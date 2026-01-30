@@ -91,8 +91,8 @@ public class BattleMoveSync : NetworkBehaviour
 
                 if (GameManager.Instance != null)
                 {
-                        GameManager.Instance.GameOver(hostWon, "Resign");
-                }
+			        GameManager.Instance.GameOver(hostWon, "ResignRound");
+		        }
 
                 SendResignToClients(hostWon);
         }
@@ -295,10 +295,11 @@ public class BattleMoveSync : NetworkBehaviour
 
                 bool localIsHost = NetworkManager.Singleton != null && NetworkManager.Singleton.IsHost;
                 bool localWon = localIsHost == hostWon;
-                GameManager.Instance.GameOver(localWon, "Resign");
-        }
+		        GameManager.Instance.GameOver(localWon, "ResignRound");
 
-        private void ApplyMoveLocal(Piece piece, Tile targetTile)
+    	}
+
+	private void ApplyMoveLocal(Piece piece, Tile targetTile)
         {
                 if (piece.currentTile != null)
                 {

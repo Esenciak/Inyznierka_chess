@@ -320,87 +320,125 @@ public class GameManager : MonoBehaviour
                 currentTurn = PieceOwner.Player;
         }
 
-        public void GameOver(bool playerWon, string reason = "KingCaptured")
-        {
-                if (gameEnded) return;
+	public void GameOver(bool localWon, string reason = "KingCaptured")
+	{
+		if (gameEnded) return;
+		gameEnded = true;
 
-                gameEnded = true;
-                Debug.Log(playerWon ? "WYGRANA!" : "PRZEGRANA!");
+		// "Resign" z battle ma kończyć TYLKO rundę.
+		// "ResignMatch" (docelowo ze sklepu) ma kończyć CAŁY mecz.
+		string sceneName = SceneManager.GetActiveScene().name;
+		bool isShopScene = sceneName == "Shop";
+		bool isMatchResign = isShopScene && (reason == "ResignMatch");
 
-                if (GameProgress.Instance != null)
-                {
-                        int piecesRemaining = GetLocalPiecesRemaining();
-                        UpdateArmyAfterBattle();
-                        int roundNumber = GameProgress.Instance.gamesPlayed + 1;
-                        int winValue = economyConfig != null ? economyConfig.GetWinReward(roundNumber) : winReward;
-                        int loseValue = economyConfig != null ? economyConfig.GetLoseReward(roundNumber) : loseReward;
-                        GameProgress.Instance.CompleteRound(playerWon, winValue, loseValue);
-                        if (GameProgress.Instance.gamesPlayed >= 9)
-                        {
-                                if (TelemetryService.Instance != null)
-                                {
-                                        string winnerColor = ResolveWinnerColor(playerWon);
-                                        TelemetryService.Instance.LogMatchEnd(winnerColor, reason, GameProgress.Instance.gamesPlayed);
-                                }
-                        }
-                        if (TelemetryService.Instance != null && BoardManager.Instance != null)
-                        {
-                                TelemetryService.Instance.LogRoundEnd(
-                                        playerWon,
-                                        GameProgress.Instance.coins,
-                                        piecesRemaining,
-                                        BoardManager.Instance.CenterRows);
-                        }
-                        if (GameProgress.Instance.gamesPlayed >= 9)
-                        {
-                                GameProgress.Instance.lastWinnerMessage = playerWon ? "Winner: You" : "Winner: Enemy";
-                                if (isMultiplayer && Unity.Netcode.NetworkManager.Singleton != null)
-                                {
-                                        if (Unity.Netcode.NetworkManager.Singleton.IsServer)
-                                        {
-                                                SceneFader.FadeOutThen(() =>
-                                                {
-                                                        Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("MainMenu", UnityEngine.SceneManagement.LoadSceneMode.Single);
-                                                });
-                                        }
-                                }
-                                else
-                                {
-                                        SceneFader.LoadSceneWithFade("MainMenu");
-                                }
-                                return;
-                        }
-                        if (isMultiplayer && Unity.Netcode.NetworkManager.Singleton != null)
-                        {
-                                if (Unity.Netcode.NetworkManager.Singleton.IsServer)
-                                {
-                                        if (BattleSession.Instance != null)
-                                        {
-                                                BattleSession.Instance.SharedGamesPlayed.Value = GameProgress.Instance.gamesPlayed;
-                                                BattleSession.Instance.SharedPlayerBoardSize.Value = GameProgress.Instance.playerBoardSize;
-                                                BattleSession.Instance.ResetSessionState();
-                                        }
-                                        SceneFader.FadeOutThen(() =>
-                                        {
-                                                Unity.Netcode.NetworkManager.Singleton.SceneManager.LoadScene("Shop", UnityEngine.SceneManagement.LoadSceneMode.Single);
-                                        });
-                                }
-                        }
-                        else
-                        {
-                                GameProgress.Instance.LoadScene("Shop");
-                        }
-                }
-                else
-                {
-                        Debug.LogWarning("GameProgress jest null - nie mogę zapisać nagrody.");
-                }
+		// battle-resign: traktuj też zwykłe "Resign" / "ResignRound" jako koniec rundy
+		bool isRoundResign = (!isShopScene) && (reason == "Resign" || reason == "ResignRound");
 
-                currentPhase = GamePhase.Placement;
-                currentTurn = PieceOwner.Player;
-        }
+		if (GameProgress.Instance == null)
+		{
+			Debug.LogWarning("GameProgress jest null - nie mogę zapisać wyniku.");
+			currentPhase = GamePhase.Placement;
+			currentTurn = PieceOwner.Player;
+			return;
+		}
 
-        private void UpdateArmyAfterBattle()
+		int piecesRemaining = GetLocalPiecesRemaining();
+		int centerSize = (BoardManager.Instance != null && BoardManager.Instance.CenterRows > 0) ? BoardManager.Instance.CenterRows : 3;
+
+		// aktualizuj armię po walce (jak miałeś)
+		UpdateArmyAfterBattle();
+
+		int roundNumber = GameProgress.Instance.gamesPlayed + 1;
+		int winValue = economyConfig != null ? economyConfig.GetWinReward(roundNumber) : winReward;
+		int loseValue = economyConfig != null ? economyConfig.GetLoseReward(roundNumber) : loseReward;
+
+		// zapis wyniku rundy (+ nagrody)
+		GameProgress.Instance.CompleteRound(localWon, winValue, loseValue);
+
+		// czy mecz się skończył?
+		bool matchFinished = isMatchResign || (GameProgress.Instance.gamesPlayed >= 9);
+
+		// TELEMETRIA:
+		// - RoundEnd zawsze (jeśli mamy BoardManager)
+		// - MatchEnd TYLKO gdy matchFinished
+		// - jeżeli matchFinished, to loguj MatchEnd PRZED RoundEnd, żeby wpadło do tego samego batcha (ostatnia runda)
+		if (TelemetryService.Instance != null)
+		{
+			if (matchFinished)
+			{
+				string winnerColor = ResolveWinnerColor(localWon);
+				string matchReason = isMatchResign ? "ResignMatch" : reason;
+				TelemetryService.Instance.LogMatchEnd(winnerColor, matchReason, GameProgress.Instance.gamesPlayed);
+			}
+
+			if (BoardManager.Instance != null)
+			{
+				TelemetryService.Instance.LogRoundEnd(localWon, GameProgress.Instance.coins, piecesRemaining, centerSize);
+			}
+		}
+
+		// Przejścia scen:
+		// Multiplayer -> tylko SERVER ładuje scenę (klient dostaje ją przez Netcode)
+		if (matchFinished)
+		{
+			GameProgress.Instance.lastWinnerMessage = localWon ? "Winner: You" : "Winner: Enemy";
+
+			if (isMultiplayer && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+			{
+				SceneFader.FadeOutThen(() =>
+				{
+					NetworkManager.Singleton.SceneManager.LoadScene("MainMenu", LoadSceneMode.Single);
+				});
+			}
+			else if (!isMultiplayer)
+			{
+				SceneFader.LoadSceneWithFade("MainMenu");
+			}
+
+			currentPhase = GamePhase.Placement;
+			currentTurn = PieceOwner.Player;
+			return;
+		}
+
+		// normalnie wracamy do Shop po rundzie (także po battle-resign)
+		if (isMultiplayer && NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+		{
+			if (BattleSession.Instance != null)
+			{
+				BattleSession.Instance.SharedGamesPlayed.Value = GameProgress.Instance.gamesPlayed;
+				BattleSession.Instance.SharedPlayerBoardSize.Value = GameProgress.Instance.playerBoardSize;
+				BattleSession.Instance.ResetSessionState();
+			}
+
+			SceneFader.FadeOutThen(() =>
+			{
+				NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
+			});
+		}
+		else if (!isMultiplayer)
+		{
+			GameProgress.Instance.LoadScene("Shop");
+		}
+
+		currentPhase = GamePhase.Placement;
+		currentTurn = PieceOwner.Player;
+	}
+
+
+
+	private int ResolveCenterBoardSizeSafe()
+	{
+		if (GameProgress.Instance != null && GameProgress.Instance.centerBoardSize > 0)
+			return GameProgress.Instance.centerBoardSize;
+
+		if (BoardManager.Instance != null && BoardManager.Instance.CenterRows > 0)
+			return BoardManager.Instance.CenterRows;
+
+		return 3;
+	}
+
+
+	private void UpdateArmyAfterBattle()
         {
                 if (GameProgress.Instance == null || BoardManager.Instance == null)
                 {

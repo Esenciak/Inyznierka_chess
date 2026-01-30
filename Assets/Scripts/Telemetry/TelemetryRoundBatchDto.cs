@@ -5,6 +5,8 @@ public class TelemetryRoundBatchDto
 	public int SchemaVersion { get; set; } = 1;
 	public string MatchId { get; set; }
     public string PlayerId { get; set; }
+ 
+    public string PlayerName { get; set; }
     public int RoundNumber { get; set; }
     public string BalanceVersion { get; set; }
     public int BoardSize { get; set; }

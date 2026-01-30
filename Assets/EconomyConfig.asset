@@ -12,16 +12,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44ff70435d124196abf748b25e2283e0, type: 3}
   m_Name: EconomyConfig
   m_EditorClassIdentifier: Assembly-CSharp::EconomyConfig
+  pawnUnlockRound: 1
+  knightUnlockRound: 1
+  bishopUnlockRound: 1
+  rookUnlockRound: 3
+  queenUnlockRound: 5
   startingCoins: 100
   winReward: 20
   loseReward: 10
   rerollCost: 10
-  pawnPrice: 10
+  configVersion: v1
+  pawnPrice: 666
   kingPrice: 0
-  queenPrice: 100
-  rookPrice: 50
-  bishopPrice: 40
-  knightPrice: 25
+  queenPrice: 666
+  rookPrice: 666
+  bishopPrice: 666
+  knightPrice: 666
   pricesByRound:
   - roundNumber: 1
     pawnPrice: 1
