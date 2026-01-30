@@ -17,6 +17,9 @@ public class TelemetryConfig : ScriptableObject
     public bool enableTelemetry = true;
     public bool logToUnityConsole = true;
 
+    [Header("Debug")]
+    public bool showBattleCoordsDebug = false;
+
     [Header("save to file")]
 	public bool writeBatchesToDisk = true;
 	public bool writeEventsToDisk = true; // opcjonalnie

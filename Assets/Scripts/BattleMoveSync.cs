@@ -143,10 +143,12 @@ public class BattleMoveSync : NetworkBehaviour
 
                 bool capturedKing = false;
                 Piece capturedPiece = null;
+                string capturedPieceType = null;
                 if (toTile.isOccupied && toTile.currentPiece != null && toTile.currentPiece.owner != expectedOwner)
                 {
                         capturedKing = toTile.currentPiece.pieceType == PieceType.King;
                         capturedPiece = toTile.currentPiece;
+                        capturedPieceType = TelemetryService.ToTelemetryPieceType(capturedPiece.pieceType);
                         Destroy(toTile.currentPiece.gameObject);
                 }
 
@@ -162,7 +164,7 @@ public class BattleMoveSync : NetworkBehaviour
                                 toCoords.y,
                                 toCoords.x);
 
-                        if (capturedPiece != null)
+                        if (capturedPieceType != null)
                         {
                                 TelemetryService.Instance.LogPieceCaptured(
                                         movingPieceType,
@@ -170,7 +172,9 @@ public class BattleMoveSync : NetworkBehaviour
                                         fromCoords.x,
                                         toCoords.y,
                                         toCoords.x,
-                                        TelemetryService.ToTelemetryPieceType(capturedPiece.pieceType));
+                                        capturedPieceType,
+                                        GetCaptureBoardSize(),
+                                        GetCaptureRegion(toCoords.x));
                         }
                 }
 
@@ -270,12 +274,48 @@ public class BattleMoveSync : NetworkBehaviour
                         return;
                 }
 
-                if (toTile.isOccupied && toTile.currentPiece != null && toTile.currentPiece != fromTile.currentPiece)
+                Piece movingPiece = fromTile.currentPiece;
+                string movingPieceType = null;
+                if (movingPiece != null)
                 {
+                        movingPieceType = TelemetryService.ToTelemetryPieceType(movingPiece.pieceType);
+                }
+
+                string capturedPieceType = null;
+                if (toTile.isOccupied && toTile.currentPiece != null && toTile.currentPiece != movingPiece)
+                {
+                        capturedPieceType = TelemetryService.ToTelemetryPieceType(toTile.currentPiece.pieceType);
                         Destroy(toTile.currentPiece.gameObject);
                 }
 
-                ApplyMoveLocal(fromTile.currentPiece, toTile);
+                if (movingPiece != null)
+                {
+                        ApplyMoveLocal(movingPiece, toTile);
+                }
+
+                PieceOwner moveOwner = hostWon ? PieceOwner.Player : PieceOwner.Enemy;
+                if (movingPieceType != null && TelemetryService.Instance != null && TelemetryService.Instance.IsLocalOwner(moveOwner))
+                {
+                        TelemetryService.Instance.LogPieceMoved(
+                                movingPieceType,
+                                fromCoords.y,
+                                fromCoords.x,
+                                toCoords.y,
+                                toCoords.x);
+
+                        if (capturedPieceType != null)
+                        {
+                                TelemetryService.Instance.LogPieceCaptured(
+                                        movingPieceType,
+                                        fromCoords.y,
+                                        fromCoords.x,
+                                        toCoords.y,
+                                        toCoords.x,
+                                        capturedPieceType,
+                                        GetCaptureBoardSize(),
+                                        GetCaptureRegion(toCoords.x));
+                        }
+                }
 
                 if (capturedKing && GameManager.Instance != null)
                 {
@@ -347,5 +387,37 @@ public class BattleMoveSync : NetworkBehaviour
                 }
 
                 BattleSession.Instance.ActiveTeam.Value = turn == PieceOwner.Player ? 0 : 1;
+        }
+
+        private int? GetCaptureBoardSize()
+        {
+                if (BoardManager.Instance == null)
+                {
+                        return null;
+                }
+
+                return BoardManager.Instance.CenterRows;
+        }
+
+        private string GetCaptureRegion(int globalRow)
+        {
+                if (BoardManager.Instance == null)
+                {
+                        return null;
+                }
+
+                int playerRows = BoardManager.Instance.PlayerRows;
+                int centerRows = BoardManager.Instance.CenterRows;
+                if (globalRow < playerRows)
+                {
+                        return "Player";
+                }
+
+                if (globalRow < playerRows + centerRows)
+                {
+                        return "Center";
+                }
+
+                return "Enemy";
         }
 }

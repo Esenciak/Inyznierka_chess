@@ -241,7 +241,15 @@ public class TelemetryService : MonoBehaviour
         LogEvent(evt);
     }
 
-    public void LogPieceCaptured(string pieceType, int fromX, int fromY, int toX, int toY, string capturedPieceType)
+    public void LogPieceCaptured(
+        string pieceType,
+        int fromX,
+        int fromY,
+        int toX,
+        int toY,
+        string capturedPieceType,
+        int? boardSize = null,
+        string capturedOnRegion = null)
     {
         if (!IsTelemetryEnabled())
         {
@@ -256,6 +264,8 @@ public class TelemetryService : MonoBehaviour
         evt.ToY = toY;
         evt.CapturedPieceType = capturedPieceType;
         evt.BoardContext = "Battle";
+        evt.BoardSize = boardSize;
+        evt.CapturedOnRegion = capturedOnRegion;
         LogEvent(evt);
     }
 
@@ -390,7 +400,7 @@ public class TelemetryService : MonoBehaviour
 
 		string json = TelemetryJson.SerializeBatch(batch);
 
-		// DEBUG: zawsze zapisuj batch lokalnie, ¿eby sprawdziæ czy dzia³a
+		// DEBUG: zawsze zapisuj batch lokalnie, Â¿eby sprawdziÃ¦ czy dziaÂ³a
 		if (config != null && config.writeBatchesToDisk)
 		{
 			fileLogger.WriteBatch(json, currentRoundNumber);
@@ -509,10 +519,10 @@ public class TelemetryService : MonoBehaviour
 	{
 		if (!IsTelemetryEnabled()) return;
 
-		// Najpierw MatchEnd, ¿eby znalaz³ siê w batchu
+		// Najpierw MatchEnd, Â¿eby znalazÂ³ siÃª w batchu
 		LogMatchEnd(winnerColor, "Resign", totalRounds);
 
-		// Potem RoundEnd -> to wysy³a batch i czyœci currentEvents
+		// Potem RoundEnd -> to wysyÂ³a batch i czyÂœci currentEvents
 		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize);
 	}
 

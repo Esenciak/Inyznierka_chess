@@ -48,6 +48,7 @@ public class TelemetryEventBase
 
     public int? BoardSize { get; set; }
     public string CapturedPieceType { get; set; }
+    public string CapturedOnRegion { get; set; }
 
     public bool? PlayerWon { get; set; }
     public int? CoinsEnd { get; set; }
