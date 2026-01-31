@@ -14,6 +14,7 @@ public static class TelemetryEventTypes
     public const string PieceMoved = "PieceMoved";
     public const string PieceCaptured = "PieceCaptured";
     public const string RoundEnd = "RoundEnd";
+    public const string ResignRound = "ResignRound";
     public const string MatchEnd = "MatchEnd";
 }
 
@@ -26,6 +27,8 @@ public class TelemetryEventBase
     public string EventType { get; set; }
     public string TimestampUtc { get; set; }
     public long ClientTimeMsFromMatchStart { get; set; }
+    public int ClientEventSeq { get; set; }
+    public int? TurnIndexInRound { get; set; }
 
     public string[] OfferedPieces { get; set; }
     public int? ShopSlots { get; set; }

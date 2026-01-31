@@ -11,6 +11,11 @@ public class BattleMoveSync : NetworkBehaviour
                 NetworkVariableReadPermission.Everyone,
                 NetworkVariableWritePermission.Server);
 
+        public NetworkVariable<int> TurnIndexInRound = new NetworkVariable<int>(
+                0,
+                NetworkVariableReadPermission.Everyone,
+                NetworkVariableWritePermission.Server);
+
         private void Awake()
         {
                 if (Instance != null && Instance != this)
@@ -35,6 +40,7 @@ public class BattleMoveSync : NetworkBehaviour
                 if (IsServer)
                 {
                         CurrentTurn.Value = PieceOwner.Player;
+                        TurnIndexInRound.Value = 0;
                         SyncActiveTeam(CurrentTurn.Value);
                 }
                 HandleTurnChanged(CurrentTurn.Value, CurrentTurn.Value);
@@ -154,6 +160,9 @@ public class BattleMoveSync : NetworkBehaviour
 
                 ApplyMoveLocal(movingPiece, toTile);
 
+                int turnIndexInRound = TurnIndexInRound.Value;
+                TurnIndexInRound.Value = turnIndexInRound + 1;
+
                 if (TelemetryService.Instance != null && TelemetryService.Instance.IsLocalOwner(expectedOwner))
                 {
                         string movingPieceType = TelemetryService.ToTelemetryPieceType(movingPiece.pieceType);
@@ -162,7 +171,8 @@ public class BattleMoveSync : NetworkBehaviour
                                 fromCoords.y,
                                 fromCoords.x,
                                 toCoords.y,
-                                toCoords.x);
+                                toCoords.x,
+                                turnIndexInRound);
 
                         if (capturedPieceType != null)
                         {
@@ -174,7 +184,8 @@ public class BattleMoveSync : NetworkBehaviour
                                         toCoords.x,
                                         capturedPieceType,
                                         GetCaptureBoardSize(),
-                                        GetCaptureRegion(toCoords.x));
+                                        GetCaptureRegion(toCoords.x),
+                                        turnIndexInRound);
                         }
                 }
 
@@ -188,10 +199,10 @@ public class BattleMoveSync : NetworkBehaviour
                         GameManager.Instance.GameOver(hostWon, "KingCaptured");
                 }
 
-                SendMoveToClients(fromCoords.x, fromCoords.y, toCoords.x, toCoords.y, capturedKing, expectedOwner == PieceOwner.Player);
+                SendMoveToClients(fromCoords.x, fromCoords.y, toCoords.x, toCoords.y, capturedKing, expectedOwner == PieceOwner.Player, turnIndexInRound);
         }
 
-        private void SendMoveToClients(int fromRow, int fromCol, int toRow, int toCol, bool capturedKing, bool hostWon)
+        private void SendMoveToClients(int fromRow, int fromCol, int toRow, int toCol, bool capturedKing, bool hostWon, int turnIndexInRound)
         {
                 if (NetworkManager.Singleton == null)
                 {
@@ -218,7 +229,7 @@ public class BattleMoveSync : NetworkBehaviour
                         }
                 };
 
-                ApplyMoveClientRpc(fromRow, fromCol, toRow, toCol, capturedKing, hostWon, rpcParams);
+                ApplyMoveClientRpc(fromRow, fromCol, toRow, toCol, capturedKing, hostWon, turnIndexInRound, rpcParams);
         }
 
         private void SendResignToClients(bool hostWon)
@@ -252,7 +263,7 @@ public class BattleMoveSync : NetworkBehaviour
         }
 
         [ClientRpc]
-        private void ApplyMoveClientRpc(int fromRow, int fromCol, int toRow, int toCol, bool capturedKing, bool hostWon, ClientRpcParams rpcParams = default)
+        private void ApplyMoveClientRpc(int fromRow, int fromCol, int toRow, int toCol, bool capturedKing, bool hostWon, int turnIndexInRound, ClientRpcParams rpcParams = default)
         {
                 if (BoardManager.Instance == null)
                 {
@@ -301,7 +312,8 @@ public class BattleMoveSync : NetworkBehaviour
                                 fromCoords.y,
                                 fromCoords.x,
                                 toCoords.y,
-                                toCoords.x);
+                                toCoords.x,
+                                turnIndexInRound);
 
                         if (capturedPieceType != null)
                         {
@@ -313,7 +325,8 @@ public class BattleMoveSync : NetworkBehaviour
                                         toCoords.x,
                                         capturedPieceType,
                                         GetCaptureBoardSize(),
-                                        GetCaptureRegion(toCoords.x));
+                                        GetCaptureRegion(toCoords.x),
+                                        turnIndexInRound);
                         }
                 }
 
@@ -419,5 +432,10 @@ public class BattleMoveSync : NetworkBehaviour
                 }
 
                 return "Enemy";
+        }
+
+        public int GetLastTurnIndexInRound()
+        {
+                return Mathf.Max(TurnIndexInRound.Value - 1, 0);
         }
 }

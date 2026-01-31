@@ -59,7 +59,16 @@
 
 ## Event list and fields
 All events share base fields:
-- `eventId`, `matchId`, `playerId`, `roundNumber`, `eventType`, `timestampUtc`, `clientTimeMsFromMatchStart`
+- `eventId`, `matchId`, `playerId`, `roundNumber`, `eventType`, `timestampUtc`, `clientTimeMsFromMatchStart`, `clientEventSeq`
+
+### Identity + ordering semantics
+- **playerId**: uses `AuthenticationService.Instance.PlayerId` when signed in; otherwise a GUID stored in `PlayerPrefs` under `TelemetryPlayerId`.
+- **matchId**: uses the lobby ID (`LobbyState.CurrentLobbyId`) shared by host and client for the entire match; offline fallback uses a generated GUID.
+- **clientEventSeq**: monotonically increasing per client instance for every telemetry event.
+- **turnIndexInRound**: server-synchronized 0-based move index in battle; incremented after each accepted move and reused on `PieceMoved`/`PieceCaptured` plus end-of-round events (`RoundEnd`, `ResignRound`).
+
+### Coordinate convention
+- `fromX/fromY/toX/toY` map directly to `Tile.globalCol` / `Tile.globalRow` (global board coordinates).
 
 Additional fields per event:
 - **ShopOfferGenerated**: `offeredPieces`, `shopSlots`, `rerollCost`
@@ -68,9 +77,10 @@ Additional fields per event:
 - **Sell**: `pieceType`, `refund`, `coinsBefore`, `coinsAfter`
 - **PiecePlaced**: `pieceType`, `toX`, `toY`, `source` (Inventory|Swap|Initial), `boardContext` (Setup)
 - **BattleStart**: `boardSize`
-- **PieceMoved**: `pieceType`, `fromX`, `fromY`, `toX`, `toY`, `boardContext` (Battle)
-- **PieceCaptured**: `pieceType`, `fromX`, `fromY`, `toX`, `toY`, `capturedPieceType`, `boardContext` (Battle)
-- **RoundEnd**: `playerWon`, `coinsEnd`, `piecesRemaining`, `boardSize`
+- **PieceMoved**: `pieceType`, `fromX`, `fromY`, `toX`, `toY`, `boardContext` (Battle), `turnIndexInRound`
+- **PieceCaptured**: `pieceType`, `fromX`, `fromY`, `toX`, `toY`, `capturedPieceType`, `boardContext` (Battle), `boardSize`, `turnIndexInRound`
+- **ResignRound**: `playerWon`, `coinsEnd`, `piecesRemaining`, `boardSize`, `turnIndexInRound`
+- **RoundEnd**: `playerWon`, `coinsEnd`, `piecesRemaining`, `boardSize`, `turnIndexInRound`
 - **MatchEnd**: `winnerColor`, `reason`, `totalRounds`
 
 > Note: King is **never** logged as a shop offer or purchase. King can still appear in battle events.

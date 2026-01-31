@@ -168,10 +168,6 @@ public class PieceMovement : MonoBehaviour
                                                 BattleMoveSync.Instance.SubmitMove(pieceComponent, targetTile);
                                                 if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer)
                                                 {
-                                                        if (shouldLogLocalMove && TelemetryService.Instance != null)
-                                                        {
-                                                                LogBattleTelemetry(movingPieceType, fromX, fromY, toX, toY, targetTile);
-                                                        }
                                                         transform.position = startPosition;
                                                 }
                                                 return;
@@ -192,7 +188,8 @@ public class PieceMovement : MonoBehaviour
 
                                         if (shouldLogLocalMove && TelemetryService.Instance != null)
                                         {
-                                                LogBattleTelemetry(movingPieceType, fromX, fromY, toX, toY, targetTile, capturedPiece);
+                                                int turnIndexInRound = TelemetryService.Instance.GetNextLocalTurnIndexInRound();
+                                                LogBattleTelemetry(movingPieceType, fromX, fromY, toX, toY, targetTile, turnIndexInRound, capturedPiece);
                                         }
 
                                         if (capturedPiece != null && capturedPiece.pieceType == PieceType.King && GameManager.Instance != null)
@@ -283,9 +280,9 @@ public class PieceMovement : MonoBehaviour
                 return TelemetryService.Instance != null && TelemetryService.Instance.IsLocalOwner(pieceComponent.owner);
         }
 
-        private void LogBattleTelemetry(string movingPieceType, int fromX, int fromY, int toX, int toY, Tile targetTile, Piece capturedPiece = null)
+        private void LogBattleTelemetry(string movingPieceType, int fromX, int fromY, int toX, int toY, Tile targetTile, int turnIndexInRound, Piece capturedPiece = null)
         {
-                TelemetryService.Instance.LogPieceMoved(movingPieceType, fromX, fromY, toX, toY);
+                TelemetryService.Instance.LogPieceMoved(movingPieceType, fromX, fromY, toX, toY, turnIndexInRound);
 
                 if (capturedPiece != null)
                 {
@@ -295,7 +292,10 @@ public class PieceMovement : MonoBehaviour
                                 fromY,
                                 toX,
                                 toY,
-                                TelemetryService.ToTelemetryPieceType(capturedPiece.pieceType));
+                                TelemetryService.ToTelemetryPieceType(capturedPiece.pieceType),
+                                BoardManager.Instance != null ? BoardManager.Instance.CenterRows : (int?)null,
+                                null,
+                                turnIndexInRound);
                 }
         }
 }

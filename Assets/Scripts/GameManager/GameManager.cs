@@ -352,11 +352,24 @@ public class GameManager : MonoBehaviour
 		// Telemetria końca rundy (każdy klient loguje "swój" wynik)
 		if (TelemetryService.Instance != null && BoardManager.Instance != null)
 		{
+			int turnIndexInRound = ResolveTurnIndexInRoundForTelemetry();
+			if (reason == "ResignRound")
+			{
+				TelemetryService.Instance.LogResignRound(
+					localWon,
+					GameProgress.Instance.coins,
+					piecesRemaining,
+					BoardManager.Instance.CenterRows,
+					turnIndexInRound
+				);
+			}
+
 			TelemetryService.Instance.LogRoundEnd(
 				localWon,
 				GameProgress.Instance.coins,
 				piecesRemaining,
-				BoardManager.Instance.CenterRows
+				BoardManager.Instance.CenterRows,
+				turnIndexInRound
 			);
 		}
 
@@ -430,6 +443,21 @@ public class GameManager : MonoBehaviour
 
 		currentPhase = GamePhase.Placement;
 		currentTurn = PieceOwner.Player;
+	}
+
+	private int ResolveTurnIndexInRoundForTelemetry()
+	{
+		if (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned)
+		{
+			return BattleMoveSync.Instance.GetLastTurnIndexInRound();
+		}
+
+		if (TelemetryService.Instance != null)
+		{
+			return TelemetryService.Instance.GetLastTurnIndexInRound();
+		}
+
+		return 0;
 	}
 
 
