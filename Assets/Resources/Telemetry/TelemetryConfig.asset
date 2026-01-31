@@ -19,5 +19,6 @@ MonoBehaviour:
   flushIntervalSeconds: 15
   enableTelemetry: 1
   logToUnityConsole: 1
+  showBattleCoordsDebug: 0
   writeBatchesToDisk: 1
   writeEventsToDisk: 1
