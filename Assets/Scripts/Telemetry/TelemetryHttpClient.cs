@@ -80,7 +80,17 @@ public class TelemetryHttpClient
             bool success = request.result == UnityWebRequest.Result.Success || isConflict;
             if (!success)
             {
-                Debug.LogError($"[Telemetry] Send failed: {request.error}\nResponse: {request.downloadHandler.text}");
+                bool isTimeout = !string.IsNullOrEmpty(request.error) &&
+                    request.error.IndexOf("timeout", StringComparison.OrdinalIgnoreCase) >= 0;
+                string message = $"[Telemetry] Send failed: {request.error}\nResponse: {request.downloadHandler.text}";
+                if (isTimeout)
+                {
+                    Debug.LogWarning(message);
+                }
+                else
+                {
+                    Debug.LogError(message);
+                }
             }
             else if (config != null && config.logToUnityConsole && !isConflict)
             {
