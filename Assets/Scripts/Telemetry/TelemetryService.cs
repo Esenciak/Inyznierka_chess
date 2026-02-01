@@ -73,31 +73,33 @@ public class TelemetryService : MonoBehaviour
 	}
 
 	public void StartMatchIfNeeded(int roundNumber)
-    {
-        if (!IsTelemetryEnabled())
-        {
-            return;
-        }
+	{
+		if (!IsTelemetryEnabled())
+			return;
 
 		RefreshPlayerId();
 
+		// zawsze gwarantuj matchId (offline fallback)
+		if (string.IsNullOrEmpty(matchId))
+			matchId = TelemetryIds.CreateMatchId();
+
+		// inicjalizacja stanu meczu tylko raz
 		if (!matchStarted)
 		{
-			if (string.IsNullOrEmpty(matchId))
-				matchId = TelemetryIds.CreateMatchId(); // fallback offline
-
 			matchStarted = true;
 			clientEventSeq = 0;
 			clock.Reset();
-			LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
+			matchStartLogged = false;
 		}
 
+		// MatchStart logujemy dokładnie raz na mecz
 		if (!matchStartLogged)
 		{
 			LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
 			matchStartLogged = true;
 		}
 	}
+
 
 	public void SetMatchContext(string newMatchId)
 	{
@@ -111,16 +113,24 @@ public class TelemetryService : MonoBehaviour
 			return;
 
 		RefreshPlayerId();
+
 		matchId = newMatchId;
-		matchStarted = true;
-		matchStartLogged = false;   
+
+		// reset "meczu" na nowy kontekst lobby
+		matchStarted = false;
+		matchStartLogged = false;
 		clientEventSeq = 0;
 		clock.Reset();
+
+		// bezpiecznie: nie mieszaj eventów między lobby
+		currentEvents.Clear();
+
+		ResetTurnIndexInRound();
 	}
 
 
 
-    public void StartRound(int roundNumber, int coinsAtStart)
+	public void StartRound(int roundNumber, int coinsAtStart)
     {
         if (!IsTelemetryEnabled())
         {
@@ -573,11 +583,34 @@ public class TelemetryService : MonoBehaviour
 	{
 		if (!IsTelemetryEnabled()) return;
 
-		// Najpierw MatchEnd, ¿eby znalaz³ siê w batchu
+		int ti = GetLastTurnIndexInRound();
+
+		// 1) ResignRound MUSI być przed RoundEnd
+		LogResignRound(false, coinsEnd, piecesRemaining, boardSize, ti);
+
+		// 2) MatchEnd chcemy mieć w tym samym batchu, więc przed RoundEnd
 		LogMatchEnd(winnerColor, "Resign", totalRounds);
 
-		// Potem RoundEnd -> to wysy³a batch i czyci currentEvents
-		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize, GetLastTurnIndexInRound());
+		// 3) RoundEnd wysyła batch i czyści eventy
+		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize, ti);
 	}
+
+	public void ResetMatchState()
+	{
+		matchId = null;
+		matchStarted = false;
+		matchStartLogged = false;
+
+		currentRoundNumber = 0;
+		coinsBeforeShop = 0;
+		coinsAfterShop = 0;
+
+		clientEventSeq = 0;
+		currentEvents.Clear();
+		ResetTurnIndexInRound();
+
+		// Nie resetuję clock tutaj — zresetuje się przy StartMatchIfNeeded
+	}
+
 
 }
