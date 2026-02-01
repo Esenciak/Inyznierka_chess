@@ -495,6 +495,7 @@ public class GameManager : MonoBehaviour
                         }
                 }
 
+                EnsureKingInArmyList(updatedArmy);
                 GameProgress.Instance.myArmy = updatedArmy;
         }
 
@@ -520,6 +521,62 @@ public class GameManager : MonoBehaviour
                                 });
                         }
                 }
+        }
+
+        private void EnsureKingInArmyList(List<SavedPieceData> army)
+        {
+                if (army == null)
+                {
+                        return;
+                }
+
+                foreach (SavedPieceData data in army)
+                {
+                        if (data.type == PieceType.King)
+                        {
+                                return;
+                        }
+                }
+
+                Vector2Int coords = FindFallbackKingCoords();
+                army.Add(new SavedPieceData
+                {
+                        type = PieceType.King,
+                        x = coords.x,
+                        y = coords.y
+                });
+        }
+
+        private Vector2Int FindFallbackKingCoords()
+        {
+                if (BoardManager.Instance == null)
+                {
+                        return Vector2Int.zero;
+                }
+
+                int rows = BoardManager.Instance.PlayerRows;
+                int cols = BoardManager.Instance.PlayerCols;
+                int centerRow = rows / 2;
+                int centerCol = cols / 2;
+                Tile centerTile = BoardManager.Instance.GetTile(BoardType.Player, centerRow, centerCol);
+                if (centerTile != null && !centerTile.isOccupied)
+                {
+                        return new Vector2Int(centerCol, centerRow);
+                }
+
+                for (int r = 0; r < rows; r++)
+                {
+                        for (int c = 0; c < cols; c++)
+                        {
+                                Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
+                                if (tile != null && !tile.isOccupied)
+                                {
+                                        return new Vector2Int(c, r);
+                                }
+                        }
+                }
+
+                return new Vector2Int(centerCol, centerRow);
         }
 
         private Dictionary<PieceType, int> CountLocalAlivePieces()

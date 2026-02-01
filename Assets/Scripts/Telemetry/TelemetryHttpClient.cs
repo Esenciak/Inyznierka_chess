@@ -1,42 +1,47 @@
 using System.Collections;
+using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
 public class TelemetryHttpClient
 {
-	public IEnumerator SendJsonWithRetry(string url, string json, int timeoutSeconds, int maxRetries, System.Action<bool> onComplete)
+	private TelemetryConfig _config;
+
+	public TelemetryHttpClient(TelemetryConfig config)
 	{
-		bool success = false;
-		int attempts = Mathf.Max(1, maxRetries);
-		int[] backoffSeconds = { 1, 3, 7 };
+		_config = config;
+	}
 
-		for (int attempt = 0; attempt < attempts; attempt++)
+	public IEnumerator PostBatchAsync(TelemetryRoundBatchDto batchData)
+	{
+		// 1. Serializacja do JSON
+		string json = JsonUtility.ToJson(batchData); // Lub Newtonsoft.Json jeœli masz zainstalowany
+
+		if (_config.EnableDebugLogs)
+			Debug.Log($"[Telemetry] Wysy³anie batcha: {json}");
+
+		// 2. Przygotowanie requestu
+		using (UnityWebRequest request = new UnityWebRequest(_config.ApiUrl, "POST"))
 		{
-			using (UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
+			byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
+			request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+			request.downloadHandler = new DownloadHandlerBuffer();
+			request.SetRequestHeader("Content-Type", "application/json");
+			request.timeout = (int)_config.SendTimeout;
+
+			// 3. Wys³anie i czekanie
+			yield return request.SendWebRequest();
+
+			// 4. Obs³uga odpowiedzi
+			if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
 			{
-				byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(json);
-				request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-				request.downloadHandler = new DownloadHandlerBuffer();
-				request.SetRequestHeader("Content-Type", "application/json");
-				request.timeout = timeoutSeconds;
-
-				yield return request.SendWebRequest();
-
-				if (request.result == UnityWebRequest.Result.Success &&
-					request.responseCode >= 200 && request.responseCode < 300)
-				{
-					success = true;
-					break;
-				}
+				Debug.LogError($"[Telemetry] B³¹d wysy³ania: {request.error}\nOdpowiedŸ: {request.downloadHandler.text}");
 			}
-
-			if (attempt < attempts - 1)
+			else
 			{
-				int delay = attempt < backoffSeconds.Length ? backoffSeconds[attempt] : backoffSeconds[backoffSeconds.Length - 1];
-				yield return new WaitForSeconds(delay);
+				if (_config.EnableDebugLogs)
+					Debug.Log($"[Telemetry] Sukces! OdpowiedŸ serwera: {request.downloadHandler.text}");
 			}
 		}
-
-		onComplete?.Invoke(success);
 	}
 }
