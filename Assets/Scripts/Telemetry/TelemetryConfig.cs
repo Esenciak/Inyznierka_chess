@@ -1,27 +1,23 @@
-using UnityEngine;
-using WebSocketSharp.Server;
+﻿using UnityEngine;
 
-[CreateAssetMenu(menuName = "Chess/Telemetry Config", fileName = "TelemetryConfig")]
+[CreateAssetMenu(menuName = "Telemetry/Telemetry Config", fileName = "TelemetryConfig")]
 public class TelemetryConfig : ScriptableObject
 {
-    [Header("Endpoint")]
-    public string baseUrl = "https://127.0.0.1:1";
-    public string roundBatchEndpointPath = "/telemetry/round";
-
-    [Header("Transport")]
-    public int requestTimeoutSeconds = 10;
-    public int maxRetries = 3;
-    public int flushIntervalSeconds = 15;
-
-    [Header("Behavior")]
-    public bool enableTelemetry = true;
-    public bool logToUnityConsole = true;
-
-    [Header("Debug")]
-    public bool showBattleCoordsDebug = false;
-
-    [Header("save to file")]
+	[Header("Main")]
+	public bool enableTelemetry = true;
+	public bool logToUnityConsole = true;
 	public bool writeBatchesToDisk = true;
-	public bool writeEventsToDisk = true; // opcjonalnie
 
+	[Header("Networking")]
+	public int requestTimeoutSeconds = 10;
+	public int maxRetries = 3;
+	public int flushIntervalSeconds = 15;
+
+	[Header("API")]
+	[SerializeField] private string _baseUrl = "https://game-analytics-api.onrender.com";
+	[SerializeField] private string _roundBatchEndpointPath = "/api/logs/batch";
+
+	// ✅ Nazwy MUSZĄ pasować do TelemetryService (baseUrl + roundBatchEndpointPath)
+	public string baseUrl => _baseUrl;
+	public string roundBatchEndpointPath => _roundBatchEndpointPath;
 }
