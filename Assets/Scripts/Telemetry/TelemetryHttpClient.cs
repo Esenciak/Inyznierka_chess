@@ -82,16 +82,9 @@ public class TelemetryHttpClient
             {
                 Debug.LogError($"[Telemetry] Send failed: {request.error}\nResponse: {request.downloadHandler.text}");
             }
-            else if (config != null && config.logToUnityConsole)
+            else if (config != null && config.logToUnityConsole && !isConflict)
             {
-                if (isConflict)
-                {
-                    Debug.LogWarning($"[Telemetry] Batch already exists on server (409). Response: {request.downloadHandler.text}");
-                }
-                else
-                {
-                    Debug.Log($"[Telemetry] Send success. Response: {request.downloadHandler.text}");
-                }
+                Debug.Log($"[Telemetry] Send success. Response: {request.downloadHandler.text}");
             }
 
             onComplete?.Invoke(success);
