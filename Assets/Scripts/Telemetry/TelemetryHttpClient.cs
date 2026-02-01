@@ -76,14 +76,22 @@ public class TelemetryHttpClient
 
             yield return request.SendWebRequest();
 
-            bool success = request.result == UnityWebRequest.Result.Success;
+            bool isConflict = request.responseCode == 409;
+            bool success = request.result == UnityWebRequest.Result.Success || isConflict;
             if (!success)
             {
                 Debug.LogError($"[Telemetry] Send failed: {request.error}\nResponse: {request.downloadHandler.text}");
             }
             else if (config != null && config.logToUnityConsole)
             {
-                Debug.Log($"[Telemetry] Send success. Response: {request.downloadHandler.text}");
+                if (isConflict)
+                {
+                    Debug.LogWarning($"[Telemetry] Batch already exists on server (409). Response: {request.downloadHandler.text}");
+                }
+                else
+                {
+                    Debug.Log($"[Telemetry] Send success. Response: {request.downloadHandler.text}");
+                }
             }
 
             onComplete?.Invoke(success);
