@@ -7,6 +7,7 @@ public class TelemetryConfig : ScriptableObject
 	public bool enableTelemetry = true;
 	public bool logToUnityConsole = true;
 	public bool writeBatchesToDisk = true;
+    public bool showBattleCoordsDebug = false;
 
 	[Header("Networking")]
 	public int requestTimeoutSeconds = 10;
