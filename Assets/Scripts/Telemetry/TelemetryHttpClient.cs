@@ -8,6 +8,10 @@ public class TelemetryHttpClient
 {
     private readonly TelemetryConfig config;
 
+    public TelemetryHttpClient() : this(null)
+    {
+    }
+
     public TelemetryHttpClient(TelemetryConfig config)
     {
         this.config = config;
