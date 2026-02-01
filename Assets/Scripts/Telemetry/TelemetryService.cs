@@ -26,6 +26,9 @@ public class TelemetryService : MonoBehaviour
     private int coinsAfterShop;
     private bool matchStarted;
     private Coroutine flushRoutine;
+    private int clientEventSeq;
+    private int localTurnIndexInRound;
+    private int lastTurnIndexInRound = -1;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     private static void Initialize()
@@ -55,7 +58,7 @@ public class TelemetryService : MonoBehaviour
         clock = new TelemetryClock();
         httpClient = new TelemetryHttpClient();
         queueStorage = new TelemetryQueueStorage();
-        playerId = TelemetryIds.GetOrCreatePlayerId();
+        RefreshPlayerId();
 
         if (config != null && config.enableTelemetry)
         {
@@ -70,28 +73,33 @@ public class TelemetryService : MonoBehaviour
 	}
 
 	public void StartMatchIfNeeded(int roundNumber)
-    {
-        if (!IsTelemetryEnabled())
-        {
-            return;
-        }
+	{
+		if (!IsTelemetryEnabled())
+			return;
 
+		RefreshPlayerId();
+
+		// zawsze gwarantuj matchId (offline fallback)
+		if (string.IsNullOrEmpty(matchId))
+			matchId = TelemetryIds.CreateMatchId();
+
+		// inicjalizacja stanu meczu tylko raz
 		if (!matchStarted)
 		{
-			if (string.IsNullOrEmpty(matchId))
-				matchId = TelemetryIds.CreateMatchId(); // fallback offline
-
 			matchStarted = true;
+			clientEventSeq = 0;
 			clock.Reset();
-			LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
+			matchStartLogged = false;
 		}
 
+		// MatchStart logujemy dokładnie raz na mecz
 		if (!matchStartLogged)
 		{
 			LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
 			matchStartLogged = true;
 		}
 	}
+
 
 	public void SetMatchContext(string newMatchId)
 	{
@@ -104,10 +112,20 @@ public class TelemetryService : MonoBehaviour
 		if (!string.IsNullOrEmpty(matchId) && matchId == newMatchId)
 			return;
 
+		RefreshPlayerId();
+
 		matchId = newMatchId;
-		matchStarted = true;
-		matchStartLogged = false;   
+
+		// reset "meczu" na nowy kontekst lobby
+		matchStarted = false;
+		matchStartLogged = false;
+		clientEventSeq = 0;
 		clock.Reset();
+
+		// bezpiecznie: nie mieszaj eventów między lobby
+		currentEvents.Clear();
+
+		ResetTurnIndexInRound();
 	}
 
 
@@ -125,6 +143,25 @@ public class TelemetryService : MonoBehaviour
         coinsAfterShop = coinsAtStart;
 
         LogEvent(CreateBaseEvent(TelemetryEventTypes.RoundStart, roundNumber));
+    }
+
+    public void ResetTurnIndexInRound()
+    {
+        localTurnIndexInRound = 0;
+        lastTurnIndexInRound = -1;
+    }
+
+    public int GetNextLocalTurnIndexInRound()
+    {
+        int index = localTurnIndexInRound;
+        localTurnIndexInRound++;
+        lastTurnIndexInRound = index;
+        return index;
+    }
+
+    public int GetLastTurnIndexInRound()
+    {
+        return Mathf.Max(lastTurnIndexInRound, 0);
     }
 
     public void RecordCoinsAfterShop(int coins)
@@ -219,12 +256,13 @@ public class TelemetryService : MonoBehaviour
             return;
         }
 
+        ResetTurnIndexInRound();
         TelemetryEventBase evt = CreateBaseEvent(TelemetryEventTypes.BattleStart, currentRoundNumber);
         evt.BoardSize = boardSize;
         LogEvent(evt);
     }
 
-    public void LogPieceMoved(string pieceType, int fromX, int fromY, int toX, int toY)
+    public void LogPieceMoved(string pieceType, int fromX, int fromY, int toX, int toY, int turnIndexInRound)
     {
         if (!IsTelemetryEnabled())
         {
@@ -238,6 +276,7 @@ public class TelemetryService : MonoBehaviour
         evt.ToX = toX;
         evt.ToY = toY;
         evt.BoardContext = "Battle";
+        evt.TurnIndexInRound = turnIndexInRound;
         LogEvent(evt);
     }
 
@@ -249,7 +288,8 @@ public class TelemetryService : MonoBehaviour
         int toY,
         string capturedPieceType,
         int? boardSize = null,
-        string capturedOnRegion = null)
+        string capturedOnRegion = null,
+        int? turnIndexInRound = null)
     {
         if (!IsTelemetryEnabled())
         {
@@ -266,10 +306,11 @@ public class TelemetryService : MonoBehaviour
         evt.BoardContext = "Battle";
         evt.BoardSize = boardSize;
         evt.CapturedOnRegion = capturedOnRegion;
+        evt.TurnIndexInRound = turnIndexInRound;
         LogEvent(evt);
     }
 
-    public void LogRoundEnd(bool playerWon, int coinsEnd, int piecesRemaining, int boardSize)
+    public void LogRoundEnd(bool playerWon, int coinsEnd, int piecesRemaining, int boardSize, int turnIndexInRound)
     {
         if (!IsTelemetryEnabled())
         {
@@ -281,10 +322,27 @@ public class TelemetryService : MonoBehaviour
         evt.CoinsEnd = coinsEnd;
         evt.PiecesRemaining = piecesRemaining;
         evt.BoardSize = boardSize;
+        evt.TurnIndexInRound = turnIndexInRound;
         LogEvent(evt);
 
         SendRoundBatch(boardSize);
         currentEvents.Clear();
+    }
+
+    public void LogResignRound(bool playerWon, int coinsEnd, int piecesRemaining, int boardSize, int turnIndexInRound)
+    {
+        if (!IsTelemetryEnabled())
+        {
+            return;
+        }
+
+        TelemetryEventBase evt = CreateBaseEvent(TelemetryEventTypes.ResignRound, currentRoundNumber);
+        evt.PlayerWon = playerWon;
+        evt.CoinsEnd = coinsEnd;
+        evt.PiecesRemaining = piecesRemaining;
+        evt.BoardSize = boardSize;
+        evt.TurnIndexInRound = turnIndexInRound;
+        LogEvent(evt);
     }
 
     public void LogMatchEnd(string winnerColor, string reason, int totalRounds)
@@ -353,8 +411,14 @@ public class TelemetryService : MonoBehaviour
             RoundNumber = roundNumber,
             EventType = eventType,
             TimestampUtc = clock.GetTimestampUtc(),
-            ClientTimeMsFromMatchStart = clock.GetElapsedMs()
+            ClientTimeMsFromMatchStart = clock.GetElapsedMs(),
+            ClientEventSeq = clientEventSeq++
         };
+    }
+
+    private void RefreshPlayerId()
+    {
+        playerId = TelemetryIds.GetOrCreatePlayerId();
     }
 
     private void LogEvent(TelemetryEventBase evt)
@@ -519,11 +583,34 @@ public class TelemetryService : MonoBehaviour
 	{
 		if (!IsTelemetryEnabled()) return;
 
-		// Najpierw MatchEnd, ¿eby znalaz³ siê w batchu
+		int ti = GetLastTurnIndexInRound();
+
+		// 1) ResignRound MUSI być przed RoundEnd
+		LogResignRound(false, coinsEnd, piecesRemaining, boardSize, ti);
+
+		// 2) MatchEnd chcemy mieć w tym samym batchu, więc przed RoundEnd
 		LogMatchEnd(winnerColor, "Resign", totalRounds);
 
-		// Potem RoundEnd -> to wysy³a batch i czyci currentEvents
-		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize);
+		// 3) RoundEnd wysyła batch i czyści eventy
+		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize, ti);
 	}
+
+	public void ResetMatchState()
+	{
+		matchId = null;
+		matchStarted = false;
+		matchStartLogged = false;
+
+		currentRoundNumber = 0;
+		coinsBeforeShop = 0;
+		coinsAfterShop = 0;
+
+		clientEventSeq = 0;
+		currentEvents.Clear();
+		ResetTurnIndexInRound();
+
+		// Nie resetuję clock tutaj — zresetuje się przy StartMatchIfNeeded
+	}
+
 
 }
