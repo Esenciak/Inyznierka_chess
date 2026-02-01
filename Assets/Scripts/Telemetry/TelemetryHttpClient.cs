@@ -77,7 +77,10 @@ public class TelemetryHttpClient
             yield return request.SendWebRequest();
 
             bool isConflict = request.responseCode == 409;
-            bool success = request.result == UnityWebRequest.Result.Success || isConflict;
+            bool isDuplicateKey = request.responseCode == 400 &&
+                !string.IsNullOrEmpty(request.downloadHandler?.text) &&
+                request.downloadHandler.text.IndexOf("duplicate key", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool success = request.result == UnityWebRequest.Result.Success || isConflict || isDuplicateKey;
             if (!success)
             {
                 bool isTimeout = !string.IsNullOrEmpty(request.error) &&
@@ -92,7 +95,7 @@ public class TelemetryHttpClient
                     Debug.LogError(message);
                 }
             }
-            else if (config != null && config.logToUnityConsole && !isConflict)
+            else if (config != null && config.logToUnityConsole && !isConflict && !isDuplicateKey)
             {
                 Debug.Log($"[Telemetry] Send success. Response: {request.downloadHandler.text}");
             }
