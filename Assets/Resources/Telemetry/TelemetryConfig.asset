@@ -12,13 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 73e76463accaedf479d91db7d1eee509, type: 3}
   m_Name: TelemetryConfig
   m_EditorClassIdentifier: Assembly-CSharp::TelemetryConfig
-  baseUrl: https://127.0.0.1:1
-  roundBatchEndpointPath: /telemetry/round
+  enableTelemetry: 1
+  logToUnityConsole: 1
+  writeBatchesToDisk: 0
+  showBattleCoordsDebug: 0
   requestTimeoutSeconds: 10
   maxRetries: 3
   flushIntervalSeconds: 15
-  enableTelemetry: 1
-  logToUnityConsole: 1
-  showBattleCoordsDebug: 0
-  writeBatchesToDisk: 1
-  writeEventsToDisk: 1
+  _baseUrl: https://game-analytics-api.onrender.com
+  _roundBatchEndpointPath: /api/logs/batch
