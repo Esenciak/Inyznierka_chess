@@ -56,7 +56,7 @@ public class TelemetryService : MonoBehaviour
 
         config = config != null ? config : Resources.Load<TelemetryConfig>("Telemetry/TelemetryConfig");
         clock = new TelemetryClock();
-        httpClient = new TelemetryHttpClient(config);
+		httpClient = new TelemetryHttpClient();
         queueStorage = new TelemetryQueueStorage();
         RefreshPlayerId();
 
@@ -117,7 +117,7 @@ public class TelemetryService : MonoBehaviour
 		matchId = newMatchId;
 
 		// reset "meczu" na nowy kontekst lobby
-		matchStarted = false;
+		matchStarted = true;
 		matchStartLogged = false;
 		clientEventSeq = 0;
 		clock.Reset();

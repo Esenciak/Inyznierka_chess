@@ -8,7 +8,7 @@ public class TelemetryHttpClient
 {
     private readonly TelemetryConfig config;
 
-    public TelemetryHttpClient(TelemetryConfig config)
+    public TelemetryHttpClient(TelemetryConfig config = null)
     {
         this.config = config;
     }
@@ -76,12 +76,26 @@ public class TelemetryHttpClient
 
             yield return request.SendWebRequest();
 
-            bool success = request.result == UnityWebRequest.Result.Success;
+            bool isConflict = request.responseCode == 409;
+            bool isDuplicateKey = request.responseCode == 400 &&
+                !string.IsNullOrEmpty(request.downloadHandler?.text) &&
+                request.downloadHandler.text.IndexOf("duplicate key", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool success = request.result == UnityWebRequest.Result.Success || isConflict || isDuplicateKey;
             if (!success)
             {
-                Debug.LogError($"[Telemetry] Send failed: {request.error}\nResponse: {request.downloadHandler.text}");
+                bool isTimeout = !string.IsNullOrEmpty(request.error) &&
+                    request.error.IndexOf("timeout", StringComparison.OrdinalIgnoreCase) >= 0;
+                string message = $"[Telemetry] Send failed: {request.error}\nResponse: {request.downloadHandler.text}";
+                if (isTimeout)
+                {
+                    Debug.LogWarning(message);
+                }
+                else
+                {
+                    Debug.LogError(message);
+                }
             }
-            else if (config != null && config.logToUnityConsole)
+            else if (config != null && config.logToUnityConsole && !isConflict && !isDuplicateKey)
             {
                 Debug.Log($"[Telemetry] Send success. Response: {request.downloadHandler.text}");
             }
