@@ -13,181 +13,174 @@ MonoBehaviour:
   m_Name: EconomyConfig
   m_EditorClassIdentifier: Assembly-CSharp::EconomyConfig
   pawnUnlockRound: 1
-  knightUnlockRound: 1
+  knightUnlockRound: 2
   bishopUnlockRound: 1
-  rookUnlockRound: 3
-  queenUnlockRound: 5
+  rookUnlockRound: 4
+  queenUnlockRound: 6
   startingCoins: 100
   winReward: 20
-  loseReward: 10
-  rerollCost: 10
-  configVersion: v1
-  pawnPrice: 666
+  loseReward: 15
+  rerollCost: 15
+  configVersion: v2
+  pawnPrice: 0
   kingPrice: 0
-  queenPrice: 666
-  rookPrice: 666
-  bishopPrice: 666
-  knightPrice: 666
+  queenPrice: 0
+  rookPrice: 0
+  bishopPrice: 0
+  knightPrice: 0
   pricesByRound:
   - roundNumber: 1
-    pawnPrice: 1
+    pawnPrice: 20
     kingPrice: 0
-    queenPrice: 1
-    rookPrice: 1
-    bishopPrice: 1
-    knightPrice: 1
+    queenPrice: 0
+    rookPrice: 0
+    bishopPrice: 30
+    knightPrice: 0
   - roundNumber: 2
-    pawnPrice: 2
+    pawnPrice: 20
     kingPrice: 0
-    queenPrice: 2
-    rookPrice: 2
-    bishopPrice: 2
-    knightPrice: 2
+    queenPrice: 0
+    rookPrice: 0
+    bishopPrice: 30
+    knightPrice: 40
   - roundNumber: 3
-    pawnPrice: 3
+    pawnPrice: 20
     kingPrice: 0
-    queenPrice: 3
-    rookPrice: 3
-    bishopPrice: 3
-    knightPrice: 3
+    queenPrice: 0
+    rookPrice: 0
+    bishopPrice: 30
+    knightPrice: 40
   - roundNumber: 4
-    pawnPrice: 4
+    pawnPrice: 20
     kingPrice: 0
-    queenPrice: 4
-    rookPrice: 4
-    bishopPrice: 4
-    knightPrice: 4
+    queenPrice: 0
+    rookPrice: 50
+    bishopPrice: 20
+    knightPrice: 30
   - roundNumber: 5
-    pawnPrice: 5
+    pawnPrice: 20
     kingPrice: 0
-    queenPrice: 5
-    rookPrice: 5
-    bishopPrice: 5
-    knightPrice: 5
-  - roundNumber: 5
-    pawnPrice: 5
-    kingPrice: 0
-    queenPrice: 5
-    rookPrice: 5
-    bishopPrice: 5
-    knightPrice: 5
+    queenPrice: 0
+    rookPrice: 50
+    bishopPrice: 20
+    knightPrice: 30
   - roundNumber: 6
-    pawnPrice: 6
+    pawnPrice: 20
     kingPrice: 0
-    queenPrice: 6
-    rookPrice: 6
-    bishopPrice: 6
-    knightPrice: 6
+    queenPrice: 80
+    rookPrice: 50
+    bishopPrice: 30
+    knightPrice: 40
   - roundNumber: 7
-    pawnPrice: 7
+    pawnPrice: 20
     kingPrice: 0
-    queenPrice: 7
-    rookPrice: 7
-    bishopPrice: 7
-    knightPrice: 7
+    queenPrice: 80
+    rookPrice: 45
+    bishopPrice: 25
+    knightPrice: 35
   - roundNumber: 8
-    pawnPrice: 7
+    pawnPrice: 20
     kingPrice: 0
-    queenPrice: 7
-    rookPrice: 7
-    bishopPrice: 7
-    knightPrice: 7
+    queenPrice: 80
+    rookPrice: 45
+    bishopPrice: 25
+    knightPrice: 35
   - roundNumber: 9
-    pawnPrice: 7
+    pawnPrice: 20
     kingPrice: 0
-    queenPrice: 7
-    rookPrice: 7
-    bishopPrice: 7
-    knightPrice: 7
+    queenPrice: 50
+    rookPrice: 30
+    bishopPrice: 10
+    knightPrice: 20
   cashRewardsByRound:
   - roundNumber: 1
-    winReward: 1
-    loseReward: 2
+    winReward: 30
+    loseReward: 40
   - roundNumber: 2
-    winReward: 2
-    loseReward: 4
+    winReward: 30
+    loseReward: 45
   - roundNumber: 3
-    winReward: 3
-    loseReward: 4
+    winReward: 40
+    loseReward: 50
   - roundNumber: 4
-    winReward: 3
-    loseReward: 4
+    winReward: 40
+    loseReward: 55
   - roundNumber: 5
-    winReward: 3
-    loseReward: 4
+    winReward: 45
+    loseReward: 55
   - roundNumber: 6
-    winReward: 3
-    loseReward: 4
+    winReward: 45
+    loseReward: 55
   - roundNumber: 7
-    winReward: 3
-    loseReward: 4
+    winReward: 50
+    loseReward: 60
   - roundNumber: 8
-    winReward: 3
-    loseReward: 4
+    winReward: 100
+    loseReward: 120
   - roundNumber: 9
-    winReward: 3
-    loseReward: 4
+    winReward: 100
+    loseReward: 120
   spawnWeightsByRound:
   - roundNumber: 1
+    pawnWeight: 80
+    kingWeight: 0
+    queenWeight: 0
+    rookWeight: 0
+    bishopWeight: 20
+    knightWeight: 0
+  - roundNumber: 2
     pawnWeight: 50
     kingWeight: 0
-    queenWeight: 5
-    rookWeight: 5
-    bishopWeight: 20
+    queenWeight: 0
+    rookWeight: 0
+    bishopWeight: 30
     knightWeight: 20
-  - roundNumber: 2
+  - roundNumber: 3
+    pawnWeight: 50
+    kingWeight: 0
+    queenWeight: 0
+    rookWeight: 0
+    bishopWeight: 30
+    knightWeight: 20
+  - roundNumber: 4
     pawnWeight: 40
     kingWeight: 0
-    queenWeight: 5
+    queenWeight: 0
+    rookWeight: 10
+    bishopWeight: 15
+    knightWeight: 35
+  - roundNumber: 5
+    pawnWeight: 35
+    kingWeight: 0
+    queenWeight: 0
     rookWeight: 10
     bishopWeight: 20
-    knightWeight: 25
-  - roundNumber: 3
-    pawnWeight: 30
+    knightWeight: 35
+  - roundNumber: 5
+    pawnWeight: 35
     kingWeight: 0
-    queenWeight: 10
+    queenWeight: 0
     rookWeight: 10
-    bishopWeight: 25
-    knightWeight: 25
-  - roundNumber: 4
-    pawnWeight: 20
-    kingWeight: 0
-    queenWeight: 10
-    rookWeight: 20
-    bishopWeight: 25
-    knightWeight: 25
-  - roundNumber: 5
-    pawnWeight: 10
-    kingWeight: 0
-    queenWeight: 10
-    rookWeight: 20
-    bishopWeight: 35
-    knightWeight: 25
-  - roundNumber: 5
-    pawnWeight: 10
-    kingWeight: 0
-    queenWeight: 10
-    rookWeight: 20
-    bishopWeight: 35
-    knightWeight: 25
+    bishopWeight: 20
+    knightWeight: 35
   - roundNumber: 6
-    pawnWeight: 10
+    pawnWeight: 25
     kingWeight: 0
-    queenWeight: 15
-    rookWeight: 25
-    bishopWeight: 30
-    knightWeight: 20
+    queenWeight: 5
+    rookWeight: 15
+    bishopWeight: 20
+    knightWeight: 35
   - roundNumber: 7
+    pawnWeight: 25
+    kingWeight: 0
+    queenWeight: 5
+    rookWeight: 15
+    bishopWeight: 20
+    knightWeight: 35
+  - roundNumber: 8
     pawnWeight: 5
     kingWeight: 0
-    queenWeight: 15
-    rookWeight: 25
-    bishopWeight: 30
-    knightWeight: 25
-  - roundNumber: 8
-    pawnWeight: 0
-    kingWeight: 0
-    queenWeight: 20
-    rookWeight: 25
-    bishopWeight: 35
+    queenWeight: 30
+    rookWeight: 30
+    bishopWeight: 15
     knightWeight: 20
