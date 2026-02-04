@@ -353,6 +353,7 @@ public class GameManager : MonoBehaviour
 		if (TelemetryService.Instance != null && BoardManager.Instance != null)
 		{
 			int turnIndexInRound = ResolveTurnIndexInRoundForTelemetry();
+			string roundWinnerColor = ResolveWinnerColor(localWon);
 			if (reason == "ResignRound")
 			{
 				TelemetryService.Instance.LogResignRound(
@@ -360,8 +361,14 @@ public class GameManager : MonoBehaviour
 					GameProgress.Instance.coins,
 					piecesRemaining,
 					BoardManager.Instance.CenterRows,
-					turnIndexInRound
+					turnIndexInRound,
+					roundWinnerColor
 				);
+			}
+
+			if (GameProgress.Instance != null && GameProgress.Instance.gamesPlayed >= 9)
+			{
+				TelemetryService.Instance.LogMatchEnd(roundWinnerColor, reason, GameProgress.Instance.gamesPlayed);
 			}
 
 			TelemetryService.Instance.LogRoundEnd(
@@ -369,7 +376,8 @@ public class GameManager : MonoBehaviour
 				GameProgress.Instance.coins,
 				piecesRemaining,
 				BoardManager.Instance.CenterRows,
-				turnIndexInRound
+				turnIndexInRound,
+				roundWinnerColor
 			);
 		}
 
@@ -380,12 +388,6 @@ public class GameManager : MonoBehaviour
 		// KONIEC MECZU po 9 rundach (tylko wtedy idziemy do MainMenu)
 		if (GameProgress.Instance.gamesPlayed >= 9)
 		{
-			if (TelemetryService.Instance != null)
-			{
-				string winnerColor = ResolveWinnerColor(localWon); // Twoja metoda (zostaw 1 wersję!)
-				TelemetryService.Instance.LogMatchEnd(winnerColor, reason, GameProgress.Instance.gamesPlayed);
-			}
-
 			GameProgress.Instance.lastWinnerMessage = localWon ? "Winner: You" : "Winner: Enemy";
 
 			if (isNetwork)

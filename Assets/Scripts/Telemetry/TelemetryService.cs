@@ -310,7 +310,7 @@ public class TelemetryService : MonoBehaviour
         LogEvent(evt);
     }
 
-    public void LogRoundEnd(bool playerWon, int coinsEnd, int piecesRemaining, int boardSize, int turnIndexInRound)
+    public void LogRoundEnd(bool playerWon, int coinsEnd, int piecesRemaining, int boardSize, int turnIndexInRound, string roundWinnerColor)
     {
         if (!IsTelemetryEnabled())
         {
@@ -323,13 +323,14 @@ public class TelemetryService : MonoBehaviour
         evt.PiecesRemaining = piecesRemaining;
         evt.BoardSize = boardSize;
         evt.TurnIndexInRound = turnIndexInRound;
+        evt.RoundWinnerColor = roundWinnerColor;
         LogEvent(evt);
 
         SendRoundBatch(boardSize);
         currentEvents.Clear();
     }
 
-    public void LogResignRound(bool playerWon, int coinsEnd, int piecesRemaining, int boardSize, int turnIndexInRound)
+    public void LogResignRound(bool playerWon, int coinsEnd, int piecesRemaining, int boardSize, int turnIndexInRound, string roundWinnerColor)
     {
         if (!IsTelemetryEnabled())
         {
@@ -342,6 +343,7 @@ public class TelemetryService : MonoBehaviour
         evt.PiecesRemaining = piecesRemaining;
         evt.BoardSize = boardSize;
         evt.TurnIndexInRound = turnIndexInRound;
+        evt.RoundWinnerColor = roundWinnerColor;
         LogEvent(evt);
     }
 
@@ -354,6 +356,7 @@ public class TelemetryService : MonoBehaviour
 
         TelemetryEventBase evt = CreateBaseEvent(TelemetryEventTypes.MatchEnd, currentRoundNumber);
         evt.WinnerColor = winnerColor;
+        evt.GameWinnerColor = winnerColor;
         evt.Reason = reason;
         evt.TotalRounds = totalRounds;
         LogEvent(evt);
@@ -586,13 +589,13 @@ public class TelemetryService : MonoBehaviour
 		int ti = GetLastTurnIndexInRound();
 
 		// 1) ResignRound MUSI być przed RoundEnd
-		LogResignRound(false, coinsEnd, piecesRemaining, boardSize, ti);
+		LogResignRound(false, coinsEnd, piecesRemaining, boardSize, ti, winnerColor);
 
 		// 2) MatchEnd chcemy mieć w tym samym batchu, więc przed RoundEnd
 		LogMatchEnd(winnerColor, "Resign", totalRounds);
 
 		// 3) RoundEnd wysyła batch i czyści eventy
-		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize, ti);
+		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize, ti, winnerColor);
 	}
 
 	public void ResetMatchState()

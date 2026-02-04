@@ -57,7 +57,9 @@ public class TelemetryEventBase
     public int? CoinsEnd { get; set; }
     public int? PiecesRemaining { get; set; }
 
+    public string RoundWinnerColor { get; set; }
     public string WinnerColor { get; set; }
+    public string GameWinnerColor { get; set; }
     public string Reason { get; set; }
     public int? TotalRounds { get; set; }
 }
