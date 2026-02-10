@@ -56,7 +56,7 @@ public class TelemetryService : MonoBehaviour
 
         config = config != null ? config : Resources.Load<TelemetryConfig>("Telemetry/TelemetryConfig");
         clock = new TelemetryClock();
-        httpClient = new TelemetryHttpClient();
+        httpClient = new TelemetryHttpClient(config);
         queueStorage = new TelemetryQueueStorage();
         RefreshPlayerId();
 

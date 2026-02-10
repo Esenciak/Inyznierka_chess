@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Text;
 using UnityEngine;
@@ -5,43 +6,99 @@ using UnityEngine.Networking;
 
 public class TelemetryHttpClient
 {
-	private TelemetryConfig _config;
+    private readonly TelemetryConfig config;
 
-	public TelemetryHttpClient(TelemetryConfig config)
-	{
-		_config = config;
-	}
+    public TelemetryHttpClient(TelemetryConfig config)
+    {
+        this.config = config;
+    }
 
-	public IEnumerator PostBatchAsync(TelemetryRoundBatchDto batchData)
-	{
-		// 1. Serializacja do JSON
-		string json = JsonUtility.ToJson(batchData); // Lub Newtonsoft.Json jeúli masz zainstalowany
+    public IEnumerator PostBatchAsync(TelemetryRoundBatchDto batchData)
+    {
+        if (config == null)
+        {
+            yield break;
+        }
 
-		if (_config.EnableDebugLogs)
-			Debug.Log($"[Telemetry] Wysy≥anie batcha: {json}");
+        string json = TelemetryJson.SerializeBatch(batchData);
+        string url = BuildBatchUrl(config);
+        if (string.IsNullOrEmpty(url))
+        {
+            yield break;
+        }
 
-		// 2. Przygotowanie requestu
-		using (UnityWebRequest request = new UnityWebRequest(_config.ApiUrl, "POST"))
-		{
-			byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
-			request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-			request.downloadHandler = new DownloadHandlerBuffer();
-			request.SetRequestHeader("Content-Type", "application/json");
-			request.timeout = (int)_config.SendTimeout;
+        bool success = false;
+        yield return SendJsonWithRetry(url, json, config.requestTimeoutSeconds, config.maxRetries, result => success = result);
+        if (!success && config.logToUnityConsole)
+        {
+            Debug.LogWarning("[Telemetry] Batch send failed in PostBatchAsync.");
+        }
+    }
 
-			// 3. Wys≥anie i czekanie
-			yield return request.SendWebRequest();
+    public IEnumerator SendJsonWithRetry(string url, string json, int timeoutSeconds, int maxRetries, Action<bool> onComplete)
+    {
+        int attempts = Mathf.Max(1, maxRetries);
+        int[] backoffSeconds = { 1, 3, 7 };
+        bool success = false;
 
-			// 4. Obs≥uga odpowiedzi
-			if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
-			{
-				Debug.LogError($"[Telemetry] B≥πd wysy≥ania: {request.error}\nOdpowiedü: {request.downloadHandler.text}");
-			}
-			else
-			{
-				if (_config.EnableDebugLogs)
-					Debug.Log($"[Telemetry] Sukces! Odpowiedü serwera: {request.downloadHandler.text}");
-			}
-		}
-	}
+        for (int attempt = 0; attempt < attempts; attempt++)
+        {
+            yield return SendJsonOnce(url, json, timeoutSeconds, result => success = result);
+            if (success)
+            {
+                break;
+            }
+
+            if (attempt < attempts - 1)
+            {
+                int delay = backoffSeconds[Mathf.Min(attempt, backoffSeconds.Length - 1)];
+                yield return new WaitForSeconds(delay);
+            }
+        }
+
+        onComplete?.Invoke(success);
+    }
+
+    private IEnumerator SendJsonOnce(string url, string json, int timeoutSeconds, Action<bool> onComplete)
+    {
+        if (config != null && config.logToUnityConsole)
+        {
+            Debug.Log($"[Telemetry] Sending batch to {url}: {json}");
+        }
+
+        using (UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbPOST))
+        {
+            byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.timeout = Mathf.Max(1, timeoutSeconds);
+
+            yield return request.SendWebRequest();
+
+            bool success = request.result == UnityWebRequest.Result.Success;
+            if (!success)
+            {
+                Debug.LogError($"[Telemetry] Send failed: {request.error}\nResponse: {request.downloadHandler.text}");
+            }
+            else if (config != null && config.logToUnityConsole)
+            {
+                Debug.Log($"[Telemetry] Send success. Response: {request.downloadHandler.text}");
+            }
+
+            onComplete?.Invoke(success);
+        }
+    }
+
+    private static string BuildBatchUrl(TelemetryConfig config)
+    {
+        if (config == null || string.IsNullOrEmpty(config.baseUrl))
+        {
+            return null;
+        }
+
+        string baseUrlTrimmed = config.baseUrl.TrimEnd('/');
+        string path = string.IsNullOrEmpty(config.roundBatchEndpointPath) ? string.Empty : config.roundBatchEndpointPath.TrimStart('/');
+        return string.IsNullOrEmpty(path) ? baseUrlTrimmed : $"{baseUrlTrimmed}/{path}";
+    }
 }
