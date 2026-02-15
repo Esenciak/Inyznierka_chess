@@ -389,6 +389,7 @@ public class GameManager : MonoBehaviour
 		if (GameProgress.Instance.gamesPlayed >= 9)
 		{
 			GameProgress.Instance.lastWinnerMessage = localWon ? "Winner: You" : "Winner: Enemy";
+			GameProgress.Instance.ResetProgressForNewLobby();
 
 			if (isNetwork)
 			{
@@ -540,7 +541,7 @@ public class GameManager : MonoBehaviour
                         }
                 }
 
-                Vector2Int coords = FindFallbackKingCoords();
+                Vector2Int coords = FindFallbackKingCoords(army);
                 army.Add(new SavedPieceData
                 {
                         type = PieceType.King,
@@ -549,7 +550,7 @@ public class GameManager : MonoBehaviour
                 });
         }
 
-        private Vector2Int FindFallbackKingCoords()
+        private Vector2Int FindFallbackKingCoords(List<SavedPieceData> army)
         {
                 if (BoardManager.Instance == null)
                 {
@@ -560,8 +561,7 @@ public class GameManager : MonoBehaviour
                 int cols = BoardManager.Instance.PlayerCols;
                 int centerRow = rows / 2;
                 int centerCol = cols / 2;
-                Tile centerTile = BoardManager.Instance.GetTile(BoardType.Player, centerRow, centerCol);
-                if (centerTile != null && !centerTile.isOccupied)
+                if (!IsArmyCoordinateTaken(army, centerCol, centerRow))
                 {
                         return new Vector2Int(centerCol, centerRow);
                 }
@@ -570,8 +570,7 @@ public class GameManager : MonoBehaviour
                 {
                         for (int c = 0; c < cols; c++)
                         {
-                                Tile tile = BoardManager.Instance.GetTile(BoardType.Player, r, c);
-                                if (tile != null && !tile.isOccupied)
+                                if (!IsArmyCoordinateTaken(army, c, r))
                                 {
                                         return new Vector2Int(c, r);
                                 }
@@ -579,6 +578,24 @@ public class GameManager : MonoBehaviour
                 }
 
                 return new Vector2Int(centerCol, centerRow);
+        }
+
+        private bool IsArmyCoordinateTaken(List<SavedPieceData> army, int x, int y)
+        {
+                if (army == null)
+                {
+                        return false;
+                }
+
+                foreach (SavedPieceData piece in army)
+                {
+                        if (piece.x == x && piece.y == y)
+                        {
+                                return true;
+                        }
+                }
+
+                return false;
         }
 
         private Dictionary<PieceType, int> CountLocalAlivePieces()
