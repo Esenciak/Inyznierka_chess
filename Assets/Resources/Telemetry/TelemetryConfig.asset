@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TelemetryConfig
   enableTelemetry: 1
   logToUnityConsole: 1
-  writeBatchesToDisk: 0
+  writeBatchesToDisk: 1
   showBattleCoordsDebug: 0
   requestTimeoutSeconds: 10
   maxRetries: 3

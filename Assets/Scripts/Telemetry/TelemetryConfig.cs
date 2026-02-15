@@ -18,7 +18,6 @@ public class TelemetryConfig : ScriptableObject
 	[SerializeField] private string _baseUrl = "https://game-analytics-api.onrender.com";
 	[SerializeField] private string _roundBatchEndpointPath = "/api/logs/batch";
 
-	// ✅ Nazwy MUSZĄ pasować do TelemetryService (baseUrl + roundBatchEndpointPath)
 	public string baseUrl => _baseUrl;
 	public string roundBatchEndpointPath => _roundBatchEndpointPath;
 }

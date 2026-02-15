@@ -9,7 +9,6 @@ public class ConfigUploader : Editor
 	[MenuItem("Chess/Upload Economy Config")]
 	public static void UploadConfig()
 	{
-		// 1. Znajdź plik EconomyConfig (musi być w Resources lub podajemy ścieżkę)
 		EconomyConfig config = Resources.Load<EconomyConfig>("EconomyConfig");
 
 		if (config == null)
@@ -23,7 +22,7 @@ public class ConfigUploader : Editor
 		Debug.Log("Serialized EconomyConfig: " + json);
 
 		// 3. Wyślij do API
-		string url = "https://game-analytics-api.onrender.com/api/config"; // Zmień na swój URL
+		string url = "https://game-analytics-api.onrender.com/api/config"; 
 		UploadCoroutine(url, json);
 	}
 
