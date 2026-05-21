@@ -45,7 +45,7 @@ public class BoardManager : MonoBehaviour
 			return;
 		}
 		Instance = this;
-		// Jeli jest na obiekcie Manager z GameProgress, to DontDestroyOnLoad ju¿ dzia³a.
+
 	}
 
 	private void OnEnable() => SceneManager.sceneLoaded += OnSceneLoaded;
@@ -68,12 +68,12 @@ public class BoardManager : MonoBehaviour
 		string sceneName = SceneManager.GetActiveScene().name;
 		if (sceneName == "MainMenu")
 		{
-			// W menu g³ównym czycimy planszê (jeli jaka zosta³a) i koñczymy
+
 			ClearAllBoards();
 			return;
 		}
 
-		// Pobranie rozmiarów z zapisu gry
+
 		if (GameProgress.Instance != null)
 		{
 			if (GameManager.Instance != null && GameManager.Instance.isMultiplayer && BattleSession.Instance != null)
@@ -90,7 +90,7 @@ public class BoardManager : MonoBehaviour
 
 		ApplyBattleBackground(sceneName);
 		RecalculateGlobalLayout();
-		offsetCalculation(); // <-- Tutaj dzieje siê magia z pozycj¹
+		offsetCalculation(); 
 
 		if (sceneName == "Shop") GenerateShopLayout();
 		else GenerateBattleLayout();
@@ -122,7 +122,6 @@ public class BoardManager : MonoBehaviour
 		cam.backgroundColor = Color.Lerp(blended, Color.black, battleBackgroundDarken);
 	}
 
-	// --- Generowanie (Skrócone dla czytelnoci, logika bez zmian) ---
 
 	void GenerateShopLayout()
 	{
@@ -188,7 +187,6 @@ public class BoardManager : MonoBehaviour
 
 	private void GenerateBoard(GameObject[,] board, Color[] colA, Color[] colB, Vector2 offset, BoardType boardType, int startGlobalRow, int startGlobalCol)
 	{
-		// Wersja Gradientowa (Center)
 		int rows = board.GetLength(0);
 		int cols = board.GetLength(1);
 		int len = Mathf.Min(colA.Length, colB.Length);
@@ -245,23 +243,22 @@ public class BoardManager : MonoBehaviour
 		enemyStartCol = diff / 2;
 	}
 
-	// *** TUTAJ JEST NAPRAWA POZYCJI W SKLEPIE ***
+
 	private void offsetCalculation()
 	{
 		float centerX = 0f;
 		float centerY = 0f;
 
-		// Domylne (Bitwa)
 		float playerOffsetX = centerX + (CenterCols - PlayerCols) / 2f;
 		float playerOffsetY = centerY - PlayerRows;
 		float enemyOffsetY = centerY + CenterRows;
 
-		// Jeli SKLEP -> Sztywna pozycja
+
 		if (SceneManager.GetActiveScene().name == "Shop")
 		{
-			playerOffsetX = 3.5f; // Sta³a pozycja X
-			playerOffsetY = 0f;   // Sta³a pozycja Y
-			enemyOffsetY = 100f;  // Wyrzucamy wroga poza ekran
+			playerOffsetX = 3.5f; 
+			playerOffsetY = 0f;  
+			enemyOffsetY = 100f; 
 		}
 
 		playerOffset = new Vector2(playerOffsetX, playerOffsetY);
@@ -269,7 +266,6 @@ public class BoardManager : MonoBehaviour
 		centerOffset = new Vector2(0f, 0f);
 	}
 
-	// --- PUBLIC API (Przywrócone metody) ---
 
 	private void CreateUnderlay(GameObject tileGO)
 	{
