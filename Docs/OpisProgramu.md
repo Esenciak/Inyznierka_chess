@@ -1,4 +1,4 @@
-# Opis programu Chess_inz
+# Opis programu Chess_inz dla promotora
 
 ## Cel projektu
 Chess_inz to gra oparta o Unity, która łączy planszową walkę figur z etapem przygotowania armii. Gracz przechodzi przez pętlę: sklep/rozstawienie figur → walka → nagrody → kolejna runda. Gra obsługuje tryb singleplayer i multiplayer.
