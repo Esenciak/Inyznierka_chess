@@ -18,7 +18,7 @@ public class GameManager : MonoBehaviour
         [Header("Stan Gry")]
         public GamePhase currentPhase = GamePhase.Placement;
 
-        // ZMIANA: Używamy PieceOwner zamiast "Turn", żeby pasowało do kodu Piece.cs
+       
         public PieceOwner currentTurn = PieceOwner.Player;
 
         [Header("Nagrody")]
@@ -30,7 +30,7 @@ public class GameManager : MonoBehaviour
 
         private void Awake()
         {
-                // Singleton - zapewnia, że jest tylko jeden GameManager
+    
                 if (Instance != null && Instance != this)
                 {
                         Destroy(gameObject);
@@ -224,15 +224,14 @@ public class GameManager : MonoBehaviour
 
 	public void EndTurn()
 	{
-		// Zlecenie zmiany tury musi iść do serwera, bo NetworkVariable jest zapisywalne tylko przez serwer
+
 		if (NetworkManager.Singleton.IsServer)
 		{
 			BattleSession.Instance.SwapTurn();
 		}
 		else
 		{
-			// Jeśli jesteśmy klientem, musimy poprosić serwer o zmianę tury (zrobimy to przez RPC w BattleMoveSync)
-			// Tutaj lokalnie nic nie zmieniamy "na siłę", czekamy na synchronizację.
+			
 		}
 	}
 
@@ -244,21 +243,21 @@ public class GameManager : MonoBehaviour
 	public bool CanPieceMove(Piece piece)
         {
                 // 1. Faza Placement (Sklep):
-                // Pozwalamy ruszać tylko naszymi figurami (np. przestawiać je na planszy)
+
                 if (currentPhase == GamePhase.Placement)
                 {
                         return piece.owner == PieceOwner.Player;
                 }
 
                 // 2. Faza Battle (Walka):
-                // Sprawdzamy czyja jest tura i czy ruszamy właściwą figurą
+
                 if (currentPhase == GamePhase.Battle)
                 {
-                        // Jeśli tura Gracza -> ruszamy tylko Player
+
                         if (currentTurn == PieceOwner.Player && piece.owner == PieceOwner.Player)
                                 return true;
 
-                        // Jeśli tura Wroga -> ruszamy tylko Enemy (dla AI)
+
                         if (currentTurn == PieceOwner.Enemy && piece.owner == PieceOwner.Enemy)
                                 return true;
                 }
@@ -266,16 +265,16 @@ public class GameManager : MonoBehaviour
                 return false;
         }
 
-        // Metoda wywoływana przez przycisk "Start" (przejście ze Sklepu do Bitwy)
+
         public void StartBattle()
         {
                 currentPhase = GamePhase.Battle;
-                currentTurn = PieceOwner.Player; // Zawsze zaczyna gracz
+                currentTurn = PieceOwner.Player; 
                 gameEnded = false;
                 Debug.Log("Faza bitwy rozpoczęta!");
         }
 
-        // --- System Tur ---
+
 
         public void SwitchTurn()
         {
@@ -294,13 +293,13 @@ public class GameManager : MonoBehaviour
                 Debug.Log("Koniec tury gracza. Tura Enemy...");
                 currentTurn = PieceOwner.Enemy;
 
-                // Uruchamiamy AI z opóźnieniem
+
                 StartCoroutine(EnemyMoveRoutine());
         }
 
         private IEnumerator EnemyMoveRoutine()
         {
-                yield return new WaitForSeconds(1.0f); // "Myślenie" AI
+                yield return new WaitForSeconds(1.0f);
 
                 if (EnemyAI.Instance != null)
                 {
@@ -308,7 +307,7 @@ public class GameManager : MonoBehaviour
                 }
                 else
                 {
-                        // Zabezpieczenie: jeśli nie ma AI, oddaj turę
+                   
                         Debug.LogError("Brak skryptu EnemyAI na scenie!");
                         SwitchTurn();
                 }
@@ -335,13 +334,13 @@ public class GameManager : MonoBehaviour
 			return;
 		}
 
-		// Runda liczona PRZED CompleteRound (bo CompleteRound zwiększa gamesPlayed)
+
 		int roundNumber = GameProgress.Instance.gamesPlayed + 1;
 
-		// policz pozostałe figury lokalnego gracza (Twoja istniejąca metoda)
+	
 		int piecesRemaining = GetLocalPiecesRemaining();
 
-		// aktualizacja armii po walce (Twoja istniejąca metoda)
+	
 		UpdateArmyAfterBattle();
 
 		int winValue = economyConfig != null ? economyConfig.GetWinReward(roundNumber) : winReward;
@@ -349,7 +348,7 @@ public class GameManager : MonoBehaviour
 
 		GameProgress.Instance.CompleteRound(localWon, winValue, loseValue);
 
-		// Telemetria końca rundy (każdy klient loguje "swój" wynik)
+		
 		if (TelemetryService.Instance != null && BoardManager.Instance != null)
 		{
 			int turnIndexInRound = ResolveTurnIndexInRoundForTelemetry();
@@ -385,14 +384,14 @@ public class GameManager : MonoBehaviour
 			&& Unity.Netcode.NetworkManager.Singleton != null
 			&& Unity.Netcode.NetworkManager.Singleton.IsListening;
 
-		// KONIEC MECZU po 9 rundach (tylko wtedy idziemy do MainMenu)
+		
 		if (GameProgress.Instance.gamesPlayed >= 9)
 		{
 			GameProgress.Instance.lastWinnerMessage = localWon ? "Winner: You" : "Winner: Enemy";
 
 			if (isNetwork)
 			{
-				// Server ładuje scenę, client tylko robi fade i czeka na sync sceny
+				
 				if (Unity.Netcode.NetworkManager.Singleton.IsServer)
 				{
 					SceneFader.FadeOutThen(() =>
@@ -415,7 +414,7 @@ public class GameManager : MonoBehaviour
 			return;
 		}
 
-		// NORMALNY KONIEC RUNDY (w tym "Resign") => wracamy do Shop
+		
 		if (isNetwork)
 		{
 			if (Unity.Netcode.NetworkManager.Singleton.IsServer)
@@ -434,7 +433,7 @@ public class GameManager : MonoBehaviour
 			}
 			else
 			{
-				// client: fade, scena przyjdzie z serwera
+				
 				SceneFader.FadeOutThen(() => { });
 			}
 		}
