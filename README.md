@@ -1,4 +1,6 @@
 # Chess Roguelike PvP - AI-Driven Telemetry & Balancing System
+> [!CAUTION]
+The live cloud environment (Render/PostgreSQL) was decommissioned after the successful thesis defense. The repository serves as an architectural showcase and codebase reference.
 
 ## 📌 Overview
 An automated game balancing ecosystem built for a multiplayer turn-based chess strategy. This project solves the problem of subjective game balancing by implementing a complete data pipeline: from in-game telemetry collection to an automated AI-driven analysis loop that generates intelligent configuration patches.
