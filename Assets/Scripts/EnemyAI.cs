@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class EnemyAI : MonoBehaviour
-{
+	{
 	public static EnemyAI Instance { get; private set; }
 
 	private void Awake()
@@ -17,7 +17,6 @@ public class EnemyAI : MonoBehaviour
 
 	public void MakeMove()
 	{
-		// znajduje wszystkie figury przeciwnika
 		Piece[] allPieces = FindObjectsOfType<Piece>();
 		List<(Piece, List<Tile>)> candidates = new List<(Piece, List<Tile>)>();
 
@@ -33,19 +32,17 @@ public class EnemyAI : MonoBehaviour
 
 		if (candidates.Count == 0)
 		{
-			// brak ruchów ==  remis / win gracza
 			GameManager.Instance.EndEnemyMove();
 			return;
 		}
 
-		// wylosuje figurê i ruch
 		var pair = candidates[Random.Range(0, candidates.Count)];
 		Piece piece = pair.Item1;
 		List<Tile> movesList = pair.Item2;
 
 		Tile target = movesList[Random.Range(0, movesList.Count)];
 
-		// wykonaje ruch "jak gracz"
+		// wykonaje ruch 
 		//piece.MoveToTileFromAI(target);
 	}
 }

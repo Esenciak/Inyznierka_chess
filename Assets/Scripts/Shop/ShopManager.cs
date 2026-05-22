@@ -229,13 +229,13 @@ public class ShopManager : MonoBehaviour
 			    Tile tile = tileGO.GetComponent<Tile>();
 			    tile.isOccupied = false;
 
-			    // spawn i zapisz do oferty w tej samej kolejności co sloty
+			    // spawn i zapisz 
 			    PieceType spawned = SpawnRandomShopItem(tileGO);
 			    string typeStr = (spawned == PieceType.King) ? "Empty" : TelemetryService.ToTelemetryPieceType(spawned);
 			    currentOfferPieces.Add(typeStr);
 		    }
 
-		    // 1 log na ofertę
+
 		    LogShopOfferFromCurrent();
 	    }
 
@@ -287,7 +287,6 @@ public class ShopManager : MonoBehaviour
 
 		int slots = shopRows * shopCols;
 
-		// gwarancja długości
 		while (currentOfferPieces.Count < slots) currentOfferPieces.Add("Empty");
 		if (currentOfferPieces.Count > slots) currentOfferPieces.RemoveRange(slots, currentOfferPieces.Count - slots);
 
@@ -338,7 +337,6 @@ public class ShopManager : MonoBehaviour
 
 		int coinsBefore = GameProgress.Instance.coins;
 
-		// Zapisz kontekst zanim cokolwiek wyczyścisz
 		PieceType boughtType = item.type;
 		int slotIndex = GetShopSlotIndex(item.CurrentTile);
 
@@ -353,7 +351,7 @@ public class ShopManager : MonoBehaviour
 		GameProgress.Instance.SpendCoins(item.price);
 		int coinsAfter = GameProgress.Instance.coins;
 
-		// Telemetry opcjonalnie, nie blokuje logiki
+		// Telemetria 
 		if (TelemetryService.Instance != null && boughtType != PieceType.King)
 		{
 			string bought = TelemetryService.ToTelemetryPieceType(boughtType);
@@ -372,7 +370,7 @@ public class ShopManager : MonoBehaviour
 			TelemetryService.Instance.LogPurchase(bought, item.price, slotIndex, coinsBefore, coinsAfter);
 		}
 
-		// Sprzątanie tile + obiektu (raz)
+		// Sprzątanie
 		if (item.CurrentTile != null)
 		{
 			item.CurrentTile.isOccupied = false;

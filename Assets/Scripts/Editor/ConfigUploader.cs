@@ -3,7 +3,6 @@ using UnityEditor;
 using UnityEngine.Networking;
 using System.Text;
 
-// Ten skrypt dodaje opcję w menu Unity, żeby wysłać config do bazy
 public class ConfigUploader : Editor
 {
 	[MenuItem("Chess/Upload Economy Config")]
@@ -17,11 +16,11 @@ public class ConfigUploader : Editor
 			return;
 		}
 
-		// 2. Serializacja do JSON
+		// Serializacja do JSON
 		string json = JsonUtility.ToJson(config, true);
 		Debug.Log("Serialized EconomyConfig: " + json);
 
-		// 3. Wyślij do API
+		//  Wysyłanie do API
 		string url = "https://game-analytics-api.onrender.com/api/config"; 
 		UploadCoroutine(url, json);
 	}

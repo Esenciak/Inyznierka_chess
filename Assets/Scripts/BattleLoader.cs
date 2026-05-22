@@ -73,15 +73,15 @@ public class BattleLoader : MonoBehaviour
         {
                 List<SavedPieceData> army = GameProgress.Instance.myArmy;
 
-                // --- TRYB AWARYJNY (Jeśli odpalasz Battle bezpośrednio) ---
+
                 if (army.Count == 0)
                 {
                         Debug.LogWarning("Brak armii ze sklepu! Generuję armię testową.");
-                        GenerateDebugArmy(); // Generuje domyślne pionki
+                        GenerateDebugArmy(); 
                         return;
                 }
 
-                // --- TRYB NORMALNY (Ze sklepu) ---
+
                 foreach (SavedPieceData data in army)
                 {
                         // 1. Gracz
@@ -131,7 +131,6 @@ public class BattleLoader : MonoBehaviour
 
         void GenerateDebugArmy()
         {
-                // Generuje Króla i kilka pionków dla testu
                 SpawnPiece(PieceType.King, 1, 1, BoardType.Player, PieceOwner.Player, false);
                 SpawnPiece(PieceType.King, 1, 1, BoardType.Enemy, PieceOwner.Enemy, true);
 

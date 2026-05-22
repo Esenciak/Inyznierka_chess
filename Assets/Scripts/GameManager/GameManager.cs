@@ -242,14 +242,14 @@ public class GameManager : MonoBehaviour
 
 	public bool CanPieceMove(Piece piece)
         {
-                // 1. Faza Placement (Sklep):
+                // 1. Faza Placement Sklep
 
                 if (currentPhase == GamePhase.Placement)
                 {
                         return piece.owner == PieceOwner.Player;
                 }
 
-                // 2. Faza Battle (Walka):
+                // 2. Faza Battle Walka
 
                 if (currentPhase == GamePhase.Battle)
                 {

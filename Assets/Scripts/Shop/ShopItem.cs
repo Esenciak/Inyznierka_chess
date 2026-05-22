@@ -34,19 +34,15 @@ public class ShopItem : MonoBehaviour
 
 			if (tmp != null)
 			{
-				// 1. Ustawiamy tekst
 				tmp.text = price.ToString();
 
-				// 2. Formatowanie
-				tmp.fontSize = 5; // Mo¿esz zwiêkszyæ jeœli jest za ma³e
+				tmp.fontSize = 5;
 				tmp.alignment = TextAlignmentOptions.Center;
 				tmp.color = Color.yellow;
 
-				// 3. KLUCZOWA POPRAWKA - WARSTWY I KOLEJNOŒÆ
-				// Ustawiamy Sorting Order na bardzo wysoki, ¿eby by³ nad wszystkim
+
 				tmp.GetComponent<MeshRenderer>().sortingOrder = 500;
 
-				// Dla pewnoœci przysuwamy go te¿ do kamery (Z = -2)
 				Vector3 fixPos = priceTextObj.transform.position;
 				fixPos.z = -2f;
 				priceTextObj.transform.position = fixPos;
@@ -66,12 +62,12 @@ public class ShopItem : MonoBehaviour
 
 		if (GameProgress.Instance.coins < price)
 		{
-			// Brak kasy -> Czerwony
+			// Brak kasy  Czerwony
 			tileSr.color = new Color(1f, 0.3f, 0.3f);
 		}
 		else
 		{
-			// Jest kasa -> Normalny
+			// Jest kasa  Normalny
 			tileSr.color = originalTileColor;
 		}
 	}

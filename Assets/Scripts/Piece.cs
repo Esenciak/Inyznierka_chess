@@ -15,20 +15,16 @@ public class Piece : MonoBehaviour
 		transform.position = pos;
 	}
 
-	// --- NOWA METODA DLA PIECEMOVEMENT ---
 	public void ToggleHighlight(bool show)
 	{
-		// 1. Obliczamy gdzie mo¿emy iœæ
 		List<Tile> moves = GetLegalMoves();
 
-		// 2. Ka¿demu kafelkowi z listy mówimy "zmieñ kolor"
 		foreach (Tile t in moves)
 		{
 			if (t != null) t.SetHighlight(show);
 		}
 	}
 
-	// --- RUCHY SZACHOWE (Bez zmian) ---
 	public List<Tile> GetLegalMoves()
 	{
 		List<Tile> moves = new List<Tile>();

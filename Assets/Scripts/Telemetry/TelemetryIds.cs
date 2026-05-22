@@ -8,14 +8,11 @@ public static class TelemetryIds
 	private const string PlayerIdKey = "TelemetryPlayerId";
 
 	/// <summary>
-	/// Prefer authenticated UGS playerId when available (UGS initialized + signed in),
-	/// otherwise fallback to a stable GUID stored in PlayerPrefs.
+
 	/// </summary>
 	public static string GetOrCreatePlayerId()
 	{
-		// IMPORTANT:
-		// Do NOT touch AuthenticationService.Instance unless UnityServices is initialized,
-		// otherwise it can throw ServicesInitializationException.
+
 		if (UnityServices.State == ServicesInitializationState.Initialized)
 		{
 			try
@@ -29,12 +26,10 @@ public static class TelemetryIds
 			}
 			catch (Exception)
 			{
-				// If anything goes wrong with auth, fall back to PlayerPrefs ID.
-				// We intentionally swallow here to keep telemetry non-blocking.
+
 			}
 		}
 
-		// Fallback: stable per device/install
 		var existing = PlayerPrefs.GetString(PlayerIdKey, string.Empty);
 		if (!string.IsNullOrEmpty(existing))
 			return existing;
@@ -46,7 +41,7 @@ public static class TelemetryIds
 	}
 
 	/// <summary>
-	/// Offline fallback matchId. Online should use lobby ID (e.g., LobbyState.CurrentLobbyId).
+
 	/// </summary>
 	public static string CreateMatchId() => Guid.NewGuid().ToString();
 }

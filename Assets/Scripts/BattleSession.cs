@@ -7,11 +7,11 @@ public class BattleSession : NetworkBehaviour
 {
 	public static BattleSession Instance { get; private set; }
 
-	// Listy sieciowe (synchronizowane automatycznie)
+	// Listy sieciowe 
 	public NetworkList<NetworkArmyPiece> HostArmy;
 	public NetworkList<NetworkArmyPiece> ClientArmy;
 
-	// Flagi gotowoci
+	// Flagi 
 	public NetworkVariable<bool> IsHostReady = new NetworkVariable<bool>(false);
 	public NetworkVariable<bool> IsClientReady = new NetworkVariable<bool>(false);
 	public NetworkVariable<int> SharedGamesPlayed = new NetworkVariable<int>(0);
@@ -28,7 +28,6 @@ public class BattleSession : NetworkBehaviour
 		Instance = this;
 		DontDestroyOnLoad(gameObject);
 
-		// Inicjalizacja list sieciowych
 		HostArmy = new NetworkList<NetworkArmyPiece>();
 		ClientArmy = new NetworkList<NetworkArmyPiece>();
 	}
@@ -42,10 +41,8 @@ public class BattleSession : NetworkBehaviour
 		}
 	}
 
-	// Tê metodê wo³a Twój ShopManager
 	public void PlayerReady(List<SavedPieceData> localArmy)
 	{
-		// Konwersja na format sieciowy
 		NetworkArmyPiece[] networkArmy = new NetworkArmyPiece[localArmy.Count];
 		for (int i = 0; i < localArmy.Count; i++)
 		{

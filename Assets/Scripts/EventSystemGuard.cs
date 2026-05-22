@@ -49,7 +49,6 @@ public class EventSystemGuard : MonoBehaviour
 			return;
 		}
 
-		// zostaw pierwszy, usuñ resztê
 		var keep = systems[0];
 		for (int i = 1; i < systems.Length; i++)
 		{
@@ -74,15 +73,12 @@ public class EventSystemGuard : MonoBehaviour
 	private static void EnsureCorrectInputModule(GameObject eventSystemGO)
 	{
 #if ENABLE_INPUT_SYSTEM && !ENABLE_LEGACY_INPUT_MANAGER
-        // New Input System only
         var legacy = eventSystemGO.GetComponent<StandaloneInputModule>();
         if (legacy != null) Object.Destroy(legacy);
 
         if (eventSystemGO.GetComponent<InputSystemUIInputModule>() == null)
             eventSystemGO.AddComponent<InputSystemUIInputModule>();
 #else
-		// Legacy (albo Both) - zapewnij StandaloneInputModule
-		// Usuñ InputSystemUIInputModule jeœli ktoœ go przyniós³ prefabem/scen¹ (bez twardej referencji)
 		var inputSystemModule = eventSystemGO.GetComponent("UnityEngine.InputSystem.UI.InputSystemUIInputModule");
 		if (inputSystemModule != null) Object.Destroy(inputSystemModule);
 

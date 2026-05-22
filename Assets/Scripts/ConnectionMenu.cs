@@ -6,12 +6,12 @@ using UnityEngine.UI;
 public class ConnectionMenu : MonoBehaviour
 {
 	[Header("UI References")]
-	public Button hostBtn;          // Przycisk "Host (LAN/Direct)" - Opcjonalny
-	public Button clientBtn;        // Przycisk "Client (LAN/Direct)" - Opcjonalny
-	public Button singleplayerBtn;  // Przycisk Singleplayer
+	public Button hostBtn;          // Przycisk "Host 
+	public Button clientBtn;        // Przycisk "Client 
+	public Button singleplayerBtn;  // Przycisk Singleplayer jeżeli zdążę 
 
 	[Header("Dependencies")]
-	public LobbyMenu lobbyMenu;     // Przypisz tu skrypt LobbyMenu w Inspektorze!
+	public LobbyMenu lobbyMenu;     
 
 	void Start()
 	{
@@ -25,14 +25,12 @@ public class ConnectionMenu : MonoBehaviour
 		if (singleplayerBtn != null)
 			singleplayerBtn.onClick.AddListener(StartSingleplayer);
 
-		// Łączymy się z LobbyMenu, jeśli zostało przypisane
 		if (lobbyMenu != null)
 		{
 			lobbyMenu.SetConnectionMenu(this);
 		}
 		else
 		{
-			// Próba znalezienia, jeśli zapomniałeś przypisać
 			lobbyMenu = GetComponent<LobbyMenu>();
 			if (lobbyMenu != null)
 			{
@@ -40,7 +38,7 @@ public class ConnectionMenu : MonoBehaviour
 			}
 			else
 			{
-				Debug.LogWarning("Brak LobbyMenu na obiekcie! Multiplayer przez internet nie zadziała z tego poziomu.");
+				Debug.LogWarning("Brak LobbyMenu na obiekcie! Multiplayer przez internet nie zadziała.");
 			}
 		}
 	}
@@ -63,12 +61,8 @@ public class ConnectionMenu : MonoBehaviour
 			return;
 		}
 
-		// WAŻNE: Jeśli startujemy przez Lobby, Relay został już skonfigurowany w LobbyMenu.
-		// Jeśli kliknąłeś zwykły przycisk "Host", Relay NIE jest skonfigurowany i gra ruszy na LAN (127.0.0.1).
 		NetworkManager.Singleton.StartHost();
 
-		// Przenosimy graczy do sklepu
-		// SceneFader to twój system przejść
 		if (SceneFader.Instance != null) // Zabezpieczenie
 		{
 			SceneFader.FadeOutThen(() =>
@@ -78,7 +72,7 @@ public class ConnectionMenu : MonoBehaviour
 		}
 		else
 		{
-			// Fallback jeśli nie ma fadera
+	
 			NetworkManager.Singleton.SceneManager.LoadScene("Shop", LoadSceneMode.Single);
 		}
 	}
@@ -96,10 +90,8 @@ public class ConnectionMenu : MonoBehaviour
 			}
 		}
 
-		// Tutaj UnityTransport musi mieć już dane z Relay (ustawione przez LobbyMenu)
 		NetworkManager.Singleton.StartClient();
 
-		// Klient NIE ładuje sceny sam. Czeka aż Host go pociągnie za sobą.
 	}
 
 	public void StartSingleplayer()

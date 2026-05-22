@@ -83,7 +83,7 @@ public class TelemetryService : MonoBehaviour
 		if (string.IsNullOrEmpty(matchId))
 			matchId = TelemetryIds.CreateMatchId();
 
-		// inicjalizacja stanu meczu tylko raz
+		// inicjalizacja  meczu
 		if (!matchStarted)
 		{
 			matchStarted = true;
@@ -92,7 +92,7 @@ public class TelemetryService : MonoBehaviour
 			matchStartLogged = false;
 		}
 
-		// MatchStart logujemy dokładnie raz na mecz
+		// MatchStart
 		if (!matchStartLogged)
 		{
 			LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
@@ -122,7 +122,6 @@ public class TelemetryService : MonoBehaviour
 		clientEventSeq = 0;
 		clock.Reset();
 
-		// bezpiecznie: nie mieszaj eventów między lobby
 		currentEvents.Clear();
 
 		ResetTurnIndexInRound();
@@ -588,13 +587,10 @@ public class TelemetryService : MonoBehaviour
 
 		int ti = GetLastTurnIndexInRound();
 
-		// 1) ResignRound MUSI być przed RoundEnd
 		LogResignRound(false, coinsEnd, piecesRemaining, boardSize, ti, winnerColor);
 
-		// 2) MatchEnd chcemy mieć w tym samym batchu, więc przed RoundEnd
 		LogMatchEnd(winnerColor, "Resign", totalRounds);
 
-		// 3) RoundEnd wysyła batch i czyści eventy
 		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize, ti, winnerColor);
 	}
 
@@ -611,8 +607,6 @@ public class TelemetryService : MonoBehaviour
 		clientEventSeq = 0;
 		currentEvents.Clear();
 		ResetTurnIndexInRound();
-
-		// Nie resetuję clock tutaj — zresetuje się przy StartMatchIfNeeded
 	}
 
 

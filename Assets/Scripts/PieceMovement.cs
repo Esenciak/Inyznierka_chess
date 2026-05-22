@@ -104,13 +104,11 @@ public class PieceMovement : MonoBehaviour
 
                 bool isBattle = SceneManager.GetActiveScene().name == "Battle";
 
-                // --- WYCZ PODŚWIETLENIE (TYLKO W BITWIE) ---
                 if (isBattle)
                 {
                         pieceComponent.ToggleHighlight(false);
                 }
 
-                // Raycast i szukanie kafelka
                 Vector2 mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
                 RaycastHit2D[] hits = Physics2D.RaycastAll(mousePos, Vector2.zero);
 
@@ -208,8 +206,7 @@ public class PieceMovement : MonoBehaviour
                         }
                 }
 
-                // Powrót przy błędzie
-                transform.position = startPosition;
+                transform.position = startPosition; // sprawdzić !!!
         }
 
         void MoveToTile(Tile newTile)
