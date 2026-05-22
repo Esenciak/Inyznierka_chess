@@ -38,9 +38,9 @@ public class TelemetryService : MonoBehaviour
             return;
         }
 
-        GameObject go = new GameObject("TelemetryService");
-        DontDestroyOnLoad(go);
-        go.AddComponent<TelemetryService>();
+       // GameObject go = new GameObject("TelemetryService");
+       // DontDestroyOnLoad(go);
+        //go.AddComponent<TelemetryService>();
     }
 
     private void Awake()
@@ -54,10 +54,10 @@ public class TelemetryService : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        config = config != null ? config : Resources.Load<TelemetryConfig>("Telemetry/TelemetryConfig");
-        clock = new TelemetryClock();
-		httpClient = new TelemetryHttpClient();
-        queueStorage = new TelemetryQueueStorage();
+        //config = config != null ? config : Resources.Load<TelemetryConfig>("Telemetry/TelemetryConfig");
+        //clock = new TelemetryClock();
+		//httpClient = new TelemetryHttpClient();
+        //queueStorage = new TelemetryQueueStorage();
         RefreshPlayerId();
 
         if (config != null && config.enableTelemetry)
@@ -67,8 +67,8 @@ public class TelemetryService : MonoBehaviour
             StartCoroutine(FlushOfflineQueue());
         }
 
-		fileLogger = new TelemetryFileLogger();
-		Debug.Log($"[Telemetry] persistentDataPath = {Application.persistentDataPath}");
+		//fileLogger = new TelemetryFileLogger();
+		//Debug.Log($"[Telemetry] persistentDataPath = {Application.persistentDataPath}");
 
 	}
 
@@ -93,11 +93,11 @@ public class TelemetryService : MonoBehaviour
 		}
 
 		// MatchStart
-		if (!matchStartLogged)
-		{
-			LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
-			matchStartLogged = true;
-		}
+		//if (!matchStartLogged)
+		//{
+		//	LogEvent(CreateBaseEvent(TelemetryEventTypes.MatchStart, roundNumber));
+		//	matchStartLogged = true;
+		//}
 	}
 
 
@@ -141,7 +141,7 @@ public class TelemetryService : MonoBehaviour
         coinsBeforeShop = coinsAtStart;
         coinsAfterShop = coinsAtStart;
 
-        LogEvent(CreateBaseEvent(TelemetryEventTypes.RoundStart, roundNumber));
+       // LogEvent(CreateBaseEvent(TelemetryEventTypes.RoundStart, roundNumber));
     }
 
     public void ResetTurnIndexInRound()
@@ -184,7 +184,7 @@ public class TelemetryService : MonoBehaviour
         evt.OfferedPieces = offeredPieces?.ToArray();
         evt.ShopSlots = shopSlots;
         evt.RerollCost = rerollCost;
-        LogEvent(evt);
+        //LogEvent(evt);
     }
 
     public void LogPurchase(string pieceType, int price, int shopSlotIndex, int coinsBefore, int coinsAfter)
@@ -200,7 +200,7 @@ public class TelemetryService : MonoBehaviour
         evt.ShopSlotIndex = shopSlotIndex;
         evt.CoinsBefore = coinsBefore;
         evt.CoinsAfter = coinsAfter;
-        LogEvent(evt);
+       // LogEvent(evt);
     }
 
     public void LogReroll(int cost, int coinsBefore, int coinsAfter)
@@ -214,7 +214,7 @@ public class TelemetryService : MonoBehaviour
         evt.Cost = cost;
         evt.CoinsBefore = coinsBefore;
         evt.CoinsAfter = coinsAfter;
-        LogEvent(evt);
+        //LogEvent(evt);
     }
 
     public void LogSell(string pieceType, int refund, int coinsBefore, int coinsAfter)
@@ -229,7 +229,7 @@ public class TelemetryService : MonoBehaviour
         evt.Refund = refund;
         evt.CoinsBefore = coinsBefore;
         evt.CoinsAfter = coinsAfter;
-        LogEvent(evt);
+      //  LogEvent(evt);
     }
 
     public void LogPiecePlaced(string pieceType, int toX, int toY, string source)
@@ -245,7 +245,7 @@ public class TelemetryService : MonoBehaviour
         evt.ToY = toY;
         evt.Source = source;
         evt.BoardContext = "Setup";
-        LogEvent(evt);
+        //LogEvent(evt);
     }
 
     public void LogBattleStart(int boardSize)
@@ -258,7 +258,7 @@ public class TelemetryService : MonoBehaviour
         ResetTurnIndexInRound();
         TelemetryEventBase evt = CreateBaseEvent(TelemetryEventTypes.BattleStart, currentRoundNumber);
         evt.BoardSize = boardSize;
-        LogEvent(evt);
+       // LogEvent(evt);
     }
 
     public void LogPieceMoved(string pieceType, int fromX, int fromY, int toX, int toY, int turnIndexInRound)
@@ -276,7 +276,7 @@ public class TelemetryService : MonoBehaviour
         evt.ToY = toY;
         evt.BoardContext = "Battle";
         evt.TurnIndexInRound = turnIndexInRound;
-        LogEvent(evt);
+       // LogEvent(evt);
     }
 
     public void LogPieceCaptured(
@@ -306,7 +306,7 @@ public class TelemetryService : MonoBehaviour
         evt.BoardSize = boardSize;
         evt.CapturedOnRegion = capturedOnRegion;
         evt.TurnIndexInRound = turnIndexInRound;
-        LogEvent(evt);
+       // LogEvent(evt);
     }
 
     public void LogRoundEnd(bool playerWon, int coinsEnd, int piecesRemaining, int boardSize, int turnIndexInRound, string roundWinnerColor)
@@ -323,7 +323,7 @@ public class TelemetryService : MonoBehaviour
         evt.BoardSize = boardSize;
         evt.TurnIndexInRound = turnIndexInRound;
         evt.RoundWinnerColor = roundWinnerColor;
-        LogEvent(evt);
+        //LogEvent(evt);
 
         SendRoundBatch(boardSize);
         currentEvents.Clear();
@@ -343,7 +343,7 @@ public class TelemetryService : MonoBehaviour
         evt.BoardSize = boardSize;
         evt.TurnIndexInRound = turnIndexInRound;
         evt.RoundWinnerColor = roundWinnerColor;
-        LogEvent(evt);
+       // LogEvent(evt);
     }
 
     public void LogMatchEnd(string winnerColor, string reason, int totalRounds)
@@ -358,7 +358,7 @@ public class TelemetryService : MonoBehaviour
         evt.GameWinnerColor = winnerColor;
         evt.Reason = reason;
         evt.TotalRounds = totalRounds;
-        LogEvent(evt);
+       // LogEvent(evt);
     }
 
     public bool IsTelemetryEnabled()
@@ -464,15 +464,15 @@ public class TelemetryService : MonoBehaviour
             Events = new List<TelemetryEventBase>(currentEvents)
         };
 
-		string json = TelemetryJson.SerializeBatch(batch);
+		//string json = TelemetryJson.SerializeBatch(batch);
 
-		// DEBUG: zawsze zapisuj batch lokalnie, ¿eby sprawdziæ czy dzia³a
+		
 		if (config != null && config.writeBatchesToDisk)
 		{
-			fileLogger.WriteBatch(json, currentRoundNumber);
+			//fileLogger.WriteBatch(json, currentRoundNumber);
 		}
 
-		StartCoroutine(SendOrQueue(json));
+		//StartCoroutine(SendOrQueue(json));
 
 
 	}
@@ -481,12 +481,12 @@ public class TelemetryService : MonoBehaviour
     {
         if (GameProgress.Instance != null && GameProgress.Instance.economyConfig != null)
         {
-            return GameProgress.Instance.economyConfig.configVersion;
+           // return GameProgress.Instance.economyConfig.configVersion;
         }
 
         if (GameManager.Instance != null && GameManager.Instance.economyConfig != null)
         {
-            return GameManager.Instance.economyConfig.configVersion;
+            //return GameManager.Instance.economyConfig.configVersion;
         }
 
         return "unknown";
@@ -585,13 +585,13 @@ public class TelemetryService : MonoBehaviour
 	{
 		if (!IsTelemetryEnabled()) return;
 
-		int ti = GetLastTurnIndexInRound();
+		//int ti = GetLastTurnIndexInRound();
 
-		LogResignRound(false, coinsEnd, piecesRemaining, boardSize, ti, winnerColor);
+		//LogResignRound(false, coinsEnd, piecesRemaining, boardSize, ti, winnerColor);
 
-		LogMatchEnd(winnerColor, "Resign", totalRounds);
+		//LogMatchEnd(winnerColor, "Resign", totalRounds);
 
-		LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize, ti, winnerColor);
+		//LogRoundEnd(false, coinsEnd, piecesRemaining, boardSize, ti, winnerColor);
 	}
 
 	public void ResetMatchState()
