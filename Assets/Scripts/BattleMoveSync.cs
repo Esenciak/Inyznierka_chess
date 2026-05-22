@@ -149,12 +149,10 @@ public class BattleMoveSync : NetworkBehaviour
 
                 bool capturedKing = false;
                 Piece capturedPiece = null;
-                string capturedPieceType = null;
                 if (toTile.isOccupied && toTile.currentPiece != null && toTile.currentPiece.owner != expectedOwner)
                 {
                         capturedKing = toTile.currentPiece.pieceType == PieceType.King;
                         capturedPiece = toTile.currentPiece;
-                        capturedPieceType = TelemetryService.ToTelemetryPieceType(capturedPiece.pieceType);
                         Destroy(toTile.currentPiece.gameObject);
                 }
 
@@ -162,32 +160,6 @@ public class BattleMoveSync : NetworkBehaviour
 
                 int turnIndexInRound = TurnIndexInRound.Value;
                 TurnIndexInRound.Value = turnIndexInRound + 1;
-
-                if (TelemetryService.Instance != null && TelemetryService.Instance.IsLocalOwner(expectedOwner))
-                {
-                        string movingPieceType = TelemetryService.ToTelemetryPieceType(movingPiece.pieceType);
-                        TelemetryService.Instance.LogPieceMoved(
-                                movingPieceType,
-                                fromCoords.y,
-                                fromCoords.x,
-                                toCoords.y,
-                                toCoords.x,
-                                turnIndexInRound);
-
-                        if (capturedPieceType != null)
-                        {
-                                TelemetryService.Instance.LogPieceCaptured(
-                                        movingPieceType,
-                                        fromCoords.y,
-                                        fromCoords.x,
-                                        toCoords.y,
-                                        toCoords.x,
-                                        capturedPieceType,
-                                        GetCaptureBoardSize(),
-                                        GetCaptureRegion(toCoords.x),
-                                        turnIndexInRound);
-                        }
-                }
 
                 PieceOwner nextTurn = expectedOwner == PieceOwner.Player ? PieceOwner.Enemy : PieceOwner.Player;
                 CurrentTurn.Value = nextTurn;
@@ -286,16 +258,8 @@ public class BattleMoveSync : NetworkBehaviour
                 }
 
                 Piece movingPiece = fromTile.currentPiece;
-                string movingPieceType = null;
-                if (movingPiece != null)
-                {
-                        movingPieceType = TelemetryService.ToTelemetryPieceType(movingPiece.pieceType);
-                }
-
-                string capturedPieceType = null;
                 if (toTile.isOccupied && toTile.currentPiece != null && toTile.currentPiece != movingPiece)
                 {
-                        capturedPieceType = TelemetryService.ToTelemetryPieceType(toTile.currentPiece.pieceType);
                         Destroy(toTile.currentPiece.gameObject);
                 }
 
@@ -305,30 +269,6 @@ public class BattleMoveSync : NetworkBehaviour
                 }
 
                 PieceOwner moveOwner = hostWon ? PieceOwner.Player : PieceOwner.Enemy;
-                if (movingPieceType != null && TelemetryService.Instance != null && TelemetryService.Instance.IsLocalOwner(moveOwner))
-                {
-                        TelemetryService.Instance.LogPieceMoved(
-                                movingPieceType,
-                                fromCoords.y,
-                                fromCoords.x,
-                                toCoords.y,
-                                toCoords.x,
-                                turnIndexInRound);
-
-                        if (capturedPieceType != null)
-                        {
-                                TelemetryService.Instance.LogPieceCaptured(
-                                        movingPieceType,
-                                        fromCoords.y,
-                                        fromCoords.x,
-                                        toCoords.y,
-                                        toCoords.x,
-                                        capturedPieceType,
-                                        GetCaptureBoardSize(),
-                                        GetCaptureRegion(toCoords.x),
-                                        turnIndexInRound);
-                        }
-                }
 
                 if (capturedKing && GameManager.Instance != null)
                 {

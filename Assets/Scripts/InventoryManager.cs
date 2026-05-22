@@ -70,12 +70,6 @@ public class InventoryManager : MonoBehaviour
                 ClearInventory();
                 GenerateInventory();
 
-                EnsureKingInArmy();
-                if (GameProgress.Instance == null || !HasKingInArmy())
-                {
-                        SpawnKingOnBoard();
-                }
-
                 IsReady = true;
                 isInitializing = false;
         }
@@ -136,17 +130,6 @@ public class InventoryManager : MonoBehaviour
                         }
                 }
                 Debug.Log($"Inventory wygenerowane: {inventoryTiles.Count} slotów.");
-        }
-
-        void SpawnKingOnBoard()
-        {
-                if (BoardManager.Instance == null) return;
-
-                Tile centerTile = BoardManager.Instance.GetPlayerCenterTile();
-                if (centerTile != null && kingPrefab != null && !centerTile.isOccupied)
-                {
-                        SpawnPiece(kingPrefab, centerTile, PieceType.King);
-                }
         }
 
         public bool AddPieceToInventory(PieceType type, GameObject prefab)
@@ -243,46 +226,6 @@ public class InventoryManager : MonoBehaviour
                         }
                 }
                 return null;
-        }
-
-        bool HasKingInArmy()
-        {
-                if (GameProgress.Instance == null)
-                {
-                        return false;
-                }
-
-                foreach (SavedPieceData piece in GameProgress.Instance.myArmy)
-                {
-                        if (piece.type == PieceType.King)
-                        {
-                                return true;
-                        }
-                }
-
-                return false;
-        }
-
-        void EnsureKingInArmy()
-        {
-                if (GameProgress.Instance == null || HasKingInArmy())
-                {
-                        return;
-                }
-
-                if (BoardManager.Instance == null)
-                {
-                        return;
-                }
-
-                int col = BoardManager.Instance.PlayerCols / 2;
-                int row = BoardManager.Instance.PlayerRows / 2;
-                GameProgress.Instance.myArmy.Add(new SavedPieceData
-                {
-                        type = PieceType.King,
-                        x = col,
-                        y = row
-                });
         }
 
         void SelectKingPrefab()

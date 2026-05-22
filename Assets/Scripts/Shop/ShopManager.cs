@@ -138,23 +138,12 @@ public class ShopManager : MonoBehaviour
 
         void InitializeShop()
         {
-		    if (TelemetryService.Instance != null && !string.IsNullOrWhiteSpace(LobbyState.CurrentLobbyId))
-	        {
-			    TelemetryService.Instance.SetMatchContext(LobbyState.CurrentLobbyId);
-	    	}
-
-
 		        if (shopInitialized) return;
                 shopInitialized = true;
 
         		ApplyPiecePrefabsForLocalPlayer();
                 CleanupShop();
                 GenerateShopGrid();
-                if (GameProgress.Instance != null && TelemetryService.Instance != null)
-                {
-                        int roundNumber = GameProgress.Instance.gamesPlayed + 1;
-                        TelemetryService.Instance.StartRound(roundNumber, GameProgress.Instance.coins);
-                }
                 RefillShop();
                 ToggleUI(true);
                 UpdateUI();
@@ -231,12 +220,9 @@ public class ShopManager : MonoBehaviour
 
 			    // spawn i zapisz 
 			    PieceType spawned = SpawnRandomShopItem(tileGO);
-			    string typeStr = (spawned == PieceType.King) ? "Empty" : TelemetryService.ToTelemetryPieceType(spawned);
+			    string typeStr = (spawned == PieceType.King) ? "Empty" : spawned.ToString();
 			    currentOfferPieces.Add(typeStr);
 		    }
-
-
-		    LogShopOfferFromCurrent();
 	    }
 
 
@@ -280,20 +266,6 @@ public class ShopManager : MonoBehaviour
         		return type;
 
 	    }
-	private void LogShopOfferFromCurrent()
-	{
-		if (TelemetryService.Instance == null || economyConfig == null)
-			return;
-
-		int slots = shopRows * shopCols;
-
-		while (currentOfferPieces.Count < slots) currentOfferPieces.Add("Empty");
-		if (currentOfferPieces.Count > slots) currentOfferPieces.RemoveRange(slots, currentOfferPieces.Count - slots);
-
-		TelemetryService.Instance.LogShopOfferGenerated(currentOfferPieces, slots, economyConfig.rerollCost);
-	}
-
-
 	private void EnsureShopItemCollider(GameObject itemGO)
         {
                 if (itemGO == null || itemGO.GetComponent<Collider2D>() != null)
@@ -349,26 +321,6 @@ public class ShopManager : MonoBehaviour
 
 		// Płatność dokładnie raz
 		GameProgress.Instance.SpendCoins(item.price);
-		int coinsAfter = GameProgress.Instance.coins;
-
-		// Telemetria 
-		if (TelemetryService.Instance != null && boughtType != PieceType.King)
-		{
-			string bought = TelemetryService.ToTelemetryPieceType(boughtType);
-
-			if (slotIndex >= 0 && slotIndex < currentOfferPieces.Count)
-			{
-				string offered = currentOfferPieces[slotIndex];
-				if (offered != bought)
-					Debug.LogWarning($"[Shop] Telemetry mismatch slot {slotIndex}: offer={offered}, buy={bought}");
-			}
-			else
-			{
-				Debug.LogWarning($"[Shop] Invalid slotIndex={slotIndex}, offerCount={currentOfferPieces.Count}");
-			}
-
-			TelemetryService.Instance.LogPurchase(bought, item.price, slotIndex, coinsBefore, coinsAfter);
-		}
 
 		// Sprzątanie
 		if (item.CurrentTile != null)
@@ -388,10 +340,6 @@ public class ShopManager : MonoBehaviour
         {
                 SaveBoardLayout();
                 SaveInventoryLayout();
-                if (TelemetryService.Instance != null && GameProgress.Instance != null)
-                {
-                        TelemetryService.Instance.RecordCoinsAfterShop(GameProgress.Instance.coins);
-                }
 
                 if (GameManager.Instance.isMultiplayer)
                 {
@@ -469,7 +417,14 @@ public class ShopManager : MonoBehaviour
 
         void RestoreBoardLayout()
         {
-                if (GameProgress.Instance == null || GameProgress.Instance.myArmy.Count == 0)
+                if (GameProgress.Instance == null)
+                {
+                        return;
+                }
+
+                EnsureKingInArmy();
+
+                if (GameProgress.Instance.myArmy.Count == 0)
                 {
                         return;
                 }
@@ -749,9 +704,6 @@ public class ShopManager : MonoBehaviour
 
 		RefillShop();
 		UpdateUI();
-
-		if (TelemetryService.Instance != null)
-			TelemetryService.Instance.LogReroll(cost, coinsBefore, GameProgress.Instance.coins);
 	}
 
 
@@ -811,39 +763,6 @@ public class ShopManager : MonoBehaviour
                 rect.sizeDelta = new Vector2(220f, 60f);
                 rect.anchoredPosition = new Vector2(-30f, 30f);
         }
-
-	//private void LogShopOffer()
-	//{
-	//	if (TelemetryService.Instance == null || economyConfig == null)
-	//		return;
-
-	//	List<string> offeredPieces = new List<string>();
-
-	//	foreach (GameObject tileGO in shopTiles)
-	//	{
-	//		if (tileGO == null)
-	//		{
-	//			offeredPieces.Add("Empty");
-	//			continue;
-	//		}
-
-	//		ShopItem item = tileGO.GetComponentInChildren<ShopItem>();
-	//		if (item == null || item.type == PieceType.King)
-	//		{
-	//			offeredPieces.Add("Empty");
-	//			continue;
-	//		}
-
-	//		offeredPieces.Add(TelemetryService.ToTelemetryPieceType(item.type));
-	//	}
-
-	//	// cache oferty pod sanity-check
-	//	currentOfferPieces = new List<string>(offeredPieces);
-
-	//	int slots = shopRows * shopCols;
-	//	TelemetryService.Instance.LogShopOfferGenerated(offeredPieces, slots, economyConfig.rerollCost);
-	//}
-
 
 	private int GetShopSlotIndex(Tile tile)
         {

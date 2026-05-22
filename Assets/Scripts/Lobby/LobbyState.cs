@@ -16,10 +16,7 @@ public static class LobbyState
         {
                 CurrentLobbyId = lobbyId ?? string.Empty;
                 IsHostLobby = isHost;
-
-		        if(!string.IsNullOrWhiteSpace(CurrentLobbyId))
-            		TelemetryService.Instance?.SetMatchContext(CurrentLobbyId);
-	}
+        }
 
         public static void SetLocalPlayerName(string playerName)
         {

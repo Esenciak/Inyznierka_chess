@@ -74,10 +74,6 @@ public class GameManager : MonoBehaviour
                         }
                         gameEnded = false;
                         UpdateBattleHeaderTexts();
-                        if (TelemetryService.Instance != null && BoardManager.Instance != null)
-                        {
-                                TelemetryService.Instance.LogBattleStart(BoardManager.Instance.CenterRows);
-                        }
                         return;
                 }
 
@@ -349,37 +345,6 @@ public class GameManager : MonoBehaviour
 		GameProgress.Instance.CompleteRound(localWon, winValue, loseValue);
 
 		
-		if (TelemetryService.Instance != null && BoardManager.Instance != null)
-		{
-			int turnIndexInRound = ResolveTurnIndexInRoundForTelemetry();
-			string roundWinnerColor = ResolveWinnerColor(localWon);
-			if (reason == "ResignRound")
-			{
-				TelemetryService.Instance.LogResignRound(
-					localWon,
-					GameProgress.Instance.coins,
-					piecesRemaining,
-					BoardManager.Instance.CenterRows,
-					turnIndexInRound,
-					roundWinnerColor
-				);
-			}
-
-			if (GameProgress.Instance != null && GameProgress.Instance.gamesPlayed >= 9)
-			{
-				TelemetryService.Instance.LogMatchEnd(roundWinnerColor, reason, GameProgress.Instance.gamesPlayed);
-			}
-
-			TelemetryService.Instance.LogRoundEnd(
-				localWon,
-				GameProgress.Instance.coins,
-				piecesRemaining,
-				BoardManager.Instance.CenterRows,
-				turnIndexInRound,
-				roundWinnerColor
-			);
-		}
-
 		bool isNetwork = isMultiplayer
 			&& Unity.Netcode.NetworkManager.Singleton != null
 			&& Unity.Netcode.NetworkManager.Singleton.IsListening;
@@ -445,24 +410,6 @@ public class GameManager : MonoBehaviour
 		currentPhase = GamePhase.Placement;
 		currentTurn = PieceOwner.Player;
 	}
-
-	private int ResolveTurnIndexInRoundForTelemetry()
-	{
-		if (BattleMoveSync.Instance != null && BattleMoveSync.Instance.IsSpawned)
-		{
-			return BattleMoveSync.Instance.GetLastTurnIndexInRound();
-		}
-
-		if (TelemetryService.Instance != null)
-		{
-			return TelemetryService.Instance.GetLastTurnIndexInRound();
-		}
-
-		return 0;
-	}
-
-
-
 
 	private int ResolveCenterBoardSizeSafe()
 	{
